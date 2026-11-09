@@ -117,7 +117,6 @@ func TestSave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer zr.Close()
 	if f := zr.File[0]; f.Name != "mimetype" || f.Method != zip.Store {
 		t.Errorf("first entry %q method %d", f.Name, f.Method)
 	}
@@ -136,6 +135,9 @@ func TestSave(t *testing.T) {
 			}
 		}
 	}
+	// Close the reader before saving: Windows won't replace a file that is
+	// still open.
+	zr.Close()
 	// Saving again after a further edit still works from the new file.
 	b.Set("OEBPS/Styles/style.css", []byte("p { margin: 1em }"))
 	if _, err := b.Save(); err != nil {

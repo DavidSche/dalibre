@@ -4,6 +4,14 @@ Each version's section is the release notes that Dalibre's update window
 shows, so write them for readers of the app. `mygo build` needs a
 `## <version>` section for the version in `cmd/dalibre/mygo.json`.
 
+## 0.3.1
+
+- Saving an edited EPUB, KEPUB or TXT book now works on Windows: the
+  saved book replaces the old file instead of failing with “Access is denied”.
+- Sharing now recognizes a port that another program has on Windows, so
+  it says the port is in use instead of showing only the socket error.
+- MCP's Add books says a missing file is missing in plain words.
+
 ## 0.3.0
 
 - Read books in Dalibre itself: a quiet, full-window page with the

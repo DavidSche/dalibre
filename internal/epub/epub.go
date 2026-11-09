@@ -273,7 +273,7 @@ func (b *Book) Save() (int64, error) {
 		os.Remove(tmp)
 		return 0, err
 	}
-	if err := os.Rename(tmp, b.path); err != nil {
+	if err := replaceFile(tmp, b.path); err != nil {
 		os.Remove(tmp)
 		return 0, err
 	}

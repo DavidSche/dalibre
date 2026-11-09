@@ -630,6 +630,9 @@ func checkFile(lib *calibre.Library, path string) error {
 	}
 	real, err := filepath.EvalSymlinks(path)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("%s: no such file", path)
+		}
 		return err
 	}
 	fi, err := os.Stat(real)

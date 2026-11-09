@@ -6,7 +6,6 @@ import (
 	"errors"
 	"net/http"
 	"os"
-	"syscall"
 	"time"
 
 	"dalibre/internal/calibre"
@@ -95,7 +94,7 @@ func (a *App) mcpStatus() mcpStatus {
 	if st == nil {
 		return mcpStatus{Port: a.settings.MCP.ServerPort()}
 	}
-	out := mcpStatus{Running: st.server != nil, Port: st.port, Err: st.err, PortInUse: errors.Is(st.err, syscall.EADDRINUSE)}
+	out := mcpStatus{Running: st.server != nil, Port: st.port, Err: st.err, PortInUse: addressInUse(st.err)}
 	if st.mcp != nil {
 		out.Client, out.Used = st.mcp.LastUse()
 		now := time.Now()

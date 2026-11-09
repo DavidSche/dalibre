@@ -301,8 +301,7 @@ func TestCheckFile(t *testing.T) {
 	d, _ := lib.Details(books[0])
 	inside := d.Files[0].Path
 	link := filepath.Join(dir, "link.epub")
-	os.Symlink(inside, link)
-	for _, c := range []struct{ path, want string }{
+	cases := []struct{ path, want string }{
 		{write("ok.epub", 10), ""},
 		{"relative.epub", "isn't an absolute path"},
 		{filepath.Join(dir, "missing.epub"), "no such file"},
@@ -310,8 +309,13 @@ func TestCheckFile(t *testing.T) {
 		{write("notes.md", 10), "isn't an e-book"},
 		{write("empty.epub", 0), "is empty"},
 		{inside, "inside the library folder"},
-		{link, "inside the library folder"},
-	} {
+	}
+	// Windows only lets a program make a symlink in developer mode or as
+	// an administrator, so test the link only where it was made.
+	if err := os.Symlink(inside, link); err == nil {
+		cases = append(cases, struct{ path, want string }{link, "inside the library folder"})
+	}
+	for _, c := range cases {
 		err := checkFile(lib, c.path)
 		switch {
 		case c.want == "" && err != nil:
