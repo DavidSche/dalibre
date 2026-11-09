@@ -265,7 +265,7 @@ export async function search({ text, page }) {
                 </div>
                 <div>
                   <div class="mb-2.5 flex items-baseline justify-between text-sm">
-                    <span class="font-medium">Dalibre <span class="text-sand-9">0.1</span></span>
+                    <span class="font-medium">Dalibre <span class="text-sand-9">{release.version}</span></span>
                     <span class="font-mono text-accent">{dalibreMB} MB</span>
                   </div>
                   <div class="relative h-12 rounded-lg bg-sand-3">
@@ -283,20 +283,42 @@ export async function search({ text, page }) {
                 Size on disk on macOS: calibre.app 9.18 as installed, and the Dalibre release binary.
               </p>
 
-              <dl class="mt-12 grid grid-cols-3 divide-x divide-sand-6 border-y border-sand-6">
-                <div class="py-5 pr-4">
-                  <dt class="text-xs text-sand-11">Binary</dt>
-                  <dd class="mt-1 font-serif text-3xl">1 file</dd>
-                </div>
-                <div class="px-4 py-5">
-                  <dt class="text-xs text-sand-11">Webview</dt>
-                  <dd class="mt-1 font-serif text-3xl">None</dd>
-                </div>
-                <div class="py-5 pl-4">
-                  <dt class="text-xs text-sand-11">Runtime</dt>
-                  <dd class="mt-1 font-serif text-3xl">Built in</dd>
-                </div>
-              </dl>
+              <table class="mt-12 w-full text-left text-[15px]">
+                <thead>
+                  <tr class="border-b border-sand-6 text-xs text-sand-11">
+                    <th class="py-3 pr-4 font-normal"></th>
+                    <th class="w-20 py-3 text-center font-medium sm:w-24">calibre</th>
+                    <th class="w-20 py-3 text-center font-medium text-accent sm:w-24">Dalibre</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-sand-6">
+                  <tr>
+                    <td class="py-3.5 pr-4">Opens your calibre library, no import</td>
+                    <td class="text-center text-sand-11">✓</td>
+                    <td class="text-center font-medium text-accent">✓</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3.5 pr-4">Edits show up in the other app</td>
+                    <td class="text-center text-sand-11">✓</td>
+                    <td class="text-center font-medium text-accent">✓</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3.5 pr-4">Sends books to KOReader over Wi-Fi</td>
+                    <td class="text-center text-sand-11">✓</td>
+                    <td class="text-center font-medium text-accent">✓</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3.5 pr-4">Converts formats</td>
+                    <td class="text-center text-sand-11">✓</td>
+                    <td class="text-center text-xs text-sand-9">Not yet</td>
+                  </tr>
+                  <tr class="border-b border-sand-6">
+                    <td class="py-3.5 pr-4">Size on disk</td>
+                    <td class="text-center font-mono text-xs text-sand-11">{(calibreMB / 1024).toFixed(2)} GB</td>
+                    <td class="text-center font-mono text-xs text-accent">{dalibreMB} MB</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

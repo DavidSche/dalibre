@@ -1,0 +1,25 @@
+{
+  "$schema": "../../sdk/plugin.schema.json",
+  "id": "dalibre.googlebooks",
+  "name": "Google Books",
+  "version": "1.0.0",
+  "api": 1,
+  "icon": "book-open",
+  "description": "Book details from Google Books",
+  "author": "Dalibre",
+  "homepage": "https://books.google.com",
+  "license": "MIT",
+  "capabilities": {
+    "metadata": {
+      "fields": ["title", "authors", "tags", "publisher", "pubdate", "language", "identifiers", "cover", "description"]
+    }
+  },
+  "permissions": {
+    "hosts": ["www.googleapis.com", "books.google.com", "books.googleusercontent.com"],
+    "library": "read"
+  },
+  "settings": [
+    { "key": "apiKey", "title": "API key", "type": "secret",
+      "description": "A Google Cloud API key with the Books API enabled." }
+  ]
+}

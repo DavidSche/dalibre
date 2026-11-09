@@ -18,6 +18,8 @@ var (
 	ChevronDown   = lucide(`<path d="m6 9 6 6 6-6"/>`)
 	ChevronRight  = lucide(`<path d="m9 18 6-6-6-6"/>`)
 	ArrowRight    = lucide(`<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>`)
+	ChevronUp     = lucide(`<path d="m18 15-6-6-6 6"/>`)
+	Replace       = lucide(`<path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/>`)
 	ChevronLeft   = lucide(`<path d="m15 18-6-6 6-6"/>`)
 	Library       = lucide(`<path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/>`)
 	BookOpen      = lucide(`<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>`)

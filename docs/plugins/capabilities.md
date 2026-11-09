@@ -161,6 +161,13 @@ catalog API, no account. By NeoDB id or ISBN when the book has one
 author, ranked by title, then authors and language. Candidates carry
 NeoDB, Douban, Goodreads, Open Library and Google Books ids.
 
+Built in: **Google Books** (`dalibre.googlebooks`, `plugins/googlebooks`):
+the Books API, with the user's own API key as an optional `secret`
+setting. By Google id or ISBN when the book has one, else by title and
+first author (fielded, then free text), ranked as NeoDB. Without a key,
+Google's shared quota running out is an `auth` error, so the app
+offers the settings.
+
 ## Later capabilities
 
 Each is a new key under `capabilities`, its exports, and a place in
@@ -256,3 +263,4 @@ Each step ships on its own and keeps earlier plugins working.
 | `internal/plugin/metadata.go` | `identify`: `Book`, candidates and their checks |
 | `internal/app/fetchmeta.go`, `view_fetchmeta.go` | the Fetch metadata step: search, candidates, comparison, apply |
 | `plugins/neodb` | the NeoDB metadata plugin |
+| `plugins/googlebooks` | the Google Books metadata plugin |

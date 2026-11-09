@@ -98,6 +98,9 @@ func (a *App) bookDetail(c *ui.Context, b *calibre.Book) {
 					if m.Item(locales.DetailMenuEditMetadata()).Icon(icons.Menu(icons.Pencil)).Trailing("Ctrl+I").Chosen() {
 						a.openEditor(b)
 					}
+					if editableFormat(b) != "" && m.Item(locales.EditorMenuEditBook()).Icon(icons.Menu(icons.File)).Trailing("Ctrl+E").Chosen() {
+						a.editBook(b, "")
+					}
 					if m.Item(locales.DetailMenuAddFormat()).Icon(icons.Menu(icons.Plus)).Chosen() {
 						a.addFormat(b.ID)
 					}
@@ -229,9 +232,13 @@ func (a *App) bookDetail(c *ui.Context, b *calibre.Book) {
 				r.Background(pal().Hover)
 			}
 			r.OnClick(func() { a.openBook(b, f.Format) })
+			editable := isEditableFormat(f.Format)
 			r.ContextMenu(func(m *ui.Menu) {
 				if m.Item(locales.CommonOpen()).Chosen() {
 					a.openBook(b, f.Format)
+				}
+				if editable && m.Item(locales.DetailEdit()).Chosen() {
+					a.editBook(b, f.Format)
 				}
 				if shareSupported && m.Item(locales.DetailShare()).Chosen() {
 					shareFiles(a.win, []string{f.Path})
@@ -247,7 +254,29 @@ func (a *App) bookDetail(c *ui.Context, b *calibre.Book) {
 			r.Children(func() {
 				widgets.FormatBadge(c, f.Format, false)
 				ui.Text(c, f.Name+"."+strings.ToLower(f.Format)).FontSize(12).TextColor(pal().TextSecondary).Grow(1).SingleLine()
-				ui.Text(c, humanSize(f.Size)).Font(theme.FontMono).FontSize(12).TextColor(pal().TextTertiary)
+				// An editable file offers Edit in place of its size while the
+				// pointer is over its row, in a slot of the badge's height so
+				// the row keeps its size.
+				ui.Row(c).Height(20).AlignItems(ui.Center).Children(func() {
+					if editable && r.Hovered() {
+						// It sits on the row's hover, so its own hover raises it
+						// rather than darkening.
+						e := ui.ButtonBase(c.Key("edit")).Height(20).Padding(0, theme.Space6).Margin(0, -theme.Space6, 0, 0).Gap(theme.Space4).
+							AlignItems(ui.Center).Radius(theme.RadiusXS).Label(locales.DetailEdit())
+						if e.Hovered() {
+							e.Background(pal().SurfaceRaised).Shadow(0, 1, 2, 0, ui.RGBA(26, 23, 18, 0.08)).Shadow(0, 0, 0, 1, pal().Border.Alpha(0.7))
+						}
+						if e.Pressed() {
+							e.Opacity(0.88)
+						}
+						e.OnClick(func() { a.editBook(b, f.Format) }).Children(func() {
+							ui.Icon(c, icons.Pencil).FontSize(13)
+							ui.Text(c, locales.DetailEdit()).FontSize(12).FontWeight(500)
+						})
+					} else {
+						ui.Text(c, humanSize(f.Size)).Font(theme.FontMono).FontSize(12).TextColor(pal().TextTertiary)
+					}
+				})
 			})
 		}
 		add := ui.ButtonBase(c).Padding(theme.Space6, theme.Space8).Gap(theme.Space6).AlignItems(ui.Center).Radius(theme.RadiusSM).Label(locales.DetailAddFormat())

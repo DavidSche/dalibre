@@ -9,7 +9,7 @@ import (
 	"io/fs"
 )
 
-//go:embed gutenberg/plugin.json gutenberg/main.js neodb/plugin.json neodb/main.js
+//go:embed gutenberg/plugin.json gutenberg/main.js googlebooks/plugin.json googlebooks/main.js neodb/plugin.json neodb/main.js
 var files embed.FS
 
 // Builtin returns each built-in plugin's files, plugin.json at the root.

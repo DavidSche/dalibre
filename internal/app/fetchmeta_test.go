@@ -236,3 +236,43 @@ func TestFetchFromDetail(t *testing.T) {
 		t.Fatal("Fetch shows without a metadata plugin")
 	}
 }
+
+// A source that needs a key says so, and opens its settings.
+func TestFetchMetadataNeedsSetup(t *testing.T) {
+	a := newTestApp(t)
+	mux := http.NewServeMux()
+	mux.HandleFunc("www.googleapis.com/books/v1/volumes", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(429)
+		w.Write([]byte(`{"error":{"code":429,"status":"RESOURCE_EXHAUSTED"}}`))
+	})
+	for _, fsys := range builtin.Builtin() {
+		if data, _ := fs.ReadFile(fsys, "plugin.json"); !strings.Contains(string(data), "dalibre.googlebooks") {
+			continue
+		}
+		p, err := plugin.LoadBuiltin(fsys, plugin.Options{Transport: fakeWeb{mux}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(p.Close)
+		a.plugins = append(a.plugins, p)
+		a.pluginsKnown = append(a.pluginsKnown, knownPlugin{manifest: p.Manifest, builtin: true})
+	}
+	tt := ui.NewTester(a.View, 1440, 900)
+	tt.Frame()
+	tt.Click("Dune")
+	tt.Frame()
+	a.openEditor(a.current())
+	a.openFetch()
+	tt.Frame()
+	if !tt.HasText("Google Books needs setting up") || !tt.HasText("Google’s shared quota is used up. Add your own API key.") {
+		t.Fatalf("setup: %q", tt.Texts())
+	}
+	shot(t, tt, "fetch-metadata-setup")
+	if err := tt.Click("Open plugin settings"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if !a.settingsOpen || a.section != sectionPlugins || a.pl.sel != "dalibre.googlebooks" || !tt.HasText("API key") {
+		t.Fatalf("settings open %v on %q", a.settingsOpen, a.pl.sel)
+	}
+}

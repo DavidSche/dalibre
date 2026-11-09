@@ -18,9 +18,15 @@ type Settings struct {
 	HideDetail bool     `json:"hideDetail"`
 	Sort       int      `json:"sort"`
 	Descending bool     `json:"descending"`
+	// EditorSidebar is the width of the book editor's sidebar the user
+	// dragged it to; 0 is the default.
+	EditorSidebar float32 `json:"editorSidebar,omitempty"`
 	// Language is the language the user chose Dalibre to show, a tag of
 	// its catalogs; "" follows the system's.
 	Language string `json:"language,omitempty"`
+	// Appearance is "light" or "dark" when the user chose one; "" follows
+	// the system's.
+	Appearance string `json:"appearance,omitempty"`
 	// GetBooksSource is the source Get books searched last: a plugin id,
 	// or "*" for all.
 	GetBooksSource string `json:"getBooksSource,omitempty"`

@@ -102,10 +102,16 @@ func (a *App) fetchCandidatesColumn(c *ui.Context, srcs []*plugin.Plugin, cands 
 		return
 	}
 	if len(cands) == 0 {
+		// A source that needs setting up wins: the user can do something about it.
 		var failed error
-		for _, err := range f.errs {
-			if err != nil {
-				failed = err
+		var setup *plugin.Plugin
+		for _, p := range a.fetchSources() {
+			if err := f.errs[p.Manifest.ID]; err != nil {
+				if k := errKind(err); setup == nil && (k == plugin.KindSettings || k == plugin.KindAuth) {
+					setup, failed = p, err
+				} else if setup == nil {
+					failed = err
+				}
 			}
 		}
 		switch {
@@ -114,6 +120,14 @@ func (a *App) fetchCandidatesColumn(c *ui.Context, srcs []*plugin.Plugin, cands 
 				ui.Spinner(c).Size(20, 20).Label(locales.CommonSearching())
 				ui.Text(c, locales.FetchMetaSearching(name)).FontSize(13).FontWeight(500)
 			})
+		case setup != nil:
+			body := errText(failed)
+			if errKind(failed) == plugin.KindSettings {
+				body = locales.GetBooksFillInSettings(strings.Join(setup.MissingSettings(), ", "))
+			}
+			id := setup.Manifest.ID
+			fetchEmpty(c, icons.Key, false, locales.GetBooksSourceNeedsSetup(setup.Manifest.Name), body,
+				icons.Settings, locales.GetBooksOpenPluginSettings(), func() { a.openPlugins(id) })
 		case failed != nil:
 			body := locales.FetchMetaCheckConnection()
 			if msg := errText(failed); msg != "" {

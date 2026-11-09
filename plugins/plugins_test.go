@@ -149,7 +149,7 @@ func builtinFS(t *testing.T, name string) fs.FS {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(Builtin()) != 2 {
+	if len(Builtin()) != 3 {
 		t.Fatalf("%d built-in plugins", len(Builtin()))
 	}
 	return sub
@@ -246,5 +246,106 @@ func TestNeoDB(t *testing.T) {
 	var pe *plugin.Error
 	if _, err := p.Identify(ctx, plugin.Book{Title: "busy"}); !errors.As(err, &pe) || pe.Kind != plugin.KindRateLimited {
 		t.Errorf("rate limited: %v", err)
+	}
+}
+
+const googleDune = `{"id":"B1hSG45JCX4C","volumeInfo":{"title":"Dune","authors":["Frank Herbert"],"publisher":"Penguin",
+	"publishedDate":"2005-08-02","description":"<p>Set on the desert planet Arrakis…</p>",
+	"industryIdentifiers":[{"type":"ISBN_10","identifier":"0441172717"},{"type":"ISBN_13","identifier":"9780441172719"}],
+	"pageCount":896,"categories":["Fiction / Science Fiction / General"],"averageRating":4.5,"ratingsCount":120,
+	"imageLinks":{"thumbnail":"http://books.google.com/books/content?id=B1hSG45JCX4C&zoom=1"},"language":"en"}}`
+
+const googleMessiah = `{"id":"Messiah0001","volumeInfo":{"title":"Dune Messiah","authors":["Frank Herbert"],"publishedDate":"1969","language":"en"}}`
+
+func TestGoogleBooks(t *testing.T) {
+	var queries, keys []string
+	mux := http.NewServeMux()
+	mux.HandleFunc("www.googleapis.com/books/v1/volumes", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query().Get("q")
+		queries = append(queries, q)
+		keys = append(keys, r.Header.Get("X-Goog-Api-Key"))
+		switch q {
+		case "intitle:Dune inauthor:Frank inauthor:Herbert":
+			w.Write([]byte(`{"totalItems":2,"items":[` + googleMessiah + `,` + googleDune + `]}`))
+		case "isbn:9780441172719":
+			w.Write([]byte(`{"totalItems":1,"items":[` + googleDune + `]}`))
+		case "intitle:quota":
+			w.WriteHeader(429)
+			w.Write([]byte(`{"error":{"code":429,"status":"RESOURCE_EXHAUSTED","errors":[{"reason":"rateLimitExceeded"}]}}`))
+		case "intitle:badkey":
+			w.WriteHeader(400)
+			w.Write([]byte(`{"error":{"code":400,"status":"INVALID_ARGUMENT","errors":[{"reason":"badRequest"}],"details":[{"reason":"API_KEY_INVALID"}]}}`))
+		default:
+			w.Write([]byte(`{"totalItems":0}`))
+		}
+	})
+	mux.HandleFunc("www.googleapis.com/books/v1/volumes/B1hSG45JCX4C", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte(googleDune)) })
+	mux.HandleFunc("www.googleapis.com/books/v1/volumes/gone000000", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(404) })
+	load := func(key string) *plugin.Plugin {
+		p, err := plugin.LoadBuiltin(builtinFS(t, "googlebooks"), plugin.Options{Transport: serve{mux}, Settings: map[string]string{"apiKey": key}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(p.Close)
+		return p
+	}
+	p := load("k123")
+	if p.Manifest.ID != "dalibre.googlebooks" || !p.Manifest.IsMetadataSource() || len(p.MissingSettings()) != 0 {
+		t.Fatalf("manifest %+v", p.Manifest)
+	}
+	ctx := context.Background()
+
+	// By title and author: the exact title first.
+	got, err := p.Identify(ctx, plugin.Book{Title: "Dune", Authors: []string{"Frank Herbert"}, Language: "eng"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got[0].ID != "B1hSG45JCX4C" || got[1].ID != "Messiah0001" {
+		t.Fatalf("candidates %+v", got)
+	}
+	if len(queries) != 1 || keys[0] != "k123" {
+		t.Errorf("queries %q, keys %q", queries, keys)
+	}
+	c := got[0]
+	if c.Title != "Dune" || c.Authors[0] != "Frank Herbert" || c.Publisher != "Penguin" || c.Pubdate != "2005-08-02" || c.Language != "en" ||
+		strings.Join(c.Tags, "|") != "Fiction|Science Fiction" || c.Description != "<p>Set on the desert planet Arrakis…</p>" ||
+		c.Cover != "https://books.google.com/books/content?id=B1hSG45JCX4C&printsec=frontcover&img=1" ||
+		c.URL != "https://books.google.com/books?id=B1hSG45JCX4C" {
+		t.Fatalf("candidate %+v", c)
+	}
+	if c.Identifiers["isbn"] != "9780441172719" || c.Identifiers["google"] != "B1hSG45JCX4C" {
+		t.Errorf("identifiers %v", c.Identifiers)
+	}
+	if got[1].Cover != "" || got[1].Pubdate != "1969" {
+		t.Errorf("second %+v", got[1])
+	}
+
+	// By ISBN, and by Google id, falling back when it is gone.
+	queries = nil
+	got, err = p.Identify(ctx, plugin.Book{Title: "whatever", Identifiers: map[string]string{"isbn": "978-0-441-17271-9"}})
+	if err != nil || len(got) != 1 || len(queries) != 1 {
+		t.Fatalf("by isbn: %v %+v %q", err, got, queries)
+	}
+	queries = nil
+	got, err = p.Identify(ctx, plugin.Book{Identifiers: map[string]string{"google": "B1hSG45JCX4C"}})
+	if err != nil || len(got) != 1 || got[0].ID != "B1hSG45JCX4C" || len(queries) != 0 {
+		t.Fatalf("by id: %v %+v %q", err, got, queries)
+	}
+	got, err = p.Identify(ctx, plugin.Book{Title: "nothing", Identifiers: map[string]string{"google": "gone000000"}})
+	if err != nil || len(got) != 0 {
+		t.Errorf("gone id: %v %+v", err, got)
+	}
+
+	// Errors: a refused key, and the quota with a key and without one.
+	var pe *plugin.Error
+	if _, err := p.Identify(ctx, plugin.Book{Title: "badkey"}); !errors.As(err, &pe) || pe.Kind != plugin.KindAuth {
+		t.Errorf("bad key: %v", err)
+	}
+	if _, err := p.Identify(ctx, plugin.Book{Title: "quota"}); !errors.As(err, &pe) || pe.Kind != plugin.KindRateLimited {
+		t.Errorf("quota with key: %v", err)
+	}
+	keys = nil
+	if _, err := load("").Identify(ctx, plugin.Book{Title: "quota"}); !errors.As(err, &pe) || pe.Kind != plugin.KindAuth || keys[0] != "" {
+		t.Errorf("quota without key: %v %q", err, keys)
 	}
 }

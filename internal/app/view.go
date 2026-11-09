@@ -106,6 +106,7 @@ func (a *App) shortcuts(c *ui.Context) {
 		return
 	}
 	c.OnWindowShortcut(ui.Cmd, ui.KeyI, func() { a.openEditor(a.current()) })
+	c.OnWindowShortcut(ui.Cmd, ui.KeyE, func() { a.editBook(a.current(), "") })
 	c.OnWindowShortcut(ui.Cmd|ui.Alt, ui.KeyI, func() {
 		a.settings.HideDetail = !a.settings.HideDetail
 		a.saveSettings()

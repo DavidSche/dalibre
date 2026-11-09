@@ -3981,16 +3981,44 @@ func (msgs Messages) SettingsChangesApplyNote() string {
 	return Catalog.Format(msgs.locale, "settingsChangesApplyNote", nil)
 }
 
-// SettingsPluginsSandboxNote says "Plugins are sandboxed: only the sites they list · {memory} MB · {seconds} s per call"
+// SettingsAppearance says "Appearance"
 // in the language the app shows.
-func SettingsPluginsSandboxNote(memory int, seconds int) string {
-	return In(i18n.Locale()).SettingsPluginsSandboxNote(memory, seconds)
+func SettingsAppearance() string { return In(i18n.Locale()).SettingsAppearance() }
+
+// SettingsAppearance says "Appearance"
+// in the language of msgs.
+func (msgs Messages) SettingsAppearance() string {
+	return Catalog.Format(msgs.locale, "settingsAppearance", nil)
 }
 
-// SettingsPluginsSandboxNote says "Plugins are sandboxed: only the sites they list · {memory} MB · {seconds} s per call"
+// SettingsAppearanceSystem says "System"
+// in the language the app shows.
+func SettingsAppearanceSystem() string { return In(i18n.Locale()).SettingsAppearanceSystem() }
+
+// SettingsAppearanceSystem says "System"
 // in the language of msgs.
-func (msgs Messages) SettingsPluginsSandboxNote(memory int, seconds int) string {
-	return Catalog.Format(msgs.locale, "settingsPluginsSandboxNote", map[string]any{"memory": memory, "seconds": seconds})
+func (msgs Messages) SettingsAppearanceSystem() string {
+	return Catalog.Format(msgs.locale, "settingsAppearanceSystem", nil)
+}
+
+// SettingsAppearanceLight says "Light"
+// in the language the app shows.
+func SettingsAppearanceLight() string { return In(i18n.Locale()).SettingsAppearanceLight() }
+
+// SettingsAppearanceLight says "Light"
+// in the language of msgs.
+func (msgs Messages) SettingsAppearanceLight() string {
+	return Catalog.Format(msgs.locale, "settingsAppearanceLight", nil)
+}
+
+// SettingsAppearanceDark says "Dark"
+// in the language the app shows.
+func SettingsAppearanceDark() string { return In(i18n.Locale()).SettingsAppearanceDark() }
+
+// SettingsAppearanceDark says "Dark"
+// in the language of msgs.
+func (msgs Messages) SettingsAppearanceDark() string {
+	return Catalog.Format(msgs.locale, "settingsAppearanceDark", nil)
 }
 
 // SettingsShowListTitle says "Show books as a list"
@@ -6573,4 +6601,236 @@ func WirelessName() string { return In(i18n.Locale()).WirelessName() }
 // in the language of msgs.
 func (msgs Messages) WirelessName() string {
 	return Catalog.Format(msgs.locale, "wirelessName", nil)
+}
+
+// EditorMenuEditBook says "Edit book"
+// in the language the app shows.
+func EditorMenuEditBook() string { return In(i18n.Locale()).EditorMenuEditBook() }
+
+// EditorMenuEditBook says "Edit book"
+// in the language of msgs.
+func (msgs Messages) EditorMenuEditBook() string {
+	return Catalog.Format(msgs.locale, "editorMenuEditBook", nil)
+}
+
+// EditorGlance says "Glance"
+// in the language the app shows.
+func EditorGlance() string { return In(i18n.Locale()).EditorGlance() }
+
+// EditorGlance says "Glance"
+// in the language of msgs.
+func (msgs Messages) EditorGlance() string {
+	return Catalog.Format(msgs.locale, "editorGlance", nil)
+}
+
+// EditorEdit says "Edit"
+// in the language the app shows.
+func EditorEdit() string { return In(i18n.Locale()).EditorEdit() }
+
+// EditorEdit says "Edit"
+// in the language of msgs.
+func (msgs Messages) EditorEdit() string {
+	return Catalog.Format(msgs.locale, "editorEdit", nil)
+}
+
+// EditorContents says "Contents"
+// in the language the app shows.
+func EditorContents() string { return In(i18n.Locale()).EditorContents() }
+
+// EditorContents says "Contents"
+// in the language of msgs.
+func (msgs Messages) EditorContents() string {
+	return Catalog.Format(msgs.locale, "editorContents", nil)
+}
+
+// EditorFiles says "Files"
+// in the language the app shows.
+func EditorFiles() string { return In(i18n.Locale()).EditorFiles() }
+
+// EditorFiles says "Files"
+// in the language of msgs.
+func (msgs Messages) EditorFiles() string {
+	return Catalog.Format(msgs.locale, "editorFiles", nil)
+}
+
+// EditorRevert says "Revert"
+// in the language the app shows.
+func EditorRevert() string { return In(i18n.Locale()).EditorRevert() }
+
+// EditorRevert says "Revert"
+// in the language of msgs.
+func (msgs Messages) EditorRevert() string {
+	return Catalog.Format(msgs.locale, "editorRevert", nil)
+}
+
+// EditorFind says "Find"
+// in the language the app shows.
+func EditorFind() string { return In(i18n.Locale()).EditorFind() }
+
+// EditorFind says "Find"
+// in the language of msgs.
+func (msgs Messages) EditorFind() string {
+	return Catalog.Format(msgs.locale, "editorFind", nil)
+}
+
+// EditorWords says "{count, plural, one {# word} other {# words}}"
+// in the language the app shows.
+func EditorWords(count int) string { return In(i18n.Locale()).EditorWords(count) }
+
+// EditorWords says "{count, plural, one {# word} other {# words}}"
+// in the language of msgs.
+func (msgs Messages) EditorWords(count int) string {
+	return Catalog.Format(msgs.locale, "editorWords", map[string]any{"count": count})
+}
+
+// EditorEdited says "Edited"
+// in the language the app shows.
+func EditorEdited() string { return In(i18n.Locale()).EditorEdited() }
+
+// EditorEdited says "Edited"
+// in the language of msgs.
+func (msgs Messages) EditorEdited() string {
+	return Catalog.Format(msgs.locale, "editorEdited", nil)
+}
+
+// EditorLineCol says "Ln {line}, Col {col}"
+// in the language the app shows.
+func EditorLineCol(line int, col int) string { return In(i18n.Locale()).EditorLineCol(line, col) }
+
+// EditorLineCol says "Ln {line}, Col {col}"
+// in the language of msgs.
+func (msgs Messages) EditorLineCol(line int, col int) string {
+	return Catalog.Format(msgs.locale, "editorLineCol", map[string]any{"line": line, "col": col})
+}
+
+// EditorNoWebViewTitle says "Pages can’t be shown on this system"
+// in the language the app shows.
+func EditorNoWebViewTitle() string { return In(i18n.Locale()).EditorNoWebViewTitle() }
+
+// EditorNoWebViewTitle says "Pages can’t be shown on this system"
+// in the language of msgs.
+func (msgs Messages) EditorNoWebViewTitle() string {
+	return Catalog.Format(msgs.locale, "editorNoWebViewTitle", nil)
+}
+
+// EditorNoWebViewDetail says "Glance needs {engine}. Edit still works."
+// in the language the app shows.
+func EditorNoWebViewDetail(engine string) string {
+	return In(i18n.Locale()).EditorNoWebViewDetail(engine)
+}
+
+// EditorNoWebViewDetail says "Glance needs {engine}. Edit still works."
+// in the language of msgs.
+func (msgs Messages) EditorNoWebViewDetail(engine string) string {
+	return Catalog.Format(msgs.locale, "editorNoWebViewDetail", map[string]any{"engine": engine})
+}
+
+// EditorSaveChanges says "Save changes to “{title}” before closing?"
+// in the language the app shows.
+func EditorSaveChanges(title string) string { return In(i18n.Locale()).EditorSaveChanges(title) }
+
+// EditorSaveChanges says "Save changes to “{title}” before closing?"
+// in the language of msgs.
+func (msgs Messages) EditorSaveChanges(title string) string {
+	return Catalog.Format(msgs.locale, "editorSaveChanges", map[string]any{"title": title})
+}
+
+// EditorDontSave says "Don’t Save"
+// in the language the app shows.
+func EditorDontSave() string { return In(i18n.Locale()).EditorDontSave() }
+
+// EditorDontSave says "Don’t Save"
+// in the language of msgs.
+func (msgs Messages) EditorDontSave() string {
+	return Catalog.Format(msgs.locale, "editorDontSave", nil)
+}
+
+// EditorSaved says "Saved “{title}”"
+// in the language the app shows.
+func EditorSaved(title string) string { return In(i18n.Locale()).EditorSaved(title) }
+
+// EditorSaved says "Saved “{title}”"
+// in the language of msgs.
+func (msgs Messages) EditorSaved(title string) string {
+	return Catalog.Format(msgs.locale, "editorSaved", map[string]any{"title": title})
+}
+
+// EditorMatchCase says "Match case"
+// in the language the app shows.
+func EditorMatchCase() string { return In(i18n.Locale()).EditorMatchCase() }
+
+// EditorMatchCase says "Match case"
+// in the language of msgs.
+func (msgs Messages) EditorMatchCase() string {
+	return Catalog.Format(msgs.locale, "editorMatchCase", nil)
+}
+
+// EditorWholeWord says "Whole word"
+// in the language the app shows.
+func EditorWholeWord() string { return In(i18n.Locale()).EditorWholeWord() }
+
+// EditorWholeWord says "Whole word"
+// in the language of msgs.
+func (msgs Messages) EditorWholeWord() string {
+	return Catalog.Format(msgs.locale, "editorWholeWord", nil)
+}
+
+// EditorRegexp says "Regular expression"
+// in the language the app shows.
+func EditorRegexp() string { return In(i18n.Locale()).EditorRegexp() }
+
+// EditorRegexp says "Regular expression"
+// in the language of msgs.
+func (msgs Messages) EditorRegexp() string {
+	return Catalog.Format(msgs.locale, "editorRegexp", nil)
+}
+
+// EditorPrevious says "Previous match"
+// in the language the app shows.
+func EditorPrevious() string { return In(i18n.Locale()).EditorPrevious() }
+
+// EditorPrevious says "Previous match"
+// in the language of msgs.
+func (msgs Messages) EditorPrevious() string {
+	return Catalog.Format(msgs.locale, "editorPrevious", nil)
+}
+
+// EditorNext says "Next match"
+// in the language the app shows.
+func EditorNext() string { return In(i18n.Locale()).EditorNext() }
+
+// EditorNext says "Next match"
+// in the language of msgs.
+func (msgs Messages) EditorNext() string {
+	return Catalog.Format(msgs.locale, "editorNext", nil)
+}
+
+// EditorReplace says "Replace"
+// in the language the app shows.
+func EditorReplace() string { return In(i18n.Locale()).EditorReplace() }
+
+// EditorReplace says "Replace"
+// in the language of msgs.
+func (msgs Messages) EditorReplace() string {
+	return Catalog.Format(msgs.locale, "editorReplace", nil)
+}
+
+// EditorReplaceAll says "Replace all"
+// in the language the app shows.
+func EditorReplaceAll() string { return In(i18n.Locale()).EditorReplaceAll() }
+
+// EditorReplaceAll says "Replace all"
+// in the language of msgs.
+func (msgs Messages) EditorReplaceAll() string {
+	return Catalog.Format(msgs.locale, "editorReplaceAll", nil)
+}
+
+// EditorCloseFind says "Close"
+// in the language the app shows.
+func EditorCloseFind() string { return In(i18n.Locale()).EditorCloseFind() }
+
+// EditorCloseFind says "Close"
+// in the language of msgs.
+func (msgs Messages) EditorCloseFind() string {
+	return Catalog.Format(msgs.locale, "editorCloseFind", nil)
 }

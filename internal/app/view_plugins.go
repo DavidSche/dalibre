@@ -77,7 +77,7 @@ func (a *App) pluginsPane(c *ui.Context) {
 			a.pl.sel = known[0].manifest.ID
 		}
 	}
-	ui.Column(c).Width(248).Padding(theme.Space8).Gap(theme.Space2).Background(pal().BgApp).BorderWidth(0, 1, 0, 0).BorderColor(pal().BorderSubtle).AlignItems(ui.Stretch).Children(func() {
+	ui.Column(c).Width(248).Padding(theme.Space8).Gap(theme.Space2).Background(pal().Chrome).BorderWidth(0, 1, 0, 0).BorderColor(pal().BorderSubtle).AlignItems(ui.Stretch).Children(func() {
 		ui.Scroll(c).Grow(1).MinHeight(0).Gap(theme.Space2).AlignItems(ui.Stretch).Children(func() {
 			for _, k := range known {
 				a.pluginRow(c.Key(k.manifest.ID), k)
