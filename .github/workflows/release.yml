@@ -13,7 +13,8 @@
 #   APPLE_API_KEY_ID             its key ID
 #   APPLE_API_ISSUER             its issuer ID
 # The macOS job signs the app with the Developer ID and notarizes its disk
-# images; the update archives carry the notarized app.
+# images when the certificate secrets are set; without them it still builds
+# an unsigned app and disk image, which a fork can publish as is.
 name: Release
 
 on:
@@ -69,7 +70,7 @@ jobs:
         with:
           go-version-file: go.mod
       - name: Import the Developer ID certificate and the notary credentials
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && secrets.MACOS_CERTIFICATE != ''
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
