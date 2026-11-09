@@ -453,6 +453,23 @@ func (l *Library) AddFormat(id int64, file string) error {
 	return tx.Commit()
 }
 
+// FormatRewritten records that a format's file was written in place, as
+// the book editor saves it: its new size, and the book's modified time.
+func (l *Library) FormatRewritten(id int64, format string, size int64) error {
+	tx, err := l.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if _, err := tx.Exec(`UPDATE data SET uncompressed_size = ? WHERE book = ? AND format = ?`, size, id, strings.ToUpper(format)); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`UPDATE books SET last_modified = ? WHERE id = ?`, formatTime(time.Now()), id); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 // RemoveFormat deletes one format of a book, file and record.
 func (l *Library) RemoveFormat(id int64, format string) error {
 	b, err := l.Book(id)

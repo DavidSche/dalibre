@@ -113,7 +113,7 @@ one export at a time.
 
 ### Built-in plugins
 
-Two plugins ship inside Dalibre, and are good worked examples:
+Three plugins ship inside Dalibre, and are good worked examples:
 
 - **Project Gutenberg** (`dalibre.gutenberg`), a book source on
   gutenberg.org's own OPDS catalog: search with language and sort
@@ -123,6 +123,9 @@ Two plugins ship inside Dalibre, and are good worked examples:
   catalog: by NeoDB id or ISBN when the book has one, else by title and
   first author, with ranking. Candidates carry NeoDB, Douban, Goodreads,
   Open Library and Google Books ids.
+- **Google Books** (`dalibre.googlebooks`), a metadata source on the
+  Books API, with an optional API key in its settings for when Google's
+  shared quota runs out.
 
 ## Quick start
 

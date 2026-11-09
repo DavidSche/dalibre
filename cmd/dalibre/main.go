@@ -25,6 +25,7 @@ func main() {
 		log.Fatal(err)
 	}
 	a := app.New(settings.DefaultPath())
+	app.ApplyAppearance(a.Appearance())
 	mygo.App.WhenReady(func() {
 		setMenu(a)
 		mygo.App.OnLocaleChanged(func(string) { setMenu(a) })

@@ -70,7 +70,7 @@ func (a *App) settingsDialog(c *ui.Context) {
 		ui.Text(c, locales.CommonSettings()).FontSize(14).FontWeight(600).Grow(1)
 	}, func() {
 		ui.Row(c).Height(540).AlignItems(ui.Stretch).Children(func() {
-			ui.Column(c).Width(168).Padding(theme.Space8).Gap(theme.Space2).Background(pal().BgApp).BorderWidth(0, 1, 0, 0).BorderColor(pal().BorderSubtle).AlignItems(ui.Stretch).Children(func() {
+			ui.Column(c).Width(168).Padding(theme.Space8).Gap(theme.Space2).Background(pal().Chrome).BorderWidth(0, 1, 0, 0).BorderColor(pal().BorderSubtle).AlignItems(ui.Stretch).Children(func() {
 				for _, s := range sections {
 					a.navItem(c, "settings:"+s.id, s.icon, s.title(), 0, a.section == s.section, nil, func() { a.openSettings(s.section) })
 				}
@@ -91,11 +91,7 @@ func (a *App) settingsDialog(c *ui.Context) {
 			}
 		})
 	}, func() {
-		note := locales.SettingsChangesApplyNote()
-		if a.section == sectionPlugins {
-			note = locales.SettingsPluginsSandboxNote(int(plugin.MaxMemory>>20), int(plugin.CallTimeout.Seconds()))
-		}
-		ui.Text(c, note).FontSize(12).TextColor(pal().TextTertiary).Grow(1)
+		ui.Text(c, locales.SettingsChangesApplyNote()).FontSize(12).TextColor(pal().TextTertiary).Grow(1)
 		if widgets.ButtonSized(c, widgets.Primary, nil, locales.CommonDone(), theme.ControlS).Clicked() {
 			a.settingsOpen = false
 		}
@@ -138,6 +134,11 @@ func (a *App) generalPane(c *ui.Context) {
 		})
 		widgets.Hairline(c)
 		ui.Row(c).Gap(theme.Space16).AlignItems(ui.Center).Children(func() {
+			heading(c, locales.SettingsAppearance(), "")
+			a.appearanceSelect(c)
+		})
+		widgets.Hairline(c)
+		ui.Row(c).Gap(theme.Space16).AlignItems(ui.Center).Children(func() {
 			heading(c, locales.SettingsShowListTitle(), locales.SettingsShowListBody())
 			on := a.settings.ListView
 			ui.Switch(c, &on).Label(locales.SettingsShowListTitle())
@@ -159,6 +160,43 @@ func (a *App) generalPane(c *ui.Context) {
 		a.updatesGroup(c)
 	})
 }
+
+// appearanceSelect picks the app's appearance: the system's, light or dark.
+func (a *App) appearanceSelect(c *ui.Context) {
+	values := []string{"", "light", "dark"}
+	names := []string{locales.SettingsAppearanceSystem(), locales.SettingsAppearanceLight(), locales.SettingsAppearanceDark()}
+	cur := names[0]
+	for i, v := range values {
+		if v == a.settings.Appearance {
+			cur = names[i]
+		}
+	}
+	if ui.Select(c, &cur, names).Width(200).Label(locales.SettingsAppearance()).Changed() {
+		for i, n := range names {
+			if n == cur && values[i] != a.settings.Appearance {
+				a.settings.Appearance = values[i]
+				a.saveSettings()
+				ApplyAppearance(values[i])
+			}
+		}
+	}
+}
+
+// ApplyAppearance gives the app the appearance a setting names: "light",
+// "dark", or "" for the system's.
+func ApplyAppearance(v string) {
+	switch v {
+	case "light":
+		mygo.Theme.SetSource(mygo.ThemeLight)
+	case "dark":
+		mygo.Theme.SetSource(mygo.ThemeDark)
+	default:
+		mygo.Theme.SetSource(mygo.ThemeSystem)
+	}
+}
+
+// Appearance is the appearance the user chose, as ApplyAppearance takes it.
+func (a *App) Appearance() string { return a.settings.Appearance }
 
 // ---- Library
 

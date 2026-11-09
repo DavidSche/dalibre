@@ -58,6 +58,7 @@ cmd/
   dalibre-plugin/     CLI for plugin authors: init, check, search, download, pack, install
 plugins/
   gutenberg/          Project Gutenberg, built into the app (dalibre.gutenberg)
+  googlebooks/        Google Books metadata lookup, built into the app (dalibre.googlebooks)
   neodb/              NeoDB metadata lookup, built into the app (dalibre.neodb)
   reader/             lays books out for the reading page (dalibre.reader)
 sdk/                  for plugin authors: dalibre.d.ts, plugin.schema.json, template

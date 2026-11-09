@@ -165,12 +165,16 @@ type App struct {
 	// pluginTransport makes plugins' requests in tests; nil is the network.
 	pluginTransport http.RoundTripper
 
-	busy        string // a long action in progress, as an import
-	busyDone    int
-	busyTotal   int
-	toasts      []toastMsg
-	searchFocus ui.Handle
-	mainBox     ui.Handle // the middle column, measured to fit the toolbar
+	busy      string // a long action in progress, as an import
+	busyDone  int
+	busyTotal int
+	toasts    []toastMsg
+	// editors are the book editor windows open, by book; editorToasts
+	// the messages waiting for theirs.
+	editors      map[int64]*bookEditor
+	editorToasts map[int64][]toastMsg
+	searchFocus  ui.Handle
+	mainBox      ui.Handle // the middle column, measured to fit the toolbar
 }
 
 type toastMsg struct {
@@ -212,7 +216,17 @@ func New(settingsPath string) *App {
 // results to the window's main thread. It opens the startup library.
 func (a *App) Attach(win *mygo.Window) {
 	a.win = win
-	a.post = win.Update
+	// What finishes in the background can change the book editors too, as
+	// a cover loading: they draw again with the main window.
+	a.post = func(fn func()) {
+		win.Update(func() {
+			fn()
+			for _, ed := range a.editors {
+				ed.win.Invalidate()
+			}
+		})
+	}
+	registerBookScheme()
 	// Quitting from the reading page keeps the place: its progress is
 	// saved with the other settings when the window closes.
 	win.OnClose(func(*mygo.CloseEvent) { a.saveReading() })

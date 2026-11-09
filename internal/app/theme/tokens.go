@@ -46,6 +46,10 @@ type Palette struct {
 	Accent, AccentHover, AccentSubtle                                                          ui.Color
 	Success, Warning, Danger                                                                   Pair
 	DangerSolid, WarningSolid                                                                  ui.Color
+	// Chrome (bg/chrome) is a dialog's frame around its content: its
+	// footer and section sidebar, one step below SurfaceRaised in both
+	// modes.
+	Chrome ui.Color
 	// The grid's shelf boards (shelf/*): lit top, front face, bottom lip.
 	PlankTop, PlankFace, PlankEdge ui.Color
 	Formats                        map[string]Pair
@@ -60,7 +64,7 @@ func NewPalette(dark bool) *Palette {
 	white := ui.Hex("#ffffff")
 	p := &Palette{
 		Dark:  dark,
-		BgApp: s[2], BgSidebar: s[3], Surface: white, SurfaceRaised: white,
+		BgApp: s[2], BgSidebar: s[3], Chrome: s[2], Surface: white, SurfaceRaised: white,
 		Subtle: s[3], Hover: s[4], Pressed: s[5], Selected: in[3], Inverse: s[12], Scrim: ui.RGBA(0, 0, 0, 0.32),
 		BorderSubtle: s[5], Border: s[6], BorderStrong: s[8], Focus: in[8], BorderSelected: in[9],
 		Text: s[12], TextSecondary: s[11], TextTertiary: s[9], TextDisabled: s[8], TextAccent: in[11],

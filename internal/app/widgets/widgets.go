@@ -216,7 +216,7 @@ func dialogFrame(c *ui.Context, open *bool, width float32, compact bool, header 
 				}
 			})
 			ui.Scroll(c).Grow(1).MinHeight(0).Children(body)
-			ui.Row(c).Padding(footV, footH).Gap(theme.Space8).AlignItems(ui.Center).Background(pal().BgApp).BorderWidth(1, 0, 0, 0).BorderColor(pal().BorderSubtle).Children(footer)
+			ui.Row(c).Padding(footV, footH).Gap(theme.Space8).AlignItems(ui.Center).Background(pal().Chrome).BorderWidth(1, 0, 0, 0).BorderColor(pal().BorderSubtle).Children(footer)
 		})
 	})
 }

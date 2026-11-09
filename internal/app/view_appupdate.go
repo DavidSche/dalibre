@@ -248,7 +248,7 @@ func (a *App) appUpdateDialog(c *ui.Context) {
 					})
 				})
 			})
-			ui.Row(c).Padding(theme.Space16, theme.Space24).Gap(theme.Space8).AlignItems(ui.Center).Background(pal().BgApp).BorderWidth(1, 0, 0, 0).BorderColor(pal().BorderSubtle).Children(func() {
+			ui.Row(c).Padding(theme.Space16, theme.Space24).Gap(theme.Space8).AlignItems(ui.Center).Background(pal().Chrome).BorderWidth(1, 0, 0, 0).BorderColor(pal().BorderSubtle).Children(func() {
 				switch u.status {
 				case auAvailable:
 					if widgets.Button(c, widgets.Ghost, nil, locales.AppUpdatesSkip()).Clicked() {

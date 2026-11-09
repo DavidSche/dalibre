@@ -21,6 +21,13 @@ shows, so write them for readers of the app. `mygo build` needs a
   a reader that lays books out their way; Dalibre extracts the text,
   pictures and tables and draws the page.
 
+## 0.2.2
+
+- Edit an EPUB, KEPUB or TXT book's text: choose Edit book from a book's
+  menu, or Edit on one of its formats.
+- Fetch metadata finds books on Google Books.
+- Choose Light or Dark in Settings › General, or follow the system.
+
 ## 0.2.1
 
 - Send books to KOReader over Wi‑Fi: turn on Wireless devices in the

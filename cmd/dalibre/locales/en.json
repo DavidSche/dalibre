@@ -586,17 +586,10 @@
   "settingsSectionOPDS": "OPDS",
   "settingsSectionPlugins": "Plugins",
   "settingsChangesApplyNote": "Changes apply right away.",
-  "settingsPluginsSandboxNote": "Plugins are sandboxed: only the sites they list · {memory} MB · {seconds} s per call",
-  "@settingsPluginsSandboxNote": {
-    "placeholders": {
-      "memory": {
-        "type": "int"
-      },
-      "seconds": {
-        "type": "int"
-      }
-    }
-  },
+  "settingsAppearance": "Appearance",
+  "settingsAppearanceSystem": "System",
+  "settingsAppearanceLight": "Light",
+  "settingsAppearanceDark": "Dark",
   "settingsShowListTitle": "Show books as a list",
   "settingsShowListBody": "A table of titles, authors and sizes, in place of covers.",
   "settingsShowDetailsTitle": "Show the details panel",
@@ -1014,5 +1007,45 @@
       }
     }
   },
-  "wirelessName": "Wireless devices"
+  "wirelessName": "Wireless devices",
+  "editorMenuEditBook": "Edit book",
+  "editorGlance": "Glance",
+  "editorEdit": "Edit",
+  "editorContents": "Contents",
+  "editorFiles": "Files",
+  "editorRevert": "Revert",
+  "editorFind": "Find",
+  "editorWords": "{count, plural, one {# word} other {# words}}",
+  "@editorWords": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "editorEdited": "Edited",
+  "editorLineCol": "Ln {line}, Col {col}",
+  "@editorLineCol": {
+    "placeholders": {
+      "line": {
+        "type": "int"
+      },
+      "col": {
+        "type": "int"
+      }
+    }
+  },
+  "editorNoWebViewTitle": "Pages can’t be shown on this system",
+  "editorNoWebViewDetail": "Glance needs {engine}. Edit still works.",
+  "editorSaveChanges": "Save changes to “{title}” before closing?",
+  "editorDontSave": "Don’t Save",
+  "editorSaved": "Saved “{title}”",
+  "editorMatchCase": "Match case",
+  "editorWholeWord": "Whole word",
+  "editorRegexp": "Regular expression",
+  "editorPrevious": "Previous match",
+  "editorNext": "Next match",
+  "editorReplace": "Replace",
+  "editorReplaceAll": "Replace all",
+  "editorCloseFind": "Close"
 }
