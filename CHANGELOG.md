@@ -21,32 +21,24 @@ shows, so write them for readers of the app. `mygo build` needs a
   a reader that lays books out their way; Dalibre extracts the text,
   pictures and tables and draws the page.
 
+## 0.2.1
+
+- Send books to KOReader over Wi‑Fi: turn on Wireless devices in the
+  Sharing button, then choose Calibre › Connect in KOReader.
+- On macOS, closing the window keeps Dalibre running; click its Dock icon
+  to bring it back.
+
 ## 0.2.0
 
-- Your own AI agents, such as Claude Code, Claude Desktop and Cursor, can
-  use your library over MCP: search it, read and edit metadata, add and
-  remove books, and convert formats with their own tools. Turn it on from
-  the new MCP button in the toolbar; Settings › MCP has the setup for each
-  agent and lists every tool.
-- While an agent works, the MCP button shows which one, and its popover
-  lists what each agent did.
-- Sharing the library over OPDS moves to its own button in the toolbar.
+- Let AI agents such as Claude Code, Claude Desktop and Cursor use your
+  library over MCP: turn it on from the MCP button in the toolbar.
+- Sharing over OPDS moves to its own button in the toolbar.
 
 ## 0.1.1
 
-- Feedback, above Settings in the sidebar, reports a bug or requests a
-  feature on GitHub, with Dalibre's version and your system filled in for
-  bug reports, or shows the issues already open.
+- Report a bug or request a feature from Feedback in the sidebar.
 
 ## 0.1.0
 
-The first release of Dalibre, a desktop library for e-books that reads and
-writes calibre libraries.
-
-- Browse, search, filter and sort your calibre library, as a grid of covers
-  or a list.
-- Import books, and fetch their metadata from sources such as NeoDB.
-- Get books from Project Gutenberg and from sources that plugins add.
-- Switch between libraries, and share books.
-- Dalibre updates itself: it checks for new versions in the background, and
-  from Settings › General or, on macOS, Dalibre > Check for Updates….
+- The first release of Dalibre: browse, search and edit your calibre
+  library, and get new books from Project Gutenberg and plugins.

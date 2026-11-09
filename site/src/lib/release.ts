@@ -48,3 +48,28 @@ async function load() {
 }
 
 export const release = await load();
+
+export interface Published {
+  version: string;
+  date: Date;
+  url: string;
+}
+
+/** Every release published, newest first, by version ("0.2.0"). */
+async function loadPublished(): Promise<Map<string, Published>> {
+  const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+  const token = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=100`, { headers });
+  if (!res.ok) throw new Error(`fetching the releases of ${repo}: ${res.status} ${res.statusText}`);
+  const list = (await res.json()) as { tag_name: string; html_url: string; published_at: string; draft: boolean; prerelease: boolean }[];
+  const out = new Map<string, Published>();
+  for (const r of list) {
+    if (r.draft || r.prerelease || !r.published_at) continue;
+    const version = r.tag_name.replace(/^v/, "");
+    out.set(version, { version, date: new Date(r.published_at), url: r.html_url });
+  }
+  return out;
+}
+
+export const published = await loadPublished();

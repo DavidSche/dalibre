@@ -974,5 +974,22 @@
   "mcpToolRemoveBooks": "Mover libros a la papelera.",
   "mcpToolFindBooks": "Buscar en las fuentes de Conseguir libros.",
   "mcpToolDownloadBook": "Añadir un libro de Conseguir libros a la biblioteca.",
-  "mcpToolFindMetadata": "Buscar los metadatos de un libro con plugins de metadatos."
+  "mcpToolFindMetadata": "Buscar los metadatos de un libro con plugins de metadatos.",
+  "wirelessPortError": "no se pudo escuchar en el puerto {port}: {reason}",
+  "wirelessWaiting": "Esperando a un lector",
+  "wirelessConnected": "{device} · {count, plural, one {# libro} many {# libros} other {# libros}}",
+  "wirelessSending": "Enviando {current} de {total}…",
+  "wirelessWrongPassword": "La contraseña del lector es incorrecta",
+  "wirelessTooOld": "Actualiza la app del lector para conectarte",
+  "wirelessSendTo": "Enviar a {device}",
+  "wirelessSent": "{count, plural, one {# libro enviado} many {# libros enviados} other {# libros enviados}} a {device}",
+  "wirelessNoFormat": "{device} no puede leer {titles}",
+  "wirelessRefused": "No enviado: {reason}",
+  "wirelessLost": "{device} se desconectó",
+  "wirelessBody": "Las apps de lectura que se conectan a calibre por Wi‑Fi, como KOReader, se conectan a Dalibre de la misma forma: en KOReader, Calibre › Conectar. Los libros se envían desde el menú del libro.",
+  "wirelessNote": "El lector necesita la misma contraseña; en KOReader, Calibre › Ajustes inalámbricos › Establecer contraseña. El puerto 9090 es el de calibre; si está ocupado, Dalibre usa otro y los lectores lo encuentran igualmente.",
+  "wirelessRequirePassword": "Pedir contraseña",
+  "wirelessRemoveFrom": "Quitar de {device}",
+  "wirelessRemoved": "{count, plural, one {# libro quitado} many {# libros quitados} other {# libros quitados}} de {device}",
+  "wirelessName": "Dispositivos inalámbricos"
 }

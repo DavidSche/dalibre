@@ -784,5 +784,22 @@
   "mcpToolRemoveBooks": "本をゴミ箱に移します。",
   "mcpToolFindBooks": "本を入手のソースを検索します。",
   "mcpToolDownloadBook": "本を入手の本をライブラリに追加します。",
-  "mcpToolFindMetadata": "メタデータプラグインで本のメタデータを調べます。"
+  "mcpToolFindMetadata": "メタデータプラグインで本のメタデータを調べます。",
+  "wirelessPortError": "ポート {port} で待ち受けできませんでした: {reason}",
+  "wirelessWaiting": "リーダーの接続を待っています",
+  "wirelessConnected": "{device} · {count, plural, other {# 冊}}",
+  "wirelessSending": "{total} 冊中 {current} 冊目を送信中…",
+  "wirelessWrongPassword": "リーダーのパスワードが違います",
+  "wirelessTooOld": "接続するにはリーダーのアプリをアップデートしてください",
+  "wirelessSendTo": "{device} に送信",
+  "wirelessSent": "{count, plural, other {# 冊}}を {device} に送信しました",
+  "wirelessNoFormat": "{device} は {titles} を読めません",
+  "wirelessRefused": "送信されませんでした: {reason}",
+  "wirelessLost": "{device} の接続が切れました",
+  "wirelessBody": "KOReader など、Wi‑Fi で calibre に接続する読書アプリは、同じ方法で Dalibre に接続できます。KOReader では Calibre › 接続 を選びます。本は本のメニューから送信します。",
+  "wirelessNote": "リーダーにも同じパスワードが必要です。KOReader では Calibre › ワイヤレス設定 › パスワードを設定。ポート 9090 は calibre のものです。使われているときは Dalibre が別のポートで待ち受け、リーダーはそれでも見つけられます。",
+  "wirelessRequirePassword": "パスワードを要求",
+  "wirelessRemoveFrom": "{device} から削除",
+  "wirelessRemoved": "{device} から {count, plural, other {# 冊}}を削除しました",
+  "wirelessName": "ワイヤレスデバイス"
 }

@@ -100,6 +100,13 @@ func Create(root string) (*Library, error) {
 // Close closes the database.
 func (l *Library) Close() error { return l.db.Close() }
 
+// UUID is the library's id, as calibre made it; "" when it has none.
+func (l *Library) UUID() string {
+	var id string
+	l.db.QueryRow(`SELECT uuid FROM library_id LIMIT 1`).Scan(&id)
+	return id
+}
+
 // UserVersion returns the schema version calibre recorded.
 func (l *Library) UserVersion() (int, error) {
 	var v int

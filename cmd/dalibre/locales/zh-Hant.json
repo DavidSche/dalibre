@@ -784,5 +784,22 @@
   "mcpToolRemoveBooks": "將書移到垃圾桶。",
   "mcpToolFindBooks": "搜尋取得書籍的來源。",
   "mcpToolDownloadBook": "將取得書籍中的書加入書庫。",
-  "mcpToolFindMetadata": "以中繼資料外掛查詢書籍的中繼資料。"
+  "mcpToolFindMetadata": "以中繼資料外掛查詢書籍的中繼資料。",
+  "wirelessPortError": "無法在連接埠 {port} 上監聽：{reason}",
+  "wirelessWaiting": "等待閱讀器連線",
+  "wirelessConnected": "{device} · {count, plural, other {# 本書}}",
+  "wirelessSending": "正在傳送第 {current} / {total} 本…",
+  "wirelessWrongPassword": "閱讀器的密碼不正確",
+  "wirelessTooOld": "請更新閱讀器的 App 後再連線",
+  "wirelessSendTo": "傳送到 {device}",
+  "wirelessSent": "已傳送 {count, plural, other {# 本書}}到 {device}",
+  "wirelessNoFormat": "{device} 無法閱讀 {titles}",
+  "wirelessRefused": "未傳送：{reason}",
+  "wirelessLost": "{device} 已中斷連線",
+  "wirelessBody": "透過 Wi‑Fi 連線 calibre 的閱讀 App（如 KOReader）可以用同樣的方式連線 Dalibre：在 KOReader 中選擇 Calibre › 連線。在書的選單中傳送書。",
+  "wirelessNote": "閱讀器需要填入相同的密碼；在 KOReader 中位於 Calibre › 無線設定 › 設定密碼。連接埠 9090 是 calibre 的；被佔用時，Dalibre 會改用其他連接埠，閱讀器仍能找到它。",
+  "wirelessRequirePassword": "需要密碼",
+  "wirelessRemoveFrom": "從 {device} 移除",
+  "wirelessRemoved": "已從 {device} 移除 {count, plural, other {# 本書}}",
+  "wirelessName": "無線裝置"
 }

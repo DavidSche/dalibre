@@ -287,6 +287,24 @@ func (a *App) bookMenu(b *calibre.Book) func(m *ui.Menu) {
 				a.openEditor(b)
 			}
 		}
+		if dev := a.connectedDevice(); dev != nil {
+			item := m.Item(locales.WirelessSendTo(dev.Info().Name)).Icon(icons.Menu(icons.Wifi))
+			if a.device.sending > 0 {
+				item.Disabled(true)
+			}
+			if item.Chosen() {
+				a.sendToDevice(ids)
+			}
+			if on := a.onDevice(ids); len(on) > 0 {
+				item := m.Item(locales.WirelessRemoveFrom(dev.Info().Name)).Icon(icons.Menu(icons.Trash))
+				if a.device.sending > 0 {
+					item.Disabled(true)
+				}
+				if item.Chosen() {
+					a.removeFromDevice(on)
+				}
+			}
+		}
 		if !many {
 			a.shareMenu(m, b)
 			if m.Item(locales.CommonShowInFolder()).Icon(icons.Menu(icons.Folder)).Chosen() {

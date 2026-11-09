@@ -15,6 +15,7 @@ import (
 	"dalibre/internal/app/theme"
 	"dalibre/internal/app/widgets"
 	"dalibre/internal/mcp"
+	"dalibre/internal/smartdevice"
 )
 
 // Sharing and AI agents (Figma "13 · Sharing & AI agents"): what
@@ -30,21 +31,33 @@ const (
 	nameMCP  = "MCP"
 )
 
-// sharingButton is the SharingIndicator in a toolbar, with its popover.
+// sharingButton is the SharingIndicator in a toolbar, with its popover:
+// OPDS, then wireless devices (device.go). It is on while either is, and
+// is named for wireless devices when only they are on.
 func (a *App) sharingButton(c *ui.Context) {
-	sh := a.settings.OPDS.Share
+	sh, w := a.settings.OPDS.Share, a.settings.Wireless
 	failed := sh.On && a.share != nil && a.share.err != nil
+	if _, bad := a.deviceStatus(); w.On && bad {
+		failed = true
+	}
 	label := nameOPDS
+	if w.On && !sh.On {
+		label = locales.WirelessName()
+	}
 	dot := pal().Success.FG
 	if failed {
 		dot = pal().Danger.FG
 	}
-	b := widgets.IndicatorButton(c, icons.Wifi, label, a.sharingOpen, sh.On, dot)
+	b := widgets.IndicatorButton(c, icons.Wifi, label, a.sharingOpen, sh.On || w.On, dot)
 	if b.Clicked() {
 		a.sharingOpen = !a.sharingOpen
 	}
 	ui.PopoverBase(c, b, &a.sharingOpen, func(panel ui.Element) {
-		popoverPanel(panel, b, 360).Children(func() { a.shareBlock(c) })
+		popoverPanel(panel, b, 360).Children(func() {
+			a.shareBlock(c)
+			widgets.Hairline(c)
+			a.wirelessBlock(c)
+		})
 	})
 }
 
@@ -110,6 +123,132 @@ func (a *App) shareBlock(c *ui.Context) {
 		a.saveSettings()
 		a.applyShare()
 	}
+}
+
+// wirelessBlock is wireless devices in the Sharing popover.
+func (a *App) wirelessBlock(c *ui.Context) {
+	w := &a.settings.Wireless
+	status, bad := a.deviceStatus()
+	color := pal().TextTertiary
+	switch {
+	case bad:
+		color = pal().Danger.FG
+	case a.connectedDevice() != nil:
+		color = pal().Success.FG
+	case w.On:
+		color = pal().TextSecondary
+	}
+	on := w.On
+	a.sharingBlock(c, locales.WirelessName(), status, color, &on, sectionWireless, a.deviceAddress(), &a.sharingOpen)
+	if on != w.On {
+		w.On = on
+		a.saveSettings()
+		a.applyDevice()
+	}
+}
+
+// ---- Settings › Wireless devices
+
+// wirelessEdit is Settings › Wireless devices' fields while they are edited.
+type wirelessEdit struct {
+	loaded   bool
+	port, pw string
+}
+
+func (a *App) wirelessPane(c *ui.Context) {
+	w := &a.settings.Wireless
+	ed := &a.wirelessEdit
+	if !ed.loaded {
+		ed.loaded = true
+		ed.port = ""
+		if w.Port > 0 {
+			ed.port = strconv.Itoa(w.Port)
+		}
+		if w.Password && a.secrets != nil {
+			secrets := a.secrets
+			a.run(func() {
+				pw, _ := secrets.Get(wirelessSecret)
+				a.post(func() { ed.pw = pw })
+			})
+		}
+	}
+	pane(c, func() {
+		ui.Column(c).Gap(theme.Space10).AlignItems(ui.Stretch).Children(func() {
+			ui.Row(c).Gap(theme.Space16).AlignItems(ui.Start).Children(func() {
+				heading(c, locales.WirelessName(), locales.WirelessBody())
+				on := w.On
+				ui.Switch(c, &on).Label(locales.WirelessName())
+				if on != w.On {
+					w.On = on
+					a.saveSettings()
+					a.applyDevice()
+				}
+			})
+			if !w.On {
+				return
+			}
+			status, bad := a.deviceStatus()
+			color, ic := pal().TextSecondary, icons.Wifi
+			switch {
+			case bad:
+				color, ic = pal().Danger.FG, icons.Alert
+			case a.connectedDevice() != nil:
+				color = pal().Success.FG
+			}
+			addr := a.deviceAddress()
+			ui.Row(c).Padding(theme.Space6, theme.Space6, theme.Space6, theme.Space12).MinHeight(44).Gap(theme.Space10).Radius(theme.RadiusMD).Background(pal().Subtle).AlignItems(ui.Center).Children(func() {
+				ui.Icon(c, ic).FontSize(16).TextColor(color)
+				ui.Column(c).Grow(1).MinWidth(0).Gap(theme.Space2).Children(func() {
+					if addr != "" {
+						ui.Text(c, addr).Font(theme.FontMono).FontSize(12).Selectable()
+					}
+					ui.Text(c, status).FontSize(12).TextColor(color)
+				})
+				if addr != "" && widgets.IconButton(c, icons.Copy, locales.SettingsCopyAddress(), false).Clicked() {
+					mygo.Clipboard.Write(transfer.TextData(addr))
+					a.toast("%s", locales.SettingsCopied(addr))
+				}
+			})
+			req := w.Password
+			ui.Checkbox(c, &req, locales.WirelessRequirePassword())
+			ui.Row(c).Gap(theme.Space12).AlignItems(ui.End).Children(func() {
+				ui.Column(c).Width(120).AlignItems(ui.Stretch).Children(func() {
+					labeled(c, locales.SettingsPortLabel(), func() {
+						ui.TextInput(c, &ed.port).Label(locales.SettingsPortLabel()).Placeholder(strconv.Itoa(smartdevice.DefaultPort))
+					})
+				})
+				if req {
+					widgets.Field(c, locales.CommonPassword(), "", func() { ui.TextInput(c, &ed.pw).Label(locales.CommonPassword()).Password() })
+				}
+				port := 0
+				text := strings.TrimSpace(ed.port)
+				var perr error
+				if text != "" {
+					port, perr = strconv.Atoi(text)
+				}
+				bad := perr != nil || port < 0 || port > 65535 || req && ed.pw == ""
+				changed := req != w.Password || port != w.Port || req
+				if widgets.Button(c, widgets.Primary, nil, locales.SettingsApply()).Disabled(bad || !changed).Clicked() {
+					w.Port, w.Password = port, req
+					a.saveSettings()
+					pw, secrets := ed.pw, a.secrets
+					a.run(func() {
+						if secrets != nil && req {
+							secrets.Set(wirelessSecret, pw)
+						}
+						a.post(func() {
+							if a.device != nil && a.device.srv != nil {
+								go a.device.srv.Close()
+							}
+							a.device = nil // restart with the new password
+							a.applyDevice()
+						})
+					})
+				}
+			})
+			ui.Text(c, locales.WirelessNote()).FontSize(12).TextColor(pal().TextTertiary)
+		})
+	})
 }
 
 // setMCPOn turns the MCP server on or off.

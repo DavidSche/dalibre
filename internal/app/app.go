@@ -132,11 +132,12 @@ type App struct {
 	// settingsOpen shows the Settings window, on section.
 	settingsOpen bool
 	section      settingsSection
-	catEdit      catalogEdit // the Add or Edit catalog sheet
-	shareEdit    shareEdit   // Settings › OPDS's sharing fields
-	mcpEdit      mcpEdit     // Settings › MCP's port field
-	mcpTab       int         // the agent Connect an agent shows
-	mcpTicking   bool        // a rebuild is due to keep MCP's status current
+	catEdit      catalogEdit  // the Add or Edit catalog sheet
+	shareEdit    shareEdit    // Settings › OPDS's sharing fields
+	mcpEdit      mcpEdit      // Settings › MCP's port field
+	wirelessEdit wirelessEdit // Settings › Wireless devices' fields
+	mcpTab       int          // the agent Connect an agent shows
+	mcpTicking   bool         // a rebuild is due to keep MCP's status current
 
 	// OPDS: the catalogs' sources, what checking each found (by catalog
 	// id), the catalog page, and the server sharing the library.
@@ -147,6 +148,8 @@ type App struct {
 	libShared     atomic.Pointer[calibre.Library]
 	// mcpSrv is the server serving the library to the user's agents.
 	mcpSrv *mcpState
+	// device is the wireless connection readers connect to.
+	device *deviceState
 	// secrets keeps passwords: the system's credential store; nil in tests
 	// until they set one.
 	secrets secretStore
@@ -224,6 +227,7 @@ func (a *App) Attach(win *mygo.Window) {
 	a.openLibrary(a.startupLibrary())
 	a.applyShare()
 	a.applyMCP()
+	a.applyDevice()
 	a.checkUpdates(false)
 	a.au.updater = mygoUpdater{}
 	a.au.relaunch = mygo.App.Relaunch
@@ -382,6 +386,8 @@ func (a *App) setBooks(books []*calibre.Book) {
 	}
 	a.booksTime = time.Now()
 	a.counts = catalog.Tally(books, a.booksTime)
+	// Books edited while a reader is connected reach it.
+	a.syncDevice()
 	a.version++
 }
 

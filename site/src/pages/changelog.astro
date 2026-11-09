@@ -1,0 +1,96 @@
+---
+import Footer from "../components/Footer.astro";
+import "../styles/global.css";
+import Seo from "../components/Seo.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import { changelog } from "../lib/changelog";
+import { published, release } from "../lib/release";
+
+// Only versions already released: CHANGELOG.md has the next one's notes
+// before it ships.
+const versions = changelog
+  .map((v) => ({ ...v, release: published.get(v.version) }))
+  .filter((v) => v.release && v.notes.length);
+
+const day = (d: Date) => d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+
+const title = "Changelog · Dalibre";
+const description = "What's new in every Dalibre release, newest first.";
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <Seo title={title} description={description} />
+    <link rel="alternate" type="application/rss+xml" title="Dalibre releases" href="https://github.com/DavidSche/dalibre/releases.atom" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body class="font-sans">
+    <div class="grain pointer-events-none fixed inset-0 z-50 opacity-70"></div>
+    <SiteHeader current="changelog" />
+
+    <main class="mx-auto max-w-6xl px-5">
+      <section class="relative pt-20 pb-14 sm:pt-28">
+        <div
+          class="pointer-events-none absolute -top-24 left-0 -z-10 h-[360px] w-[640px] rounded-full opacity-60 blur-3xl"
+          style="background: radial-gradient(closest-side, #e1e9ff, transparent);"
+        ></div>
+        <p class="rise font-mono text-xs tracking-widest text-violet uppercase">Changelog</p>
+        <h1 class="rise mt-4 max-w-2xl font-serif text-5xl leading-[1.05] tracking-tight sm:text-7xl">
+          What's new in <em class="text-accent">Dalibre</em>
+        </h1>
+      </section>
+
+      <ol class="pb-24">
+        {
+          versions.map((v) => {
+            const latest = v.version === release.version;
+            return (
+              <li id={`v${v.version}`} class="grid scroll-mt-20 gap-5 border-t border-sand-4 py-12 sm:grid-cols-[13rem_1fr] sm:gap-10">
+                <div class="self-start sm:sticky sm:top-24">
+                  <div class="flex items-center gap-3">
+                    <a href={`#v${v.version}`} class="font-serif text-4xl leading-none tracking-tight hover:text-accent">
+                      {v.version}
+                    </a>
+                    {latest && (
+                      <span class="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-medium text-accent">Latest</span>
+                    )}
+                  </div>
+                  <p class="mt-3 font-mono text-xs text-sand-9">
+                    <time datetime={v.release!.date.toISOString()}>{day(v.release!.date)}</time>
+                  </p>
+                  <a href={v.release!.url} target="_blank" rel="noopener" class="mt-1 inline-block text-xs text-sand-11 transition hover:text-ink">
+                    Release on GitHub ↗
+                  </a>
+                </div>
+                <div class="prose max-w-2xl">
+                  <ul>
+                    {v.notes.map((n) => <li set:html={n} />)}
+                  </ul>
+                </div>
+              </li>
+            );
+          })
+        }
+      </ol>
+
+      <section class="mb-24 flex flex-col items-start justify-between gap-5 rounded-2xl border border-sand-6 bg-paper-2 px-7 py-8 sm:flex-row sm:items-center">
+        <div>
+          <p class="font-serif text-3xl leading-tight tracking-tight">Get Dalibre {release.version}</p>
+          <p class="mt-1 text-sm text-sand-11">For macOS, Windows and Linux.</p>
+        </div>
+        <a href="/#download" class="rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper transition hover:bg-black">Download</a>
+      </section>
+    </main>
+
+    <Footer />
+  </body>
+</html>

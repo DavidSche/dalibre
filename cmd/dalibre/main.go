@@ -41,10 +41,34 @@ func main() {
 			Content:         ui.View(a.View),
 		})
 		a.Attach(win)
+		keepRunningOnClose(win)
 	})
 	if err := mygo.App.Run(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// keepRunningOnClose keeps the app running on macOS when its window is
+// closed: the window hides instead, and clicking the Dock icon shows it
+// again. Quitting still closes it.
+func keepRunningOnClose(win *mygo.Window) {
+	if runtime.GOOS != "darwin" {
+		return
+	}
+	quitting := false
+	mygo.App.OnBeforeQuit(func(*mygo.QuitEvent) { quitting = true })
+	win.OnClose(func(e *mygo.CloseEvent) {
+		if quitting {
+			return
+		}
+		e.PreventDefault()
+		win.Hide()
+	})
+	mygo.App.OnActivate(func(hasVisibleWindows bool) {
+		if !hasVisibleWindows {
+			win.Show()
+		}
+	})
 }
 
 // setMenu adds "Check for Updates…" after About in the macOS app menu,

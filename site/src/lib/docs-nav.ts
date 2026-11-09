@@ -8,6 +8,10 @@ export const nav: NavGroup[] = [
     items: [{ slug: "", title: "Introduction" }],
   },
   {
+    title: "Readers",
+    items: [{ slug: "koreader", title: "KOReader" }],
+  },
+  {
     title: "Agents",
     items: [{ slug: "mcp", title: "MCP" }],
   },

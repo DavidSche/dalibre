@@ -974,5 +974,22 @@
   "mcpToolRemoveBooks": "Mettre des livres à la corbeille.",
   "mcpToolFindBooks": "Chercher dans les sources de Trouver des livres.",
   "mcpToolDownloadBook": "Ajouter un livre de Trouver des livres à la bibliothèque.",
-  "mcpToolFindMetadata": "Chercher les métadonnées d’un livre avec les plugins de métadonnées."
+  "mcpToolFindMetadata": "Chercher les métadonnées d’un livre avec les plugins de métadonnées.",
+  "wirelessPortError": "impossible d’écouter sur le port {port} : {reason}",
+  "wirelessWaiting": "En attente d’une liseuse",
+  "wirelessConnected": "{device} · {count, plural, one {# livre} many {# livres} other {# livres}}",
+  "wirelessSending": "Envoi de {current} sur {total}…",
+  "wirelessWrongPassword": "Le mot de passe de la liseuse est incorrect",
+  "wirelessTooOld": "Mettez à jour l’app de la liseuse pour vous connecter",
+  "wirelessSendTo": "Envoyer à {device}",
+  "wirelessSent": "{count, plural, one {# livre envoyé} many {# livres envoyés} other {# livres envoyés}} à {device}",
+  "wirelessNoFormat": "{device} ne peut pas lire {titles}",
+  "wirelessRefused": "Non envoyé : {reason}",
+  "wirelessLost": "{device} s’est déconnecté",
+  "wirelessBody": "Les apps de lecture qui se connectent à calibre en Wi‑Fi, comme KOReader, se connectent à Dalibre de la même façon : dans KOReader, Calibre › Connexion. Les livres s’envoient depuis le menu du livre.",
+  "wirelessNote": "La liseuse a besoin du même mot de passe ; dans KOReader, Calibre › Réglages sans fil › Définir le mot de passe. Le port 9090 est celui de calibre ; s’il est pris, Dalibre en utilise un autre et les liseuses le trouvent quand même.",
+  "wirelessRequirePassword": "Demander un mot de passe",
+  "wirelessRemoveFrom": "Retirer de {device}",
+  "wirelessRemoved": "{count, plural, one {# livre retiré} many {# livres retirés} other {# livres retirés}} de {device}",
+  "wirelessName": "Appareils sans fil"
 }

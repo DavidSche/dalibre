@@ -974,5 +974,22 @@
   "mcpToolRemoveBooks": "Bücher in den Papierkorb legen.",
   "mcpToolFindBooks": "Die Quellen von „Bücher holen“ durchsuchen.",
   "mcpToolDownloadBook": "Ein Buch aus „Bücher holen“ zur Bibliothek hinzufügen.",
-  "mcpToolFindMetadata": "Metadaten eines Buchs mit Metadaten-Plugins suchen."
+  "mcpToolFindMetadata": "Metadaten eines Buchs mit Metadaten-Plugins suchen.",
+  "wirelessPortError": "Port {port} konnte nicht geöffnet werden: {reason}",
+  "wirelessWaiting": "Warte auf einen Reader",
+  "wirelessConnected": "{device} · {count, plural, one {# Buch} other {# Bücher}}",
+  "wirelessSending": "Sende {current} von {total} …",
+  "wirelessWrongPassword": "Das Passwort des Readers ist falsch",
+  "wirelessTooOld": "Aktualisiere die App des Readers, um dich zu verbinden",
+  "wirelessSendTo": "An {device} senden",
+  "wirelessSent": "{count, plural, one {# Buch} other {# Bücher}} an {device} gesendet",
+  "wirelessNoFormat": "{device} kann {titles} nicht lesen",
+  "wirelessRefused": "Nicht gesendet: {reason}",
+  "wirelessLost": "Verbindung zu {device} getrennt",
+  "wirelessBody": "Lese-Apps, die sich per WLAN mit calibre verbinden, etwa KOReader, verbinden sich genauso mit Dalibre: in KOReader unter Calibre › Verbinden. Bücher sendest du über das Buchmenü.",
+  "wirelessNote": "Der Reader braucht dasselbe Passwort; in KOReader unter Calibre › Drahtlos-Einstellungen › Passwort festlegen. Port 9090 ist der von calibre; ist er belegt, nimmt Dalibre einen anderen, und Reader finden es trotzdem.",
+  "wirelessRequirePassword": "Passwort verlangen",
+  "wirelessRemoveFrom": "Von {device} entfernen",
+  "wirelessRemoved": "{count, plural, one {# Buch} other {# Bücher}} von {device} entfernt",
+  "wirelessName": "Drahtlose Geräte"
 }

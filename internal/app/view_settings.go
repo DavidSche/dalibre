@@ -29,6 +29,7 @@ const (
 	sectionOPDS
 	sectionPlugins
 	sectionMCP
+	sectionWireless
 )
 
 // sections lists the Settings sections. id is the stable key; the title
@@ -44,6 +45,7 @@ var sections = []struct {
 	{sectionOPDS, "OPDS", locales.SettingsSectionOPDS, icons.Rss},
 	{sectionPlugins, "Plugins", locales.SettingsSectionPlugins, icons.Puzzle},
 	{sectionMCP, "MCP", locales.SettingsSectionMCP, icons.Bot},
+	{sectionWireless, "Wireless", locales.WirelessName, icons.Wifi},
 }
 
 // settingsWidth is the Settings window's width: Plugins' list and plugin
@@ -84,6 +86,8 @@ func (a *App) settingsDialog(c *ui.Context) {
 				a.pluginsPane(c)
 			case sectionMCP:
 				a.mcpPane(c)
+			case sectionWireless:
+				a.wirelessPane(c)
 			}
 		})
 	}, func() {

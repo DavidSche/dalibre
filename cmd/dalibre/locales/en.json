@@ -966,5 +966,53 @@
   "mcpToolRemoveBooks": "Move books to the Trash.",
   "mcpToolFindBooks": "Search Get books’ sources.",
   "mcpToolDownloadBook": "Add a book from Get books to the library.",
-  "mcpToolFindMetadata": "Look up a book’s metadata with metadata plugins."
+  "mcpToolFindMetadata": "Look up a book’s metadata with metadata plugins.",
+  "wirelessPortError": "couldn’t listen on port {port}: {reason}",
+  "wirelessWaiting": "Waiting for a reader",
+  "wirelessConnected": "{device} · {count, plural, one {# book} other {# books}}",
+  "@wirelessConnected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "wirelessSending": "Sending {current} of {total}…",
+  "@wirelessSending": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "wirelessWrongPassword": "The reader’s password is wrong",
+  "wirelessTooOld": "Update the reader’s app to connect",
+  "wirelessSendTo": "Send to {device}",
+  "wirelessSent": "Sent {count, plural, one {# book} other {# books}} to {device}",
+  "@wirelessSent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "wirelessNoFormat": "{device} can’t read {titles}",
+  "wirelessRefused": "Not sent: {reason}",
+  "wirelessLost": "{device} disconnected",
+  "wirelessBody": "Reading apps that connect to calibre over Wi‑Fi, such as KOReader, connect to Dalibre the same way: in KOReader, Calibre › Connect. Books are sent from the book menu.",
+  "wirelessNote": "The reader needs the same password; in KOReader, Calibre › Wireless settings › Set password. Port 9090 is calibre’s; when it is taken, Dalibre listens on another and readers still find it.",
+  "wirelessRequirePassword": "Require a password",
+  "wirelessRemoveFrom": "Remove from {device}",
+  "wirelessRemoved": "Removed {count, plural, one {# book} other {# books}} from {device}",
+  "@wirelessRemoved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "wirelessName": "Wireless devices"
 }

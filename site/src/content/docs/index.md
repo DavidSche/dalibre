@@ -10,6 +10,16 @@ plugins anyone can write.
 These docs are for people who want to connect it to their agents or
 extend it. More guides for using the app will follow.
 
+## KOReader
+
+KOReader, and other reading apps that connect to calibre over Wi‑Fi,
+connect to Dalibre the same way, and you send books to them from the book
+menu: Wireless devices, in the toolbar's Sharing button.
+
+[**KOReader**](/docs/koreader/) has how to connect, send and remove
+books, and set a password. As plain Markdown:
+[`/docs/koreader.md`](/docs/koreader.md).
+
 ## MCP
 
 Your own AI agents, such as Claude Code, Claude Desktop and Cursor, can

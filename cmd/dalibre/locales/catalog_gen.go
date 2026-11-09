@@ -6716,3 +6716,185 @@ func McpToolFindMetadata() string { return In(i18n.Locale()).McpToolFindMetadata
 func (msgs Messages) McpToolFindMetadata() string {
 	return Catalog.Format(msgs.locale, "mcpToolFindMetadata", nil)
 }
+
+// WirelessPortError says "couldn’t listen on port {port}: {reason}"
+// in the language the app shows.
+func WirelessPortError(port string, reason string) string {
+	return In(i18n.Locale()).WirelessPortError(port, reason)
+}
+
+// WirelessPortError says "couldn’t listen on port {port}: {reason}"
+// in the language of msgs.
+func (msgs Messages) WirelessPortError(port string, reason string) string {
+	return Catalog.Format(msgs.locale, "wirelessPortError", map[string]any{"port": port, "reason": reason})
+}
+
+// WirelessWaiting says "Waiting for a reader"
+// in the language the app shows.
+func WirelessWaiting() string { return In(i18n.Locale()).WirelessWaiting() }
+
+// WirelessWaiting says "Waiting for a reader"
+// in the language of msgs.
+func (msgs Messages) WirelessWaiting() string {
+	return Catalog.Format(msgs.locale, "wirelessWaiting", nil)
+}
+
+// WirelessConnected says "{device} · {count, plural, one {# book} other {# books}}"
+// in the language the app shows.
+func WirelessConnected(count int, device string) string {
+	return In(i18n.Locale()).WirelessConnected(count, device)
+}
+
+// WirelessConnected says "{device} · {count, plural, one {# book} other {# books}}"
+// in the language of msgs.
+func (msgs Messages) WirelessConnected(count int, device string) string {
+	return Catalog.Format(msgs.locale, "wirelessConnected", map[string]any{"count": count, "device": device})
+}
+
+// WirelessSending says "Sending {current} of {total}…"
+// in the language the app shows.
+func WirelessSending(current int, total int) string {
+	return In(i18n.Locale()).WirelessSending(current, total)
+}
+
+// WirelessSending says "Sending {current} of {total}…"
+// in the language of msgs.
+func (msgs Messages) WirelessSending(current int, total int) string {
+	return Catalog.Format(msgs.locale, "wirelessSending", map[string]any{"current": current, "total": total})
+}
+
+// WirelessWrongPassword says "The reader’s password is wrong"
+// in the language the app shows.
+func WirelessWrongPassword() string { return In(i18n.Locale()).WirelessWrongPassword() }
+
+// WirelessWrongPassword says "The reader’s password is wrong"
+// in the language of msgs.
+func (msgs Messages) WirelessWrongPassword() string {
+	return Catalog.Format(msgs.locale, "wirelessWrongPassword", nil)
+}
+
+// WirelessTooOld says "Update the reader’s app to connect"
+// in the language the app shows.
+func WirelessTooOld() string { return In(i18n.Locale()).WirelessTooOld() }
+
+// WirelessTooOld says "Update the reader’s app to connect"
+// in the language of msgs.
+func (msgs Messages) WirelessTooOld() string {
+	return Catalog.Format(msgs.locale, "wirelessTooOld", nil)
+}
+
+// WirelessSendTo says "Send to {device}"
+// in the language the app shows.
+func WirelessSendTo(device string) string { return In(i18n.Locale()).WirelessSendTo(device) }
+
+// WirelessSendTo says "Send to {device}"
+// in the language of msgs.
+func (msgs Messages) WirelessSendTo(device string) string {
+	return Catalog.Format(msgs.locale, "wirelessSendTo", map[string]any{"device": device})
+}
+
+// WirelessSent says "Sent {count, plural, one {# book} other {# books}} to {device}"
+// in the language the app shows.
+func WirelessSent(count int, device string) string {
+	return In(i18n.Locale()).WirelessSent(count, device)
+}
+
+// WirelessSent says "Sent {count, plural, one {# book} other {# books}} to {device}"
+// in the language of msgs.
+func (msgs Messages) WirelessSent(count int, device string) string {
+	return Catalog.Format(msgs.locale, "wirelessSent", map[string]any{"count": count, "device": device})
+}
+
+// WirelessNoFormat says "{device} can’t read {titles}"
+// in the language the app shows.
+func WirelessNoFormat(device string, titles string) string {
+	return In(i18n.Locale()).WirelessNoFormat(device, titles)
+}
+
+// WirelessNoFormat says "{device} can’t read {titles}"
+// in the language of msgs.
+func (msgs Messages) WirelessNoFormat(device string, titles string) string {
+	return Catalog.Format(msgs.locale, "wirelessNoFormat", map[string]any{"device": device, "titles": titles})
+}
+
+// WirelessRefused says "Not sent: {reason}"
+// in the language the app shows.
+func WirelessRefused(reason string) string { return In(i18n.Locale()).WirelessRefused(reason) }
+
+// WirelessRefused says "Not sent: {reason}"
+// in the language of msgs.
+func (msgs Messages) WirelessRefused(reason string) string {
+	return Catalog.Format(msgs.locale, "wirelessRefused", map[string]any{"reason": reason})
+}
+
+// WirelessLost says "{device} disconnected"
+// in the language the app shows.
+func WirelessLost(device string) string { return In(i18n.Locale()).WirelessLost(device) }
+
+// WirelessLost says "{device} disconnected"
+// in the language of msgs.
+func (msgs Messages) WirelessLost(device string) string {
+	return Catalog.Format(msgs.locale, "wirelessLost", map[string]any{"device": device})
+}
+
+// WirelessBody says "Reading apps that connect to calibre over Wi‑Fi, such as KOReader, connect to Dalibre the same way: in KOReader, Ca…"
+// in the language the app shows.
+func WirelessBody() string { return In(i18n.Locale()).WirelessBody() }
+
+// WirelessBody says "Reading apps that connect to calibre over Wi‑Fi, such as KOReader, connect to Dalibre the same way: in KOReader, Ca…"
+// in the language of msgs.
+func (msgs Messages) WirelessBody() string {
+	return Catalog.Format(msgs.locale, "wirelessBody", nil)
+}
+
+// WirelessNote says "The reader needs the same password; in KOReader, Calibre › Wireless settings › Set password. Port 9090 is calibre…"
+// in the language the app shows.
+func WirelessNote() string { return In(i18n.Locale()).WirelessNote() }
+
+// WirelessNote says "The reader needs the same password; in KOReader, Calibre › Wireless settings › Set password. Port 9090 is calibre…"
+// in the language of msgs.
+func (msgs Messages) WirelessNote() string {
+	return Catalog.Format(msgs.locale, "wirelessNote", nil)
+}
+
+// WirelessRequirePassword says "Require a password"
+// in the language the app shows.
+func WirelessRequirePassword() string { return In(i18n.Locale()).WirelessRequirePassword() }
+
+// WirelessRequirePassword says "Require a password"
+// in the language of msgs.
+func (msgs Messages) WirelessRequirePassword() string {
+	return Catalog.Format(msgs.locale, "wirelessRequirePassword", nil)
+}
+
+// WirelessRemoveFrom says "Remove from {device}"
+// in the language the app shows.
+func WirelessRemoveFrom(device string) string { return In(i18n.Locale()).WirelessRemoveFrom(device) }
+
+// WirelessRemoveFrom says "Remove from {device}"
+// in the language of msgs.
+func (msgs Messages) WirelessRemoveFrom(device string) string {
+	return Catalog.Format(msgs.locale, "wirelessRemoveFrom", map[string]any{"device": device})
+}
+
+// WirelessRemoved says "Removed {count, plural, one {# book} other {# books}} from {device}"
+// in the language the app shows.
+func WirelessRemoved(count int, device string) string {
+	return In(i18n.Locale()).WirelessRemoved(count, device)
+}
+
+// WirelessRemoved says "Removed {count, plural, one {# book} other {# books}} from {device}"
+// in the language of msgs.
+func (msgs Messages) WirelessRemoved(count int, device string) string {
+	return Catalog.Format(msgs.locale, "wirelessRemoved", map[string]any{"count": count, "device": device})
+}
+
+// WirelessName says "Wireless devices"
+// in the language the app shows.
+func WirelessName() string { return In(i18n.Locale()).WirelessName() }
+
+// WirelessName says "Wireless devices"
+// in the language of msgs.
+func (msgs Messages) WirelessName() string {
+	return Catalog.Format(msgs.locale, "wirelessName", nil)
+}
