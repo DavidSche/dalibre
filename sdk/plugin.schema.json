@@ -63,6 +63,17 @@
                 }
               }
             },
+            "reader": {
+              "description": "Lays out the books the user opens in Dalibre's reader. Export open.",
+              "type": "object", "additionalProperties": false, "required": ["formats"],
+              "properties": {
+                "formats": {
+                  "description": "The formats the plugin lays out, from those Dalibre extracts. Upper case.",
+                  "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true,
+                  "items": { "enum": ["EPUB", "KEPUB", "TXT"] }
+                }
+              }
+            },
             "metadata": {
               "description": "Looks up books' details for Fetch metadata in Edit metadata. Export identify; needs permissions.library \"read\".",
               "type": "object", "additionalProperties": false,
@@ -79,10 +90,11 @@
       ]
     },
     "permissions": {
-      "type": "object", "additionalProperties": false, "required": ["hosts"],
+      "description": "What the plugin may reach. A book source needs hosts; a metadata source needs library; a reader needs neither.",
+      "type": "object", "additionalProperties": false,
       "properties": {
         "hosts": {
-          "description": "Every host the plugin fetches or downloads from, redirects included. \"*.example.com\" matches subdomains.",
+          "description": "Every host the plugin fetches or downloads from, redirects included. Required for a book source. \"*.example.com\" matches subdomains.",
           "type": "array", "uniqueItems": true,
           "items": { "type": "string", "pattern": "^(\\*\\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$" }
         },

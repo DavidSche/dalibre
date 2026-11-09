@@ -283,10 +283,94 @@
   "appToastNoFiles": "「{title}」にはファイルがありません",
   "appShareItem": "共有…",
   "appShareMenu": "共有",
+  "readerRead": "読む",
+  "readerContinue": "続きを読む · {percent}%",
+  "@readerContinue": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerNoPlugin": "{format} 形式を開けるリーダープラグインがありません",
+  "@readerNoPlugin": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "readerChapterN": "第{n}章",
+  "@readerChapterN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "readerChapterOf": "第{current}章 / 全{total}章",
+  "@readerChapterOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "readerProgress": "{percent}%",
+  "@readerProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerContents": "目次",
+  "readerBookmarks": "ブックマーク",
+  "readerNoBookmarks": "ブックマークはまだありません。B キーで現在位置を保存できます。",
+  "readerAddBookmark": "この章をブックマーク",
+  "readerRemoveBookmark": "ブックマークを削除",
+  "readerTextSize": "文字サイズ",
+  "readerLineSpacing": "行間",
+  "readerTheme": "ページの色",
+  "readerThemePaper": "紙",
+  "readerThemeSepia": "セピア",
+  "readerThemeGreen": "グリーン",
+  "readerThemeNight": "ナイト",
+  "readerEndOfChapter": "章の終わり",
+  "readerNextChapter": "次の章",
+  "readerPrevChapter": "前の章",
+  "readerTheEnd": "おわり",
+  "readerBack": "ライブラリに戻る",
+  "readerClose": "閉じる",
+  "readerLoading": "ページを組んでいます…",
+  "readerFailed": "この本を開けませんでした",
+  "readerRetry": "再試行",
+  "readerTruncated": "この本は Dalibre が一度に読む長さを超えているため、ここで終わります。",
+  "readerNotes": "注釈",
   "widgetsRemoveTag": "{label}を削除",
   "widgetsNotRated": "評価なし",
   "widgetsStars": "星 {count}",
   "widgetsClose": "閉じる",
+  "pluginsReaderNote": "{name} は Dalibre で開いた本を組みます。章、段落、そして読んでいた位置まで。",
+  "@pluginsReaderNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsConsentReadBooks": "{name} は開いた本を組みます。読んでいる間、その本文を読み取ります。",
+  "@pluginsConsentReadBooks": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsReadsBooks": "本を読む",
   "pluginsStatusNeeds": "{settings}が必要",
   "pluginsStatusBuiltIn": "{version} · 内蔵",
   "pluginsStatusFromFolder": "{version} · フォルダから",

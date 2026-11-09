@@ -21,6 +21,7 @@ import (
 	"github.com/egoist/mygo"
 
 	"dalibre/internal/plugin"
+	"dalibre/internal/reader"
 	"dalibre/internal/settings"
 	"dalibre/sdk"
 )
@@ -36,13 +37,15 @@ const usage = `dalibre-plugin is for writing Dalibre plugins.
   dalibre-plugin download <dir> <text> [--item N] [--format EPUB] [-o DIR]
   dalibre-plugin identify <dir> [title] [--author A] [--isbn N] [--id type:value] [--language L] [--json]
                                                       what Fetch metadata shows for a book
+  dalibre-plugin open <dir> <book> [--format EPUB] [--json]
+                                                      lay out a book as the reader page shows it
   dalibre-plugin pack <dir> [-o DIR]                  make <id>-<version>.dalibre-plugin
   dalibre-plugin install <package> [--yes]            install into Dalibre's plugins folder
   dalibre-plugin uninstall <id>
   dalibre-plugin installed                            list installed plugins
 
-search, list, get, download and identify take --set key=value for the plugin's
-settings, and --filter key=value for its filters; the
+search, list, get, download, identify and open take --set key=value for the
+plugin's settings, and --filter key=value for its filters; the
 values saved in Dalibre are used otherwise. The plugins folder is
 $DALIBRE_PLUGINS, or Dalibre's in your configuration folder.
 `
@@ -57,6 +60,7 @@ func main() {
 	cmds := map[string]func(context.Context, []string) error{
 		"init": cmdInit, "check": cmdCheck, "search": cmdSearch, "download": cmdDownload,
 		"collections": cmdCollections, "list": cmdListCollection, "get": cmdGet, "identify": cmdIdentify,
+		"open": cmdOpen,
 		"pack": cmdPack, "install": cmdInstall, "uninstall": cmdUninstall, "installed": cmdList,
 	}
 	cmd, ok := cmds[os.Args[1]]
@@ -222,14 +226,21 @@ func cmdCheck(_ context.Context, args []string) error {
 	if plugin.Reserved(m.ID) {
 		fmt.Println("note: a reserved id; only a plugin shipped inside Dalibre may use it")
 	}
-	for _, fn := range []string{"search", "collections", "list", "get", "resolve", "identify"} {
+	if r := m.Capabilities.Reader; r != nil {
+		fmt.Printf("reads: %s\n", strings.Join(r.Formats, ", "))
+	}
+	for _, fn := range []string{"search", "collections", "list", "get", "resolve", "identify", "open"} {
 		if p.Defines(fn) {
 			fmt.Printf("exports %s\n", fn)
 		}
 	}
 	fmt.Println("asks to:")
-	for _, d := range m.Permissions.Describe() {
-		fmt.Println("  " + d)
+	if d := m.Permissions.Describe(); len(d) == 0 {
+		fmt.Println("  nothing")
+	} else {
+		for _, d := range d {
+			fmt.Println("  " + d)
+		}
 	}
 	if m.Description == "" {
 		fmt.Println("warning: no description; users see it before installing")
@@ -464,6 +475,118 @@ func cmdIdentify(ctx context.Context, args []string) error {
 		if len(r.Tags) > 0 {
 			fmt.Println("    tags:", strings.Join(r.Tags, "; "))
 		}
+	}
+	return nil
+}
+
+func cmdOpen(ctx context.Context, args []string) error {
+	fs := flag.NewFlagSet("open", flag.ExitOnError)
+	format := fs.String("format", "", "the book's format; else its file's extension")
+	title := fs.String("title", "", "the title the library knows")
+	var authors multiFlag
+	fs.Var(&authors, "author", "an author (repeatable)")
+	lang := fs.String("language", "", "the book's language, ISO 639")
+	asJSON := fs.Bool("json", false, "print the reading as JSON")
+	set := setFlags{}
+	fs.Var(set, "set", "a setting, as key=value (repeatable)")
+	var pos []string
+	for rest := args; ; {
+		if err := fs.Parse(rest); err != nil {
+			os.Exit(2)
+		}
+		if fs.NArg() == 0 {
+			break
+		}
+		pos = append(pos, fs.Arg(0))
+		rest = fs.Args()[1:]
+	}
+	if len(pos) != 2 {
+		fmt.Fprintln(os.Stderr, "usage: dalibre-plugin open <dir> <book> [--format EPUB]")
+		os.Exit(2)
+	}
+	f := strings.ToUpper(strings.TrimSpace(*format))
+	if f == "" {
+		f = strings.ToUpper(strings.TrimPrefix(filepath.Ext(pos[1]), "."))
+	}
+	if !reader.Supports(f) {
+		return fmt.Errorf("%s: Dalibre extracts text from %s, not %s", pos[1], strings.Join(reader.Formats, ", "), f)
+	}
+	doc, err := reader.Extract(pos[1], f)
+	if err != nil {
+		return err
+	}
+	p, err := load(pos[0], set)
+	if err != nil {
+		return err
+	}
+	t := *title
+	if t == "" {
+		t = doc.Title
+	}
+	if t == "" {
+		t = strings.TrimSuffix(filepath.Base(pos[1]), filepath.Ext(pos[1]))
+	}
+	reading, err := p.OpenReader(ctx, plugin.ReaderBook{
+		ID: "cli", Title: t, Authors: authors, Language: *lang, Format: f,
+	}, *doc)
+	if err != nil {
+		return err
+	}
+	if *asJSON {
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		return enc.Encode(reading)
+	}
+	fmt.Printf("%s", reading.Title)
+	if reading.Author != "" {
+		fmt.Printf(" — %s", reading.Author)
+	}
+	fmt.Printf(" - %d chapters", len(reading.Chapters))
+	fmt.Println()
+	for i, ch := range reading.Chapters {
+		name := ch.Title
+		if name == "" {
+			name = fmt.Sprintf("Chapter %d", i+1)
+		}
+		if ch.Continued {
+			name += " (continued)"
+		}
+		blocks, pictures, tables, chars := len(ch.Blocks), 0, 0, 0
+		for _, b := range ch.Blocks {
+			chars += len([]rune(b.Text)) + len([]rune(b.Caption))
+			if b.Kind == reader.Image {
+				pictures++
+			}
+			if b.Table != nil {
+				tables++
+				chars += len([]rune(b.Table.Caption))
+				for _, row := range b.Table.Rows {
+					for _, c := range row.Cells {
+						chars += len([]rune(c.Text))
+					}
+				}
+			}
+		}
+		for _, n := range ch.Notes {
+			chars += len([]rune(n.Text))
+		}
+		fmt.Printf("%3d. %s - %d blocks, %d characters", i+1, name, blocks, chars)
+		if pictures > 0 {
+			fmt.Printf(", %d pictures", pictures)
+		}
+		if tables > 0 {
+			fmt.Printf(", %d tables", tables)
+		}
+		if len(ch.Notes) > 0 {
+			fmt.Printf(", %d notes", len(ch.Notes))
+		}
+		fmt.Println()
+	}
+	if reading.Typography.Indent {
+		fmt.Println("indents paragraphs")
+	}
+	if reading.Truncated {
+		fmt.Println("truncated: the book is longer than Dalibre reads at once")
 	}
 	return nil
 }

@@ -4,3 +4,5 @@
 .mygo/
 mygo_windows_*.syso
 *.exe
+
+/cmd/dalibre/build-local/

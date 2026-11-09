@@ -149,7 +149,7 @@ func builtinFS(t *testing.T, name string) fs.FS {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(Builtin()) != 2 {
+	if len(Builtin()) != 3 {
 		t.Fatalf("%d built-in plugins", len(Builtin()))
 	}
 	return sub

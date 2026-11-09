@@ -283,10 +283,94 @@
   "appToastNoFiles": "« {title} » n’a aucun fichier",
   "appShareItem": "Partager…",
   "appShareMenu": "Partager",
+  "readerRead": "Lire",
+  "readerContinue": "Continuer · {percent} %",
+  "@readerContinue": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerNoPlugin": "Aucun plugin de lecture ne peut ouvrir les livres {format}",
+  "@readerNoPlugin": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "readerChapterN": "Chapitre {n}",
+  "@readerChapterN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "readerChapterOf": "Chapitre {current} sur {total}",
+  "@readerChapterOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "readerProgress": "{percent} %",
+  "@readerProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerContents": "Sommaire",
+  "readerBookmarks": "Signets",
+  "readerNoBookmarks": "Pas encore de signets. Appuyez sur B pour marquer votre place.",
+  "readerAddBookmark": "Marquer ce chapitre",
+  "readerRemoveBookmark": "Retirer le signet",
+  "readerTextSize": "Taille du texte",
+  "readerLineSpacing": "Interligne",
+  "readerTheme": "Couleur de page",
+  "readerThemePaper": "Papier",
+  "readerThemeSepia": "Sépia",
+  "readerThemeGreen": "Vert",
+  "readerThemeNight": "Nuit",
+  "readerEndOfChapter": "Fin du chapitre",
+  "readerNextChapter": "Chapitre suivant",
+  "readerPrevChapter": "Chapitre précédent",
+  "readerTheEnd": "Fin",
+  "readerBack": "Retour à la bibliothèque",
+  "readerClose": "Fermer",
+  "readerLoading": "Mise en page…",
+  "readerFailed": "Impossible d’ouvrir ce livre",
+  "readerRetry": "Réessayer",
+  "readerTruncated": "Ce livre dépasse ce que Dalibre lit d’un coup ; il s’arrête ici.",
+  "readerNotes": "Notes",
   "widgetsRemoveTag": "Retirer {label}",
   "widgetsNotRated": "Non noté",
   "widgetsStars": "{count} sur 5 étoiles",
   "widgetsClose": "Fermer",
+  "pluginsReaderNote": "{name} met en page les livres que vous ouvrez dans Dalibre : chapitres, paragraphes et votre place.",
+  "@pluginsReaderNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsConsentReadBooks": "{name} met en page les livres que vous ouvrez : il en lit le texte pendant que vous lisez.",
+  "@pluginsConsentReadBooks": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsReadsBooks": "Lit des livres",
   "pluginsStatusNeeds": "Nécessite {settings}",
   "pluginsStatusBuiltIn": "{version} · intégré",
   "pluginsStatusFromFolder": "{version} · depuis un dossier",

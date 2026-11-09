@@ -1,7 +1,7 @@
 {
   "name": "Dalibre",
   "identifier": "app.dalibre",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "out": "build",
   "i18n": {
     "dir": "locales",
@@ -9,7 +9,7 @@
   },
   "updates": {
     "publicKey": "R0fYhda+drhyACoY059Mckirm6+1yHvN0+x0Y2gUHqo=",
-    "github": "djyde/dalibre",
+    "github": "DavidSche/dalibre",
     "changelog": "../../CHANGELOG.md"
   }
 }

@@ -267,12 +267,18 @@ func (a *App) pluginPane(c *ui.Context, k knownPlugin) {
 			if m.IsMetadataSource() {
 				widgets.Tag(c, locales.CommonFetchMetadata(), false, nil)
 			}
+			if m.IsReader() {
+				widgets.Tag(c, locales.PluginsReadsBooks(), false, nil)
+			}
 		})
 		if m.IsBookSource() {
 			ui.Text(c, locales.PluginsGetBooksNote(m.Name)).FontSize(12).TextColor(pal().TextTertiary)
 		}
 		if m.IsMetadataSource() {
 			ui.Text(c, locales.PluginsFetchMetadataNote(m.Name)).FontSize(12).TextColor(pal().TextTertiary)
+		}
+		if m.IsReader() {
+			ui.Text(c, locales.PluginsReaderNote(m.Name)).FontSize(12).TextColor(pal().TextTertiary)
 		}
 	})
 	if len(m.Settings) > 0 {
@@ -452,6 +458,9 @@ func (a *App) consentDialog(c *ui.Context) {
 			}
 			if m.Permissions.Library == plugin.LibraryRead && (had == nil || had.Library != plugin.LibraryRead) {
 				permissionItem(c, icons.Library, locales.PluginsConsentSeeBooks(), locales.PluginsLibraryReadDetail(), false)
+			}
+			if m.IsReader() {
+				permissionItem(c, icons.BookOpen, locales.PluginsConsentReadBooks(m.Name), "", false)
 			}
 			if had != nil && len(had.Hosts) > 0 {
 				ui.Text(c, locales.PluginsConsentAlreadyAllowed(strings.Join(had.Hosts, ", "))).FontSize(12).TextColor(pal().TextTertiary)

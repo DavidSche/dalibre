@@ -155,6 +155,9 @@ func (p *Plugin) checkExports() error {
 	if m.IsMetadataSource() && !slices.Contains(p.exported, "identify") {
 		return &Error{Plugin: m.ID, Kind: KindInvalid, Msg: "a metadata source must export identify"}
 	}
+	if m.IsReader() && !slices.Contains(p.exported, "open") {
+		return &Error{Plugin: m.ID, Kind: KindInvalid, Msg: "a reader must export open"}
+	}
 	return nil
 }
 

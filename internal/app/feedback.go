@@ -17,7 +17,7 @@ import (
 // menu opens a new GitHub issue, a bug report or a feature request, or the
 // list of issues.
 
-const issuesURL = "https://github.com/djyde/dalibre/issues"
+const issuesURL = "https://github.com/DavidSche/dalibre/issues"
 
 // bugReportURL opens a new issue with the version and system filled in.
 func bugReportURL(version string) string {

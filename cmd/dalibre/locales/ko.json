@@ -283,10 +283,94 @@
   "appToastNoFiles": "“{title}”에 파일이 없습니다",
   "appShareItem": "공유…",
   "appShareMenu": "공유",
+  "readerRead": "읽기",
+  "readerContinue": "이어 읽기 · {percent}%",
+  "@readerContinue": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerNoPlugin": "{format} 형식을 열 수 있는 리더 플러그인이 없습니다",
+  "@readerNoPlugin": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "readerChapterN": "{n}장",
+  "@readerChapterN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "readerChapterOf": "{current}장 / 전체 {total}장",
+  "@readerChapterOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "readerProgress": "{percent}%",
+  "@readerProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerContents": "목차",
+  "readerBookmarks": "책갈피",
+  "readerNoBookmarks": "아직 책갈피가 없습니다. B 키를 눌러 현재 위치를 표시하세요.",
+  "readerAddBookmark": "이 장 책갈피",
+  "readerRemoveBookmark": "책갈피 삭제",
+  "readerTextSize": "글자 크기",
+  "readerLineSpacing": "줄 간격",
+  "readerTheme": "페이지 색",
+  "readerThemePaper": "종이",
+  "readerThemeSepia": "세피아",
+  "readerThemeGreen": "초록",
+  "readerThemeNight": "야간",
+  "readerEndOfChapter": "장 끝",
+  "readerNextChapter": "다음 장",
+  "readerPrevChapter": "이전 장",
+  "readerTheEnd": "끝",
+  "readerBack": "서재로 돌아가기",
+  "readerClose": "닫기",
+  "readerLoading": "페이지를 짜는 중…",
+  "readerFailed": "이 책을 열 수 없습니다",
+  "readerRetry": "다시 시도",
+  "readerTruncated": "이 책은 Dalibre가 한 번에 읽는 길이를 넘어 여기서 끝납니다.",
+  "readerNotes": "주석",
   "widgetsRemoveTag": "{label} 제거",
   "widgetsNotRated": "평점 없음",
   "widgetsStars": "별 {count}개",
   "widgetsClose": "닫기",
+  "pluginsReaderNote": "{name}은(는) Dalibre에서 연 책을 조판합니다. 장, 문단, 읽던 위치까지.",
+  "@pluginsReaderNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsConsentReadBooks": "{name}은(는) 연 책을 조판합니다. 읽는 동안 책의 텍스트를 읽습니다.",
+  "@pluginsConsentReadBooks": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsReadsBooks": "책 읽기",
   "pluginsStatusNeeds": "{settings} 필요",
   "pluginsStatusBuiltIn": "{version} · 기본 제공",
   "pluginsStatusFromFolder": "{version} · 폴더에서 추가됨",

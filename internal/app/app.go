@@ -72,6 +72,9 @@ type App struct {
 	tableSort  ui.SortOrder
 	sectionsOn map[string]bool
 
+	// rd is the reader page: the book open in it, or the one loading.
+	rd readerState
+
 	details    map[int64]*calibre.Details
 	detailsReq map[int64]bool
 	covers     *coverCache
@@ -194,6 +197,9 @@ func New(settingsPath string) *App {
 func (a *App) Attach(win *mygo.Window) {
 	a.win = win
 	a.post = win.Update
+	// Quitting from the reading page keeps the place: its progress is
+	// saved with the other settings when the window closes.
+	win.OnClose(func(*mygo.CloseEvent) { a.saveReading() })
 	a.pluginDir = plugin.DefaultDir()
 	a.watchEvery = defaultWatchEvery
 	a.builtins = true

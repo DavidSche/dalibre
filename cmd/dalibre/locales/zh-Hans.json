@@ -283,10 +283,94 @@
   "appToastNoFiles": "“{title}”没有文件",
   "appShareItem": "共享…",
   "appShareMenu": "共享",
+  "readerRead": "阅读",
+  "readerContinue": "继续阅读 · {percent}%",
+  "@readerContinue": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerNoPlugin": "没有能打开 {format} 格式的阅读插件",
+  "@readerNoPlugin": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "readerChapterN": "第 {n} 章",
+  "@readerChapterN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "readerChapterOf": "第 {current} 章 / 共 {total} 章",
+  "@readerChapterOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "readerProgress": "{percent}%",
+  "@readerProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerContents": "目录",
+  "readerBookmarks": "书签",
+  "readerNoBookmarks": "还没有书签。按 B 标记当前位置。",
+  "readerAddBookmark": "收藏本章",
+  "readerRemoveBookmark": "取消收藏",
+  "readerTextSize": "字号",
+  "readerLineSpacing": "行距",
+  "readerTheme": "背景",
+  "readerThemePaper": "纸白",
+  "readerThemeSepia": "羊皮",
+  "readerThemeGreen": "护眼",
+  "readerThemeNight": "夜间",
+  "readerEndOfChapter": "本章完",
+  "readerNextChapter": "下一章",
+  "readerPrevChapter": "上一章",
+  "readerTheEnd": "全书完",
+  "readerBack": "返回书架",
+  "readerClose": "关闭",
+  "readerLoading": "正在排版…",
+  "readerFailed": "无法打开这本书",
+  "readerRetry": "重试",
+  "readerTruncated": "这本书超出了单次阅读的长度，内容在此结束。",
+  "readerNotes": "注释",
   "widgetsRemoveTag": "移除{label}",
   "widgetsNotRated": "未评分",
   "widgetsStars": "{count} 星",
   "widgetsClose": "关闭",
+  "pluginsReaderNote": "{name} 负责排版你在 Dalibre 中打开的书：章节、段落，以及你读到的位置。",
+  "@pluginsReaderNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsConsentReadBooks": "{name} 负责排版你打开的书：在你阅读时读取书的正文。",
+  "@pluginsConsentReadBooks": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsReadsBooks": "阅读图书",
   "pluginsStatusNeeds": "需要{settings}",
   "pluginsStatusBuiltIn": "{version} · 内置",
   "pluginsStatusFromFolder": "{version} · 来自文件夹",

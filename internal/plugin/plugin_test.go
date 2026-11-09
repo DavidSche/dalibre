@@ -13,6 +13,8 @@ import (
 	"testing"
 	"testing/fstest"
 	"time"
+
+	"dalibre/internal/reader"
 )
 
 // write makes a plugin folder in a temporary root.
@@ -707,5 +709,97 @@ func TestCapabilitiesForms(t *testing.T) {
 		if err != nil || !got.IsBookSource() {
 			t.Errorf("%s: %v", m, err)
 		}
+	}
+}
+
+const readerManifest = `{"id":"read","name":"Read","version":"1.0.0","api":1,
+	"capabilities":{"reader":{"formats":["epub"]}},"permissions":{}}`
+
+func TestReaderCapability(t *testing.T) {
+	m, err := ParseManifest([]byte(readerManifest))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !m.IsReader() || !m.Capabilities.Reader.ReadsFormat("EPUB") {
+		t.Fatalf("reader %+v", m.Capabilities.Reader)
+	}
+	if m.Capabilities.Reader.Formats[0] != "EPUB" {
+		t.Fatalf("formats %v not normalized", m.Capabilities.Reader.Formats)
+	}
+	for _, bad := range []string{
+		`{"id":"x","name":"x","version":"1.0.0","api":1,"capabilities":{"reader":{}},"permissions":{}}`,
+		`{"id":"x","name":"x","version":"1.0.0","api":1,"capabilities":{"reader":{"formats":["COMIC"]}},"permissions":{}}`,
+		`{"id":"x","name":"x","version":"1.0.0","api":1,"capabilities":{"reader":{"formats":["PDF"]}},"permissions":{}}`,
+		`{"id":"x","name":"x","version":"1.0.0","api":1,"capabilities":{"reader":{"formats":["EPUB","epub"]}},"permissions":{}}`,
+		`{"id":"x","name":"x","version":"1.0.0","api":1,"capabilities":["reader"],"permissions":{}}`,
+	} {
+		if _, err := ParseManifest([]byte(bad)); err == nil {
+			t.Errorf("%s parsed", bad)
+		}
+	}
+}
+
+func TestReaderOpen(t *testing.T) {
+	p, err := Load(write(t, readerManifest, `
+		exports.open = ({ book, document }) => ({
+			title: book.title,
+			author: book.authors.join(", "),
+			chapters: [
+				{title: "One", depth: 3, notes: [{id: "n1", label: "1", text: "A note"}], blocks: [
+					{kind: "heading", text: "One", level: 1},
+					{kind: "paragraph", text: "Hi[1]"},
+					{kind: "image", src: "img/plate.png", alt: "A plate", caption: "The plate"},
+					{kind: "table", table: {caption: "Sizes", rows: [
+						{cells: [{text: "Hall", header: true}, {text: "Size", colspan: 99, rowspan: 2}]},
+						{cells: [{text: "First"}, {text: "12"}]},
+					]}},
+					{kind: "table", table: {rows: [{cells: [{text: "  "}]}]}},
+					{kind: "image", alt: "no src"},
+					{kind: "teleport", text: "x"},
+					{kind: "paragraph", text: "  "},
+				]},
+				{title: "Empty", blocks: []},
+				{title: "Two", depth: 99, continued: false, blocks: [{kind: "paragraph", text: "There"}]},
+			],
+			typography: {indent: true},
+		})`), Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer p.Close()
+	doc := reader.Document{Chapters: []reader.Chapter{{Blocks: []reader.Block{{Kind: reader.Paragraph, Text: "Hi"}}}}}
+	got, err := p.OpenReader(context.Background(), ReaderBook{
+		Title: "Piranesi", Authors: []string{"Susanna Clarke"}, Format: "epub",
+	}, doc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Title != "Piranesi" || got.Author != "Susanna Clarke" || !got.Typography.Indent {
+		t.Fatalf("reading %+v", got)
+	}
+	if len(got.Chapters) != 2 {
+		t.Fatalf("chapters %d: %+v", len(got.Chapters), got.Chapters)
+	}
+	if got.Chapters[0].Depth != 3 || got.Chapters[1].Depth != 6 {
+		t.Fatalf("depth %d, %d", got.Chapters[0].Depth, got.Chapters[1].Depth)
+	}
+	if len(got.Chapters[0].Blocks) != 4 {
+		t.Fatalf("blocks %+v", got.Chapters[0].Blocks)
+	}
+	if b := got.Chapters[0].Blocks[2]; b.Kind != reader.Image || b.Src != "img/plate.png" || b.Caption != "The plate" {
+		t.Fatalf("image %+v", b)
+	}
+	tb := got.Chapters[0].Blocks[3]
+	if tb.Kind != reader.TableBlock || tb.Table == nil || tb.Table.Caption != "Sizes" || len(tb.Table.Rows) != 2 {
+		t.Fatalf("table %+v", tb)
+	}
+	if c := tb.Table.Rows[0].Cells[1]; c.ColSpan != 32 || c.RowSpan != 2 || !tb.Table.Rows[0].Cells[0].Header {
+		t.Fatalf("cell %+v", c)
+	}
+	if notes := got.Chapters[0].Notes; len(notes) != 1 || notes[0].Label != "1" || notes[0].Text != "A note" {
+		t.Fatalf("notes %+v", notes)
+	}
+	if _, err := p.OpenReader(context.Background(), ReaderBook{Title: "x", Format: "TXT"}, doc); err == nil {
+		t.Fatal("a format the reader doesn't read opened")
 	}
 }

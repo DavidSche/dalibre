@@ -1,8 +1,9 @@
 # Dalibre
 
 A calm, fast desktop library for e-books that reads and writes **calibre
-libraries**. Written in Go with [MyGo](https://github.com/egoist/mygo)'s native
-UI: no webview, no cgo, one binary.
+libraries**, and reads your books on a page made for reading. Written in Go
+with [MyGo](https://github.com/egoist/mygo)'s native UI: no webview, no cgo,
+one binary.
 
 Design: [Figma — Dalibre](https://www.figma.com/design/tZg6AMrNXoz9VYoa1xZoCo/Dalibre)
 
@@ -56,6 +57,7 @@ cmd/
 plugins/
   gutenberg/          Project Gutenberg, built into the app (dalibre.gutenberg)
   neodb/              NeoDB metadata lookup, built into the app (dalibre.neodb)
+  reader/             lays books out for the reading page (dalibre.reader)
 sdk/                  for plugin authors: dalibre.d.ts, plugin.schema.json, template
 internal/
   calibre/            calibre library access: schema, SQL functions its
@@ -63,6 +65,7 @@ internal/
   ebookmeta/          title/authors/cover from EPUB, MOBI/AZW3 and file names
   catalog/            search, filters, sorting and sidebar counts (no UI)
   plugin/             plugins: manifest, sandboxed JS runtime, consent, packages
+  reader/             text, pictures, tables and notes of EPUB, KEPUB and TXT books
   settings/           user settings persisted as JSON
   thumbs/             on-disk cover thumbnails
   app/                state, actions and views of the window

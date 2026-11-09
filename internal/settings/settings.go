@@ -33,9 +33,45 @@ type Settings struct {
 	OPDS OPDS `json:"opds,omitzero"`
 	// AppUpdates is how Dalibre keeps itself up to date.
 	AppUpdates AppUpdates `json:"appUpdates,omitzero"`
+	// Reading is how the user reads books in Dalibre, and where they
+	// left off in each.
+	Reading Reading `json:"reading,omitzero"`
 
 	path string
 }
+
+// Reading is the reader's typography and each book's place.
+type Reading struct {
+	// Theme is the page's color: "paper" (default), "sepia", "green"
+	// or "night".
+	Theme string `json:"theme,omitempty"`
+	// Size is the text's size in DIPs; 0 is the default.
+	Size int `json:"size,omitempty"`
+	// LineHeight is the height of a line as a multiple of the text's
+	// size; 0 is the default.
+	LineHeight float64 `json:"lineHeight,omitempty"`
+	// Books are each book's place, by the library's UUID for it.
+	Books map[string]*Progress `json:"books,omitempty"`
+}
+
+// Progress is how far the user read a book: chapter is 0-based, Percent
+// how far into that chapter. Chapters is how many chapters the book had
+// when it was recorded, so a new layout keeps the place.
+// Bookmarks are chapter indexes the user marked.
+type Progress struct {
+	Chapter   int       `json:"chapter"`
+	Percent   float64   `json:"percent,omitempty"`
+	Chapters  int       `json:"chapters,omitempty"`
+	Bookmarks []int     `json:"bookmarks,omitempty"`
+	Updated   time.Time `json:"updated,omitzero"`
+}
+
+// Defaults for the reader's typography, when the user hasn't chosen.
+const (
+	DefaultReadingTheme      = "paper"
+	DefaultReadingSize       = 18
+	DefaultReadingLineHeight = 1.85
+)
 
 // AppUpdates is what the user chose about new versions of Dalibre.
 type AppUpdates struct {
@@ -116,6 +152,17 @@ type PluginState struct {
 	// as the folder is, instead of from a copy in the plugins folder, and
 	// reloads when the folder's files change. "" for an installed plugin.
 	Path string `json:"path,omitempty"`
+}
+
+// ReadingBook returns the place kept for a book, creating it.
+func (r *Reading) Book(key string) *Progress {
+	if r.Books == nil {
+		r.Books = map[string]*Progress{}
+	}
+	if r.Books[key] == nil {
+		r.Books[key] = &Progress{}
+	}
+	return r.Books[key]
 }
 
 // PluginSource is the GitHub repository a plugin came from, and what of

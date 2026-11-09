@@ -49,7 +49,7 @@ func (a *App) gridView(c *ui.Context, shown []*calibre.Book) {
 	})
 	a.gridBounds = g.Bounds()
 	if g.Submitted() {
-		a.openBook(a.current(), "")
+		a.openBookOrRead(a.current())
 	}
 }
 
@@ -256,7 +256,7 @@ func (a *App) listView(c *ui.Context, shown []*calibre.Book) {
 		}).Grow(1).Label(locales.BooksLabel())
 	})
 	if t.Submitted() {
-		a.openBook(a.current(), "")
+		a.openBookOrRead(a.current())
 	}
 	if a.tableSort != before {
 		if k, ok := columnSort[a.tableSort.Column]; ok {
@@ -275,7 +275,12 @@ func (a *App) bookMenu(b *calibre.Book) func(m *ui.Menu) {
 		}
 		many := len(ids) > 1
 		if !many {
-			if m.Item(locales.CommonOpen()).Icon(icons.Menu(icons.BookOpen)).Trailing("Enter").Chosen() {
+			if f, ok := a.readableFormat(b); ok {
+				if m.Item(locales.ReaderRead()).Icon(icons.Menu(icons.BookOpen)).Trailing("Enter").Chosen() {
+					a.openReader(b, f)
+				}
+			}
+			if m.Item(locales.CommonOpen()).Icon(icons.Menu(icons.External)).Chosen() {
 				a.openBook(b, "")
 			}
 			if m.Item(locales.BooksMenuEditMetadata()).Icon(icons.Menu(icons.Pencil)).Trailing("Ctrl+I").Chosen() {

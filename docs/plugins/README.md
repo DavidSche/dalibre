@@ -1,7 +1,7 @@
 # Writing Dalibre plugins
 
 A Dalibre plugin is a folder with a `plugin.json` and a JavaScript file.
-Plugin API 1 has two capabilities; a plugin may have either or both:
+Plugin API 1 has three capabilities; a plugin may have any of them:
 
 - A **book source** searches and browses a catalogue and says where each
   book's file is. Dalibre shows every book source in its **Get books**
@@ -11,12 +11,18 @@ Plugin API 1 has two capabilities; a plugin may have either or both:
   and identifiers, it returns candidates with their details. Dalibre
   shows them in Edit metadata › **Fetch metadata**, next to the book's
   own values, and fills in the fields the user picks.
+- A **reader** lays out the books the user opens in Dalibre: Dalibre
+  extracts the text from the book's file and hands it to the plugin,
+  which returns chapters, paragraphs and typography. The reading page
+  itself is Dalibre's, so every reader gets the same contents, bookmarks
+  and page colors.
 
 Your plugin gives data and never draws UI.
 
-The [Project Gutenberg plugin](../../plugins/gutenberg) (a book source)
-and the [NeoDB plugin](../../plugins/neodb) (a metadata source) ship
-inside Dalibre; read them as worked examples.
+The [Project Gutenberg plugin](../../plugins/gutenberg) (a book source),
+the [NeoDB plugin](../../plugins/neodb) (a metadata source) and the
+[Reader plugin](../../plugins/reader) (a reader) ship inside Dalibre;
+read them as worked examples.
 
 No build step and nothing to install besides the `dalibre-plugin` tool:
 plugins are plain JavaScript modules (ES2023), run sandboxed by the
@@ -24,7 +30,7 @@ QuickJS interpreter built into Dalibre.
 
 - [Quick start](#quick-start)
 - [plugin.json](#pluginjson)
-- [main.js](#mainjs): [`search`](#search), [filters](#filters), [`collections` and `list`](#collections-and-list), [`get`](#get), [`resolve`](#resolve), [`identify`](#identify), [the `dalibre` object](#the-dalibre-object), [errors](#errors)
+- [main.js](#mainjs): [`search`](#search), [filters](#filters), [`collections` and `list`](#collections-and-list), [`get`](#get), [`resolve`](#resolve), [`identify`](#identify), [`open`](#open), [the `dalibre` object](#the-dalibre-object), [errors](#errors)
 - [Permissions and limits](#permissions-and-limits)
 - [Testing](#testing)
 - [Publishing](#publishing)
@@ -102,7 +108,7 @@ Node's built-ins or the browser's.
 | `author`, `homepage`, `license` | Shown when the user installs. `license` is an SPDX id. The page's Open site button opens `homepage`. |
 | `icon` | One of Dalibre's icons: `globe` (default), `library`, `book-open`, `database`, `network`, `building`, `bookmark`, `layers`. Never an image, so a plugin can't dress up as another app. |
 | `main` | The script, relative to `plugin.json`. Default `main.js`. |
-| `capabilities` | **Required.** `{"bookSource": {…}}`: `collections` (`true` when you export `collections` and `list`) and up to 4 `filters` ([below](#filters)). `{"metadata": {…}}`: a metadata source ([`identify`](#identify)). `["source"]`, the form API 1 began with, still means a book source with no filters or collections; `["metadata"]` works too. |
+| `capabilities` | **Required.** `{"bookSource": {…}}`: `collections` (`true` when you export `collections` and `list`) and up to 4 `filters` ([below](#filters)). `{"metadata": {…}}`: a metadata source ([`identify`](#identify)). `{"reader": {…}}`: a reader, with the `formats` it lays out ([`open`](#open)). `["source"]`, the form API 1 began with, still means a book source with no filters or collections; `["metadata"]` works too. A reader declares an object, never the array form. |
 | `permissions.hosts` | **Required for a source.** Every host your plugin reaches, through `fetch`, file downloads, covers **and redirects**. `*.example.com` matches any subdomain, not `example.com` itself. |
 | `permissions.library` | `"read"`: your plugin sees the title, authors, identifiers and language of the books the user looks up with it. **Required for a metadata source**; the install dialog says so. |
 | `permissions.localNetwork` | Reach this computer and the local network: a home OPDS or Calibre server. Users are warned. Default `false`. |
@@ -302,6 +308,81 @@ for details. Dalibre fetches `cover` when the candidate is shown;
 your own id under your plugin's name. Rank with what you are given: an
 ISBN match first, then the title, then the authors.
 
+### open
+
+A reader declares the formats it lays out and `open`:
+
+```json
+"capabilities": { "reader": { "formats": ["EPUB", "TXT"] } },
+"permissions": {}
+```
+
+`formats` are the ones Dalibre can extract — `EPUB`, `KEPUB`, `TXT` — and
+a reader must export `open`. It needs no `permissions.hosts`: Dalibre
+reads the book's file, and the plugin gets only the text, the names of
+pictures, and the tables and notes.
+
+`open({ book, document }) → Reading` is called when the user opens a book
+in Dalibre's reader. `book` is `{ id, title, authors, language, format }`.
+`document` is what Dalibre extracted from the file:
+
+```ts
+Document: { title, language, chapters: Chapter[], truncated }
+Chapter:  { title, depth?, blocks: Block[], continued?, notes? }
+Block:    { kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table",
+            text?, level?, src?, alt?, caption?, table? }
+Note:     { id?, label?, text }
+```
+
+A `table` block holds text cells only: `{ caption?, rows: [{ cells: [{
+text, header?, colspan?, rowspan? }] }] }`. A `note` is a footnote or
+endnote shown after the chapter, and the text carries `[label]` where the
+reference was. Pass both through unless you have a reason not to.
+
+`depth` is the chapter's place in the book: 1 for a part, 2 for a
+chapter under it. The contents indents by it, so keep it when you pass
+chapters through. When a contents entry names an id inside a file, the
+host reads that file in sections, one chapter per entry.
+
+An `image` block names a picture the host keeps in `src`; pass it through,
+drop it or move it, and the page shows it with its `caption` under it. The
+bytes never enter the sandbox. Dalibre reads EPUB `<img>`, `<figure>` and
+inline SVG pictures; a TXT book has none.
+
+Return how the page should set it. `title` and `author` replace the
+library's; leave them out to keep them. `chapters` are shown in order. A
+`continued` chapter is part of the one before, from a chapter split for
+length: the page sets no heading and the contents lists it once.
+`typography.indent` asks for a first-line indent, which Dalibre also
+gives CJK books without it. The page says the book stops early when
+`document.truncated` is set; return it, or let Dalibre set it for you.
+
+```js
+export function open({ book, document }) {
+  return {
+    title: book.title,
+    chapters: document.chapters.map((ch) => ({
+      title: ch.title,
+      blocks: ch.blocks.filter((b) => b.kind !== "divider"), // images pass through
+    })),
+    typography: { indent: /^(zh|ja|ko)/.test(book.language) },
+  };
+}
+```
+
+Use the extracted text as it is, or clean what the file's producer added —
+running heads, page numbers, the boilerplate a public-domain library
+wraps around a book — and join lines a converter split. The [Reader
+plugin](../../plugins/reader) does this for Project Gutenberg and is a
+worked example.
+
+A reading is checked like a result: at most 2,000 chapters, 60,000 blocks,
+20,000 characters a block and 500 notes a chapter; unknown block kinds,
+empty paragraphs, tables without text and empty chapters are dropped with
+a warning. A book with no chapters cannot
+be shown, so return at least one. Throwing an error shows its message on
+the reading page, with Try again.
+
 ### The dalibre object
 
 | | |
@@ -386,6 +467,8 @@ dalibre-plugin list . popular --page 2
 dalibre-plugin get . "dune" --item 2          # what the detail panel shows
 dalibre-plugin identify . "Dune" --author "Frank Herbert"   # what Fetch metadata shows
 dalibre-plugin identify . --isbn 9780441172719 --json
+dalibre-plugin open . book.epub              # how the reading page lays out a book
+dalibre-plugin open . book.epub --json
 dalibre-plugin download . "dune" --item 3 --format PDF -o /tmp
 ```
 

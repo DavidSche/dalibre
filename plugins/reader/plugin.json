@@ -1,0 +1,18 @@
+{
+  "$schema": "../../sdk/plugin.schema.json",
+  "id": "dalibre.reader",
+  "name": "Reader",
+  "version": "1.0.0",
+  "api": 1,
+  "icon": "book-open",
+  "description": "Lays out the books you open in Dalibre: chapters, paragraphs, and where you left off",
+  "author": "Dalibre",
+  "homepage": "https://github.com/DavidSche/dalibre",
+  "license": "MIT",
+  "capabilities": {
+    "reader": {
+      "formats": ["EPUB", "KEPUB", "TXT"]
+    }
+  },
+  "permissions": {}
+}

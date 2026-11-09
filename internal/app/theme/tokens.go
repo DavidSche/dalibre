@@ -156,6 +156,10 @@ const (
 	cjkSans  = "Microsoft YaHei UI, Microsoft YaHei, PingFang SC, Hiragino Sans GB, Noto Sans CJK SC, Source Han Sans SC, Noto Sans SC"
 	FontUI   = "Inter, " + cjkSans
 	FontMono = "Geist Mono, " + cjkSans
+	// FontSerif sets the reader's pages: a book reads as a book, not as a
+	// settings sheet.
+	cjkSerif  = "Songti SC, Noto Serif CJK SC, Source Han Serif SC, Noto Serif SC, SimSun"
+	FontSerif = "Iowan Old Style, Georgia, Charter, " + cjkSerif
 )
 
 // Theme builds the toolkit's theme from the palette, so the built-in

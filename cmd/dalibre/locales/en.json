@@ -382,6 +382,73 @@
   "appToastNoFiles": "“{title}” has no files",
   "appShareItem": "Share…",
   "appShareMenu": "Share",
+  "readerRead": "Read",
+  "readerContinue": "Continue · {percent}%",
+  "@readerContinue": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerNoPlugin": "No reader plugin can open {format} books",
+  "@readerNoPlugin": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "readerChapterN": "Chapter {n}",
+  "@readerChapterN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "readerChapterOf": "Chapter {current} of {total}",
+  "@readerChapterOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "readerProgress": "{percent}%",
+  "@readerProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerContents": "Contents",
+  "readerBookmarks": "Bookmarks",
+  "readerNoBookmarks": "No bookmarks yet. Press B to mark your place.",
+  "readerAddBookmark": "Bookmark this chapter",
+  "readerRemoveBookmark": "Remove bookmark",
+  "readerTextSize": "Text size",
+  "readerLineSpacing": "Line spacing",
+  "readerTheme": "Page color",
+  "readerThemePaper": "Paper",
+  "readerThemeSepia": "Sepia",
+  "readerThemeGreen": "Green",
+  "readerThemeNight": "Night",
+  "readerEndOfChapter": "End of chapter",
+  "readerNextChapter": "Next chapter",
+  "readerPrevChapter": "Previous chapter",
+  "readerTheEnd": "The end",
+  "readerBack": "Back to library",
+  "readerClose": "Close",
+  "readerLoading": "Setting the page…",
+  "readerFailed": "This book couldn’t be opened",
+  "readerRetry": "Try again",
+  "readerTruncated": "This book is longer than Dalibre reads at once, so it stops here.",
+  "readerNotes": "Notes",
   "widgetsRemoveTag": "Remove {label}",
   "widgetsNotRated": "Not rated",
   "widgetsStars": "{count} Stars",
@@ -393,6 +460,23 @@
     }
   },
   "widgetsClose": "Close",
+  "pluginsReaderNote": "{name} lays out the books you open in Dalibre: chapters, paragraphs, and where you left off.",
+  "@pluginsReaderNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsConsentReadBooks": "{name} lays out the books you open: it reads their text while you read them.",
+  "@pluginsConsentReadBooks": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsReadsBooks": "Reads books",
   "pluginsStatusNeeds": "Needs {settings}",
   "pluginsStatusBuiltIn": "{version} · built in",
   "pluginsStatusFromFolder": "{version} · from a folder",

@@ -1,9 +1,10 @@
 # Plugin capabilities
 
-Status: rollout steps 1, 2 and 4 are built (the Get books page, the book
-source capability with filters, collections, `get`, and the built-in
+Status: rollout steps 1, 2, 4 and 7 are built (the Get books page, the
+book source capability with filters, collections, `get`, and the built-in
 Project Gutenberg plugin; the metadata capability, `permissions.library`
-and the built-in NeoDB plugin); the rest is a proposal. Extends plugin API 1
+and the built-in NeoDB plugin; the reader capability, the reading page
+and the built-in Reader plugin); the rest is a proposal. Extends plugin API 1
 without breaking it; see [design.md](design.md) for the engine, sandbox
 and trust model, which this keeps as they are. Plugin authors read
 [README.md](README.md).
@@ -14,8 +15,8 @@ pages in 05) and the Plugins dialog there.
 ## The idea
 
 A plugin is one package that can **add several capabilities** to
-Dalibre. Get books is the first; metadata, library actions and others
-follow on the same model.
+Dalibre. Get books, metadata and reading are built; library actions and
+others follow on the same model.
 
 Obsidian is the model for the package (a manifest, one script, settings,
 community list) and the opposite for the UI: an Obsidian plugin gets the
@@ -161,6 +162,108 @@ catalog API, no account. By NeoDB id or ISBN when the book has one
 author, ranked by title, then authors and language. Candidates carry
 NeoDB, Douban, Goodreads, Open Library and Google Books ids.
 
+## Capability: Reader
+
+The reading page — text, contents, bookmarks, page color and text size —
+is Dalibre's, like every screen; see [the reader design](#the-reading-page).
+A reader plugin decides what that page **says**: how the text, pictures,
+tables and notes of a book become chapters and blocks.
+
+| Export | Called when | Returns |
+|---|---|---|
+| `open({ book, document })` | the user opens a book in the reader | `Reading` |
+
+Dalibre itself extracts a book's text, pictures, tables and notes from
+its file (`internal/reader`), so a plugin never opens files, and a reader needs no
+permissions at all. It sees the books the user opens, and nothing else in
+the library. `document` is what came out. A picture is an `image` block whose
+`src` names bytes the host keeps; the plugin can pass the block through,
+drop it or move it, but the bytes never enter the sandbox. The page sets
+the picture at the size the book gives it, no wider than the measure, and
+its `caption` under it. EPUBs' `<img>`, `<figure>` and inline SVG images
+are read (up to 8 MB each, 5,000 pictures and 64 MB a book; a picture over
+24 megapixels is left out, so a small file can't unfold into a huge one);
+a TXT book has none. The page decodes a chapter's pictures when it turns
+to the chapter and lets the earlier ones go, so a book of thousands of
+formula pictures stays light.
+
+A `<table>` is a `table` block of text cells: `caption`, `rows`, and each
+cell's `text`, `header`, `colspan` and `rowspan` (1–32). Pictures inside
+a cell stay out; a cell keeps its text and a picture's `alt`. At most 200
+rows and 2,000 cells are read. Footnotes and endnotes are `notes` on the
+chapter: the text carries `[label]` where the reference was, and the page
+sets the notes after the chapter. Up to 500 notes a chapter are read,
+8,000 characters each; an endnotes file outside the reading order is
+read for them.
+
+```ts
+Document: { title?: string, language?: string, chapters: Chapter[], truncated?: boolean }
+Chapter:  { title?: string, depth?: number, blocks: Block[], continued?: boolean, notes?: Note[] }
+Block:    { kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table",
+            text?: string, level?: number,
+            src?: string, alt?: string, caption?: string,
+            table?: { caption?: string, rows: { cells: { text: string, header?: boolean,
+                     colspan?: number, rowspan?: number }[] }[] } }
+Note:     { id?: string, label?: string, text: string }
+```
+
+`depth` is where a chapter sits in the book: 1 for a part, 2 for a
+chapter under it, and so on; the page indents the table of contents by it.
+A book whose table of contents is a flat list is all depth 1. A file can
+hold several chapters when the contents name ids inside it.
+
+`Reading` is the same shape, plus `title`, `author` and typography:
+
+```ts
+Reading: {
+  title?: string, author?: string,
+  chapters: Chapter[],
+  typography?: { indent?: boolean },
+  truncated?: boolean,
+}
+```
+
+Why a plugin at all, if the host reads the file? Because the last step is
+editorial, not parsing: Project Gutenberg wraps its books in a header and
+footer, many EPUBs repeat running heads and page numbers, and converters
+split paragraphs at line breaks. A reader joins the lines, drops the
+running heads and strips the boilerplate; a different catalogue has
+different habits. Splitting this from the host keeps `internal/reader`
+about formats and leaves the judgement to plugins that can be fixed
+without a release. The built-in **Reader** (`dalibre.reader`,
+`plugins/reader`) does exactly that for EPUB, KEPUB and TXT. A reader the
+user installs is used before the built-in for the formats both read, so a
+catalogue's own habits can replace Dalibre's.
+
+`formats` in the manifest declares what the plugin reads, from those the
+host can extract — `EPUB`, `KEPUB`, `TXT`. More formats arrive with the
+host; the capability then offers them to plugins without changing.
+
+`typography.indent` asks for a first line indent (CJK books get one
+anyway). A `continued` chapter is part of the chapter before, from a
+chapter the host split for length: no heading, one entry in the
+contents. The host sets `truncated` when it had to cut the text, so the
+page says so even if the plugin doesn't.
+
+What the plugin returns is checked: at most 2,000 chapters, 60,000 blocks
+and 20,000 characters a block, and 500 notes a chapter. Unknown block
+kinds, empty paragraphs, images without a `src`, tables without text, and
+empty chapters are dropped with a warning (logged for the plugin's
+author); a book with no chapters is an error, since there is nothing to
+show.
+
+### The reading page
+
+The page is Dalibre's answer to WeChat Reading: a warm page with a wide
+serif measure, the chapter's name in the top chrome, the book's progress
+and chapter position in the footer, and the contents, bookmarks, page
+color and text size one tap away. It is not a plugin surface, and does
+not follow the app's light or dark theme: paper, sepia, green and night
+are its own four pages. The reader remembers each book's chapter,
+position within it, and bookmarks by the book's UUID, so a library edit
+doesn't lose the place; when a plugin lays the book out with a different
+number of chapters, the place is kept by proportion.
+
 ## Later capabilities
 
 Each is a new key under `capabilities`, its exports, and a place in
@@ -237,6 +340,8 @@ enforce it.
    Edit metadata; NeoDB built in as `dalibre.neodb`.
 5. Index, restricted mode, updates.
 6. Actions and hooks.
+7. ✅ Reader capability and the reading page; the Reader plugin built in
+   as `dalibre.reader`.
 
 Each step ships on its own and keeps earlier plugins working.
 
@@ -256,3 +361,7 @@ Each step ships on its own and keeps earlier plugins working.
 | `internal/plugin/metadata.go` | `identify`: `Book`, candidates and their checks |
 | `internal/app/fetchmeta.go`, `view_fetchmeta.go` | the Fetch metadata step: search, candidates, comparison, apply |
 | `plugins/neodb` | the NeoDB metadata plugin |
+| `internal/reader` | extracts text, pictures, tables and notes from EPUB, KEPUB and TXT files: chapters, blocks, limits |
+| `internal/plugin/reader.go` | `open`: `ReaderBook`, `Document`, `Reading`, its checks |
+| `internal/app/reader.go`, `view_reader.go` | the reading page: state, progress, contents, themes |
+| `plugins/reader` | the built-in Reader layout plugin |

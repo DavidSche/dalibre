@@ -17,7 +17,7 @@ import (
 // it, then it runs when Dalibre restarts.
 
 // releasesURL is where Dalibre's versions are published (mygo.json).
-const releasesURL = "https://github.com/djyde/dalibre/releases"
+const releasesURL = "https://github.com/DavidSche/dalibre/releases"
 
 type appUpdateStatus int
 

@@ -1,0 +1,495 @@
+package reader
+
+import (
+	"archive/zip"
+	"bytes"
+	"fmt"
+	"image"
+	"image/color"
+	"image/png"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/encoding/unicode"
+)
+
+func writeFile(t *testing.T, name string, data []byte) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), name)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func epubBytes(t *testing.T) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	z := zip.NewWriter(&buf)
+	addBytes := func(name string, body []byte) {
+		w, err := z.Create(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write(body); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add := func(name, body string) {
+		addBytes(name, []byte(body))
+	}
+	add("mimetype", "application/epub+zip")
+	add("META-INF/container.xml", `<container><rootfiles>
+		<rootfile full-path="OPS/book.opf" media-type="application/oebps-package+xml"/>
+	</rootfiles></container>`)
+	add("OPS/book.opf", `<package><metadata>
+		<dc:title xmlns:dc="http://purl.org/dc/elements/1.1/">A Book</dc:title>
+		<dc:language xmlns:dc="http://purl.org/dc/elements/1.1/">eng</dc:language>
+	</metadata><manifest>
+		<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+		<item id="a" href="a.xhtml" media-type="application/xhtml+xml"/>
+		<item id="b" href="sub/b.xhtml" media-type="application/xhtml+xml"/>
+		<item id="plate" href="img/plate.png" media-type="image/png"/>
+	</manifest><spine toc="ncx"><itemref idref="a"/><itemref idref="b"/></spine></package>`)
+	add("OPS/toc.ncx", `<ncx><navMap>
+		<navPoint><navLabel><text>First Chapter</text></navLabel><content src="a.xhtml"/></navPoint>
+		<navPoint><navLabel><text>Second Chapter</text></navLabel><content src="sub/b.xhtml"/></navPoint>
+	</navMap></ncx>`)
+	add("OPS/a.xhtml", `<html><body>
+		<h1>First Chapter</h1>
+		<p>One line
+		continues here.</p>
+		<blockquote><p>A quote.</p></blockquote>
+		<h3>Sub</h3>
+		<pre>code   stays</pre>
+		<figure><img src="img/plate.png" alt="A plate"/><figcaption>The plate</figcaption></figure>
+	</body></html>`)
+	add("OPS/sub/b.xhtml", `<html><body><p>Second body.</p>
+		<figure><img src="../img/plate.png" alt="Again"/></figure>
+		<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 12 8">
+			<image xlink:href="../img/plate.png" width="12" height="8"/>
+		</svg></body></html>`)
+	addBytes("OPS/img/plate.png", testPNG(t))
+	if err := z.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func TestExtractEPUB(t *testing.T) {
+	d, err := Extract(writeFile(t, "book.epub", epubBytes(t)), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if d.Title != "A Book" || d.Language != "eng" {
+		t.Fatalf("document %+v", d)
+	}
+	if len(d.Chapters) != 2 {
+		t.Fatalf("chapters %d", len(d.Chapters))
+	}
+	ch := d.Chapters[0]
+	if ch.Title != "First Chapter" {
+		t.Fatalf("title %q", ch.Title)
+	}
+	var kinds []string
+	var texts []string
+	for _, b := range ch.Blocks {
+		kinds = append(kinds, b.Kind)
+		texts = append(texts, b.Text)
+	}
+	want := []string{Heading, Paragraph, Quote, Heading, Paragraph, Image}
+	if len(kinds) != len(want) {
+		t.Fatalf("kinds %v", kinds)
+	}
+	for i := range want {
+		if kinds[i] != want[i] {
+			t.Fatalf("kinds %v", kinds)
+		}
+	}
+	if !strings.Contains(texts[1], "One line continues here.") {
+		t.Fatalf("paragraph %q", texts[1])
+	}
+	if ch.Blocks[3].Level != 3 {
+		t.Fatalf("level %d", ch.Blocks[3].Level)
+	}
+	img := ch.Blocks[5]
+	if img.Src == "" || img.Alt != "A plate" || img.Caption != "The plate" {
+		t.Fatalf("image %+v", img)
+	}
+	if len(d.Images[img.Src]) == 0 {
+		t.Fatalf("image bytes missing for %q", img.Src)
+	}
+	if d.Chapters[1].Title != "Second Chapter" {
+		t.Fatalf("second title %q", d.Chapters[1].Title)
+	}
+	if got := d.Chapters[1].Blocks[1]; got.Kind != Image || got.Src != img.Src {
+		t.Fatalf("relative image %+v", got)
+	}
+	if got := d.Chapters[1].Blocks[2]; got.Kind != Image || got.Src != img.Src {
+		t.Fatalf("inline SVG image %+v", got)
+	}
+}
+
+// TestExtractEPUBManyPictures makes sure the picture count is generous
+// enough for a converted book that sets every formula's letter as its own
+// picture: two hundred used to be the limit, and a maths book has more.
+func TestExtractEPUBManyPictures(t *testing.T) {
+	const count = 201
+	var buf bytes.Buffer
+	z := zip.NewWriter(&buf)
+	addBytes := func(name string, body []byte) {
+		w, err := z.Create(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write(body); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add := func(name, body string) { addBytes(name, []byte(body)) }
+	add("mimetype", "application/epub+zip")
+	add("META-INF/container.xml", `<container><rootfiles>
+		<rootfile full-path="OPS/book.opf" media-type="application/oebps-package+xml"/>
+	</rootfiles></container>`)
+	add("OPS/book.opf", `<package><metadata>
+		<dc:title xmlns:dc="http://purl.org/dc/elements/1.1/">Many Pictures</dc:title>
+	</metadata><manifest>
+		<item id="a" href="a.xhtml" media-type="application/xhtml+xml"/>
+	</manifest><spine><itemref idref="a"/></spine></package>`)
+	var body strings.Builder
+	body.WriteString("<html><body>")
+	pic := testPNG(t)
+	for i := 0; i < count; i++ {
+		name := fmt.Sprintf("img/p%03d.png", i)
+		body.WriteString(`<img src="` + name + `" alt="formula"/>`)
+		addBytes("OPS/"+name, pic)
+	}
+	body.WriteString("</body></html>")
+	add("OPS/a.xhtml", body.String())
+	if err := z.Close(); err != nil {
+		t.Fatal(err)
+	}
+	d, err := Extract(writeFile(t, "many.epub", buf.Bytes()), "EPUB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Images) != count {
+		t.Fatalf("pictures %d, want %d", len(d.Images), count)
+	}
+}
+
+func hierarchyEPUB(t *testing.T) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	z := zip.NewWriter(&buf)
+	addBytes := func(name string, body []byte) {
+		w, err := z.Create(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write(body); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add := func(name, body string) { addBytes(name, []byte(body)) }
+	add("mimetype", "application/epub+zip")
+	add("META-INF/container.xml", `<container><rootfiles>
+		<rootfile full-path="OPS/book.opf" media-type="application/oebps-package+xml"/>
+	</rootfiles></container>`)
+	add("OPS/book.opf", `<package><metadata>
+		<dc:title xmlns:dc="http://purl.org/dc/elements/1.1/">A Parted Book</dc:title>
+	</metadata><manifest>
+		<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+		<item id="one" href="text/one.xhtml" media-type="application/xhtml+xml"/>
+	</manifest><spine><itemref idref="one"/></spine></package>`)
+	add("OPS/nav.xhtml", `<html xmlns:epub="http://www.idpf.org/2007/ops"><body>
+		<nav epub:type="toc"><ol>
+			<li><a href="text/one.xhtml#part1">Part One</a><ol>
+				<li><a href="text/one.xhtml#ch1">Chapter One</a></li>
+				<li><a href="text/one.xhtml#ch2">Chapter Two</a></li>
+			</ol></li>
+			<li><a href="text/one.xhtml#part2">Part Two</a><ol>
+				<li><a href="text/one.xhtml#ch3">Chapter Three</a></li>
+			</ol></li>
+		</ol></nav>
+	</body></html>`)
+	add("OPS/text/one.xhtml", `<html><body>
+		<h1 id="part1">Part One</h1><p>Part one opens.</p>
+		<h2 id="ch1">Chapter One</h2><p>One text.</p>
+		<h2 id="ch2">Chapter Two</h2><p>Two text.</p>
+		<h1 id="part2">Part Two</h1><p>Part two opens.</p>
+		<h2 id="ch3">Chapter Three</h2><p>Three text.</p>
+	</body></html>`)
+	if err := z.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func TestExtractEPUBHierarchy(t *testing.T) {
+	d, err := Extract(writeFile(t, "parts.epub", hierarchyEPUB(t)), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []struct {
+		title string
+		depth int
+	}{
+		{"Part One", 1},
+		{"Chapter One", 2},
+		{"Chapter Two", 2},
+		{"Part Two", 1},
+		{"Chapter Three", 2},
+	}
+	if len(d.Chapters) != len(want) {
+		t.Fatalf("chapters %d: %+v", len(d.Chapters), d.Chapters)
+	}
+	for i, w := range want {
+		ch := d.Chapters[i]
+		if ch.Title != w.title || ch.Depth != w.depth {
+			t.Fatalf("chapter %d: %q depth %d, want %q depth %d", i, ch.Title, ch.Depth, w.title, w.depth)
+		}
+	}
+	if got := chapterText(d.Chapters[1]); strings.Contains(got, "Two text.") || !strings.Contains(got, "One text.") {
+		t.Fatalf("chapter one leaked: %q", got)
+	}
+	if got := chapterText(d.Chapters[0]); strings.Contains(got, "One text.") || !strings.Contains(got, "Part one opens.") {
+		t.Fatalf("part one leaked: %q", got)
+	}
+	if got := chapterText(d.Chapters[4]); strings.Contains(got, "Part two opens.") || !strings.Contains(got, "Three text.") {
+		t.Fatalf("chapter three leaked: %q", got)
+	}
+}
+
+func chapterText(ch Chapter) string {
+	var b strings.Builder
+	for _, block := range ch.Blocks {
+		b.WriteString(block.Text)
+		b.WriteString(" ")
+	}
+	return b.String()
+}
+
+func TestNavigationDepth(t *testing.T) {
+	nav := []byte(`<html><body><nav epub:type="toc"><ol>
+		<li><span>Part One</span><ol><li><a href="one.xhtml">Chapter One</a></li></ol></li>
+	</ol></nav></body></html>`)
+	entries := navEntries(nav)
+	if len(entries) != 1 || entries[0].Depth != 2 || entries[0].Title != "Chapter One" {
+		t.Fatalf("nav entries %+v", entries)
+	}
+	ncx := []byte(`<ncx><navMap>
+		<navPoint><navLabel><text>Part One</text></navLabel><content src="one.xhtml"/>
+			<navPoint><navLabel><text>Chapter One</text></navLabel><content src="one.xhtml#ch1"/></navPoint>
+		</navPoint>
+	</navMap></ncx>`)
+	points := ncxEntries(ncx)
+	if len(points) != 2 || points[1].Depth != 2 || points[1].Title != "Chapter One" {
+		t.Fatalf("ncx entries %+v", points)
+	}
+}
+
+// testPNG is a small picture, to check that a book's plates reach the page.
+func testPNG(t *testing.T) []byte {
+	t.Helper()
+	img := image.NewRGBA(image.Rect(0, 0, 12, 8))
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 12; x++ {
+			img.Set(x, y, color.RGBA{R: uint8(40 + x*12), G: uint8(90 + y*10), B: 170, A: 255})
+		}
+	}
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func TestExtractTXT(t *testing.T) {
+	text := "\ufeffChapter 1\r\n\r\nThe first line\r\nand its second.\r\n\r\nChapter 2\r\n\r\nAnother.\r\n"
+	d, err := Extract(writeFile(t, "book.txt", []byte(text)), "TXT")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Chapters) != 2 {
+		t.Fatalf("chapters %d: %+v", len(d.Chapters), d.Chapters)
+	}
+	if d.Chapters[0].Title != "Chapter 1" {
+		t.Fatalf("title %q", d.Chapters[0].Title)
+	}
+	if got := d.Chapters[0].Blocks[0].Text; got != "The first line and its second." {
+		t.Fatalf("text %q", got)
+	}
+}
+
+func TestExtractCJK(t *testing.T) {
+	text := "第一章 初见\n\n他说：\n你好。\n\n第二章 再见\n\n后来。\n"
+	d, err := Extract(writeFile(t, "book.txt", []byte(text)), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Chapters) != 2 || d.Chapters[0].Title != "第一章 初见" {
+		t.Fatalf("chapters %+v", d.Chapters)
+	}
+	if got := d.Chapters[0].Blocks[0].Text; got != "他说：你好。" {
+		t.Fatalf("text %q", got)
+	}
+}
+
+func TestExtractRefuses(t *testing.T) {
+	if _, err := Extract(writeFile(t, "book.pdf", []byte("x")), ""); err == nil {
+		t.Fatal("a PDF read")
+	}
+	if _, err := Extract(writeFile(t, "book.epub", []byte("not a zip")), "EPUB"); err == nil {
+		t.Fatal("a broken EPUB read")
+	}
+	if _, err := Extract(writeFile(t, "x.epub", []byte("x")), "PDF"); err == nil {
+		t.Fatal("an unsupported format read")
+	}
+}
+
+func TestExtractEPUB3NavSubfolder(t *testing.T) {
+	var buf bytes.Buffer
+	z := zip.NewWriter(&buf)
+	addBytes := func(name string, body []byte) {
+		w, err := z.Create(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write(body); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add := func(name, body string) {
+		addBytes(name, []byte(body))
+	}
+	add("mimetype", "application/epub+zip")
+	add("META-INF/container.xml", `<container><rootfiles><rootfile full-path="OPS/book.opf"/></rootfiles></container>`)
+	add("OPS/book.opf", `<package><metadata><dc:title xmlns:dc="http://purl.org/dc/elements/1.1/">Nested</dc:title></metadata>
+		<manifest>
+			<item id="nav" href="nav/toc.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+			<item id="a" href="text/a.xhtml" media-type="application/xhtml+xml"/>
+		</manifest>
+		<spine><itemref idref="a"/></spine></package>`)
+	add("OPS/nav/toc.xhtml", `<html><body><nav epub:type="toc"><ol>
+		<li><a href="../text/a.xhtml">From the nav</a></li>
+	</ol></nav></body></html>`)
+	add("OPS/text/a.xhtml", `<html><body><p>Body.</p></body></html>`)
+	if err := z.Close(); err != nil {
+		t.Fatal(err)
+	}
+	d, err := Extract(writeFile(t, "nested.epub", buf.Bytes()), "EPUB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Chapters) != 1 || d.Chapters[0].Title != "From the nav" {
+		t.Fatalf("chapters %+v", d.Chapters)
+	}
+}
+
+func TestExtractTXTEncodings(t *testing.T) {
+	text := "第一章 初见\n\n他说：你好。\n"
+	gb, err := simplifiedchinese.GB18030.NewEncoder().String(text)
+	if err != nil {
+		t.Fatal(err)
+	}
+	le, err := unicode.UTF16(unicode.LittleEndian, unicode.UseBOM).NewEncoder().String(text)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, data := range map[string]string{"gb18030.txt": gb, "utf16.txt": le} {
+		d, err := Extract(writeFile(t, name, []byte(data)), "TXT")
+		if err != nil {
+			t.Fatalf("%s: %v", name, err)
+		}
+		if len(d.Chapters) != 1 || d.Chapters[0].Title != "第一章 初见" {
+			t.Fatalf("%s: %+v", name, d.Chapters)
+		}
+		if got := d.Chapters[0].Blocks[0].Text; got != "他说：你好。" {
+			t.Fatalf("%s: %q", name, got)
+		}
+	}
+}
+
+func TestExtractEPUBTablesAndNotes(t *testing.T) {
+	var buf bytes.Buffer
+	z := zip.NewWriter(&buf)
+	add := func(name, body string) {
+		w, err := z.Create(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write([]byte(body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add("mimetype", "application/epub+zip")
+	add("META-INF/container.xml", `<container><rootfiles><rootfile full-path="OPS/book.opf"/></rootfiles></container>`)
+	add("OPS/book.opf", `<package><metadata><dc:title xmlns:dc="http://purl.org/dc/elements/1.1/">Marks</dc:title></metadata>
+		<manifest>
+			<item id="a" href="a.xhtml" media-type="application/xhtml+xml"/>
+			<item id="notes" href="notes.xhtml" media-type="application/xhtml+xml"/>
+		</manifest><spine><itemref idref="a"/></spine></package>`)
+	add("OPS/a.xhtml", `<html xmlns:epub="http://www.idpf.org/2007/ops"><body>
+		<h1>Measures</h1>
+		<p>The hall was wide.<a epub:type="noteref" href="notes.xhtml#n1">1</a></p>
+		<table><caption>Measures of the halls</caption>
+			<thead><tr><th>Hall</th><th colspan="2">Size</th></tr></thead>
+			<tbody><tr><td>First</td><td>12</td><td>paces</td></tr>
+			<tr><td>Second</td><td>9</td><td>paces</td></tr></tbody>
+		</table>
+		<p>A second mark.<a href="#fn2"><sup>2</sup></a></p>
+		<div class="footnotes"><ol><li id="fn2">2. The second mark was a star.
+			<a href="#ref2" epub:type="backlink">↩</a></li></ol></div>
+	</body></html>`)
+	add("OPS/notes.xhtml", `<html xmlns:epub="http://www.idpf.org/2007/ops"><body>
+		<section epub:type="endnotes"><aside id="n1" epub:type="endnote">
+			<p>The hall was wide.</p><p>It held the tide.</p>
+			<a href="a.xhtml#ref1">↩</a>
+		</aside></section></body></html>`)
+	if err := z.Close(); err != nil {
+		t.Fatal(err)
+	}
+	d, err := Extract(writeFile(t, "marks.epub", buf.Bytes()), "EPUB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Chapters) != 1 {
+		t.Fatalf("chapters %d: %+v", len(d.Chapters), d.Chapters)
+	}
+	ch := d.Chapters[0]
+	if len(ch.Blocks) != 4 {
+		t.Fatalf("blocks %+v", ch.Blocks)
+	}
+	if got := ch.Blocks[1].Text; !strings.Contains(got, "The hall was wide.[1]") {
+		t.Fatalf("reference %q", got)
+	}
+	tb := ch.Blocks[2]
+	if tb.Kind != TableBlock || tb.Table == nil {
+		t.Fatalf("table block %+v", tb)
+	}
+	if tb.Table.Caption != "Measures of the halls" || len(tb.Table.Rows) != 3 {
+		t.Fatalf("table %+v", tb.Table)
+	}
+	if got := tb.Table.Rows[0].Cells; len(got) != 2 || !got[0].Header || got[1].ColSpan != 2 {
+		t.Fatalf("header cells %+v", got)
+	}
+	if got := tb.Table.Rows[1].Cells[0].Text; got != "First" {
+		t.Fatalf("cell %q", got)
+	}
+	if got := ch.Blocks[3].Text; !strings.Contains(got, "A second mark.[2]") {
+		t.Fatalf("second reference %q", got)
+	}
+	if len(ch.Notes) != 2 {
+		t.Fatalf("notes %+v", ch.Notes)
+	}
+	if n := ch.Notes[0]; n.Label != "1" || !strings.Contains(n.Text, "It held the tide.") || strings.Contains(n.Text, "↩") {
+		t.Fatalf("endnote %+v", n)
+	}
+	if n := ch.Notes[1]; n.Label != "2" || n.Text != "The second mark was a star." {
+		t.Fatalf("footnote %+v", n)
+	}
+}

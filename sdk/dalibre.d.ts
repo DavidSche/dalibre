@@ -3,7 +3,8 @@
 // A plugin is an ES module (ES2023); CommonJS (module.exports) works too.
 // A book source exports search and, optionally, collections and list
 // (with "collections": true in plugin.json), get and resolve. A metadata
-// source exports identify. In plain JavaScript, put
+// source exports identify. A reader exports open and declares the formats
+// it lays out. In plain JavaScript, put
 // this file next to main.js with the template's jsconfig.json and add
 // `// @ts-check` to main.js: editors then check your code and complete
 // the API. In TypeScript, compile to one module, for example with
@@ -170,6 +171,112 @@ declare namespace Dalibre {
     /** Candidates for book, best first; at most 20. Return [] when nothing matches. */
     identify(book: Book): Candidate[] | Promise<Candidate[]>;
   }
+
+  /** A piece of a chapter as Dalibre extracted it. */
+  interface Block {
+    kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table";
+    text?: string;
+    /** heading only, 1–6. */
+    level?: number;
+    /**
+     * image only: names a picture the host keeps, in the book's own file.
+     * Pass it through to show the picture; the bytes never enter the
+     * sandbox. A plugin may drop or move image blocks.
+     */
+    src?: string;
+    /** image only: what the picture shows, for a reader who can't see it. */
+    alt?: string;
+    /** image only: the book's line under the picture, when it has one. */
+    caption?: string;
+    /** table only: its caption, rows and cells of text. */
+    table?: Table;
+  }
+
+  /** A table of text cells, as a page sets it; pictures stay in their own blocks. */
+  interface Table {
+    caption?: string;
+    rows: TableRow[];
+  }
+
+  interface TableRow {
+    cells: TableCell[];
+  }
+
+  interface TableCell {
+    text: string;
+    /** A heading cell, set apart from the data. */
+    header?: boolean;
+    /** How many columns the cell spans, 1–32. */
+    colspan?: number;
+    /** How many rows the cell spans, 1–32. */
+    rowspan?: number;
+  }
+
+  /** A footnote or endnote, kept at the end of its chapter. */
+  interface Note {
+    /** The id its reference points at; optional. */
+    id?: string;
+    /** The marker the text shows, as [1] or [*]; made from the reference when absent. */
+    label?: string;
+    text: string;
+  }
+
+  /** A chapter, or part of one: continued marks a part that carries on the one before. */
+  interface Chapter {
+    title?: string;
+    /** Its place in the book: 1 a part, 2 a chapter under it; 1–6, made 1 when absent. */
+    depth?: number;
+    blocks: Block[];
+    continued?: boolean;
+    /** Footnotes and endnotes, shown after the chapter's text. */
+    notes?: Note[];
+  }
+
+  /** The text, tables, notes and picture names Dalibre extracted from the book's file. */
+  interface Document {
+    title?: string;
+    /** ISO 639 of the book, when the file names it. */
+    language?: string;
+    chapters: Chapter[];
+    /** The book was cut for length: the page says where it stops. */
+    truncated?: boolean;
+  }
+
+  /** The book being laid out: what the library knows, and the format read. */
+  interface ReadBook {
+    id: string;
+    title: string;
+    authors?: string[];
+    /** ISO 639. */
+    language?: string;
+    format: FormatName;
+  }
+
+  interface OpenInput {
+    book: ReadBook;
+    document: Document;
+  }
+
+  /** A book as the reading page shows it. */
+  interface Reading {
+    /** Else the library's. */
+    title?: string;
+    author?: string;
+    /** At least one, at most 2,000; 60,000 blocks, 20,000 characters a block, 500 notes a chapter. */
+    chapters: Chapter[];
+    typography?: {
+      /** Indent each paragraph's first line, as Chinese and Japanese books do. */
+      indent?: boolean;
+    };
+    /** Dalibre sets it from the document when the book was cut. */
+    truncated?: boolean;
+  }
+
+  /** What a reader exports. */
+  interface ReaderSource {
+    /** Lay out the book the user opened: chapters, blocks, typography. */
+    open(input: OpenInput): Reading | Promise<Reading>;
+  }
 }
 
 declare const dalibre: {
@@ -198,5 +305,5 @@ declare const console: {
 };
 
 /** For CommonJS plugins; ES modules export their functions instead. */
-declare const module: { exports: Partial<Dalibre.Source & Dalibre.MetadataSource> };
-declare const exports: Partial<Dalibre.Source & Dalibre.MetadataSource>;
+declare const module: { exports: Partial<Dalibre.Source & Dalibre.MetadataSource & Dalibre.ReaderSource> };
+declare const exports: Partial<Dalibre.Source & Dalibre.MetadataSource & Dalibre.ReaderSource>;

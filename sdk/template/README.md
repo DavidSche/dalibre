@@ -1,6 +1,6 @@
 # {{NAME}}
 
-A [Dalibre](https://github.com/djyde/dalibre) book source: it shows up in Dalibre's Get books page.
+A [Dalibre](https://github.com/DavidSche/dalibre) book source: it shows up in Dalibre's Get books page.
 
 ```sh
 dalibre-plugin check .                         # validate plugin.json and main.js

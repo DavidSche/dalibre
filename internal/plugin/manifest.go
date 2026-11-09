@@ -10,11 +10,13 @@
 // field by field before the host uses it.
 //
 // A plugin declares what it adds to Dalibre in its manifest's
-// capabilities. API version 1 has two: "bookSource" ("source" in the
+// capabilities. API version 1 has three: "bookSource" ("source" in the
 // array form), a plugin that searches and browses a catalogue and says
 // where a book's file is (the host downloads it), shown in the Get books
-// page; and "metadata", a plugin that looks up a book's details for the
-// Edit metadata dialog's Fetch metadata. Plugins never draw UI.
+// page; "metadata", a plugin that looks up a book's details for the
+// Edit metadata dialog's Fetch metadata; and "reader", a plugin that lays
+// out the text of the books the user opens in Dalibre. Plugins never draw
+// UI: the page that shows what they return is the host's.
 package plugin
 
 import (
@@ -27,6 +29,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"dalibre/internal/reader"
 )
 
 // APIVersion is the plugin API this Dalibre implements. Within a version
@@ -108,6 +112,7 @@ type Setting struct {
 type Capabilities struct {
 	BookSource *BookSource `json:"bookSource,omitempty"`
 	Metadata   *Metadata   `json:"metadata,omitempty"`
+	Reader     *Reader     `json:"reader,omitempty"`
 }
 
 // Metadata looks up books' details for the Edit metadata dialog. The
@@ -165,6 +170,9 @@ func (c Capabilities) Names() []string {
 	if c.Metadata != nil {
 		out = append(out, "metadata")
 	}
+	if c.Reader != nil {
+		out = append(out, "reader")
+	}
 	return out
 }
 
@@ -185,6 +193,8 @@ func (c *Capabilities) UnmarshalJSON(data []byte) error {
 				if c.Metadata == nil {
 					c.Metadata = &Metadata{}
 				}
+			case "reader":
+				return errors.New("reader needs an object with formats, as {\"reader\": {\"formats\": [\"EPUB\"]}}")
 			default:
 				return fmt.Errorf("unknown capability %q", n)
 			}
@@ -210,6 +220,9 @@ func (m *Manifest) IsBookSource() bool { return m.Capabilities.BookSource != nil
 
 // IsMetadataSource reports whether the plugin looks up books' metadata.
 func (m *Manifest) IsMetadataSource() bool { return m.Capabilities.Metadata != nil }
+
+// IsReader reports whether the plugin lays out books for the reader page.
+func (m *Manifest) IsReader() bool { return m.Capabilities.Reader != nil }
 
 // Filters are the book source's filters; none when it isn't one.
 func (m *Manifest) Filters() []Filter {
@@ -314,6 +327,26 @@ func (m *Manifest) check() error {
 			if !slices.Contains(MetadataFields, f) {
 				return fmt.Errorf("capabilities.metadata.fields: %q isn’t one of %s", f, strings.Join(MetadataFields, ", "))
 			}
+		}
+	}
+	if r := m.Capabilities.Reader; r != nil {
+		if len(r.Formats) == 0 {
+			return errors.New("capabilities.reader.formats: a reader must list the formats it reads, as [\"EPUB\"]")
+		}
+		if len(r.Formats) > len(reader.Formats) {
+			return fmt.Errorf("capabilities.reader.formats: at most %d", len(reader.Formats))
+		}
+		seen := map[string]bool{}
+		for i := range r.Formats {
+			f := strings.ToUpper(strings.TrimSpace(r.Formats[i]))
+			if !slices.Contains(reader.Formats, f) {
+				return fmt.Errorf("capabilities.reader.formats[%d]: %q isn’t one of %s, whose text Dalibre extracts", i, r.Formats[i], strings.Join(reader.Formats, ", "))
+			}
+			if seen[f] {
+				return fmt.Errorf("capabilities.reader.formats[%d]: %q is listed twice", i, f)
+			}
+			seen[f] = true
+			r.Formats[i] = f
 		}
 	}
 	if l := m.Permissions.Library; l != "" && l != LibraryRead {

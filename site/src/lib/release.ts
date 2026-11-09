@@ -1,7 +1,7 @@
 // The latest Dalibre release, read from GitHub when the site builds, so the
 // download links, version and sizes follow whatever was released last.
 
-const repo = "djyde/dalibre";
+const repo = "DavidSche/dalibre";
 
 export interface Download {
   id: string;

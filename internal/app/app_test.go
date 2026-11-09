@@ -251,11 +251,6 @@ func TestWelcomeWithoutLibrary(t *testing.T) {
 func TestWelcomeCreateLibrary(t *testing.T) {
 	a := New("")
 	a.run = func(fn func()) { fn() }
-	t.Cleanup(func() {
-		if a.lib != nil {
-			a.lib.Close()
-		}
-	})
 	tt := ui.NewTester(a.View, 1440, 900)
 	tt.Frame()
 	if err := tt.Click("Create a new library"); err != nil {
@@ -263,6 +258,13 @@ func TestWelcomeCreateLibrary(t *testing.T) {
 	}
 	tt.Frame()
 	parent := t.TempDir()
+	// Close before the temporary library goes: the cleanup a library
+	// registers runs first, while its database is still open.
+	t.Cleanup(func() {
+		if a.lib != nil {
+			a.lib.Close()
+		}
+	})
 	a.welcome.create.parent = parent
 	a.welcome.create.name = "Shelf"
 	tt.Frame()
@@ -282,12 +284,12 @@ func TestWelcomeCreateLibrary(t *testing.T) {
 func TestWelcomeFolderNotLibrary(t *testing.T) {
 	a := New("")
 	a.run = func(fn func()) { fn() }
+	dir := filepath.Join(t.TempDir(), "Downloads")
 	t.Cleanup(func() {
 		if a.lib != nil {
 			a.lib.Close()
 		}
 	})
-	dir := filepath.Join(t.TempDir(), "Downloads")
 	os.MkdirAll(dir, 0o755)
 	os.WriteFile(filepath.Join(dir, "a.epub"), []byte("x"), 0o644)
 	a.openLibrary(dir)

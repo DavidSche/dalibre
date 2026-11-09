@@ -283,10 +283,94 @@
   "appToastNoFiles": "„{title}“ hat keine Dateien",
   "appShareItem": "Teilen…",
   "appShareMenu": "Teilen",
+  "readerRead": "Lesen",
+  "readerContinue": "Weiterlesen · {percent}%",
+  "@readerContinue": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerNoPlugin": "Kein Lese-Plugin kann {format}-Bücher öffnen",
+  "@readerNoPlugin": {
+    "placeholders": {
+      "format": {
+        "type": "String"
+      }
+    }
+  },
+  "readerChapterN": "Kapitel {n}",
+  "@readerChapterN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "readerChapterOf": "Kapitel {current} von {total}",
+  "@readerChapterOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "readerProgress": "{percent}%",
+  "@readerProgress": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "readerContents": "Inhalt",
+  "readerBookmarks": "Lesezeichen",
+  "readerNoBookmarks": "Noch keine Lesezeichen. Drücke B, um die Stelle zu markieren.",
+  "readerAddBookmark": "Kapitel als Lesezeichen",
+  "readerRemoveBookmark": "Lesezeichen entfernen",
+  "readerTextSize": "Schriftgröße",
+  "readerLineSpacing": "Zeilenabstand",
+  "readerTheme": "Seitenfarbe",
+  "readerThemePaper": "Papier",
+  "readerThemeSepia": "Sepia",
+  "readerThemeGreen": "Grün",
+  "readerThemeNight": "Nacht",
+  "readerEndOfChapter": "Ende des Kapitels",
+  "readerNextChapter": "Nächstes Kapitel",
+  "readerPrevChapter": "Vorheriges Kapitel",
+  "readerTheEnd": "Ende",
+  "readerBack": "Zurück zur Bibliothek",
+  "readerClose": "Schließen",
+  "readerLoading": "Die Seite wird gesetzt…",
+  "readerFailed": "Dieses Buch ließ sich nicht öffnen",
+  "readerRetry": "Erneut versuchen",
+  "readerTruncated": "Dieses Buch ist länger, als Dalibre auf einmal liest, deshalb endet es hier.",
+  "readerNotes": "Anmerkungen",
   "widgetsRemoveTag": "{label} entfernen",
   "widgetsNotRated": "Nicht bewertet",
   "widgetsStars": "{count} von 5 Sternen",
   "widgetsClose": "Schließen",
+  "pluginsReaderNote": "{name} setzt die Bücher, die du in Dalibre öffnest: Kapitel, Absätze und deine Leseposition.",
+  "@pluginsReaderNote": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsConsentReadBooks": "{name} setzt die Bücher, die du öffnest: Es liest ihren Text, während du liest.",
+  "@pluginsConsentReadBooks": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginsReadsBooks": "Liest Bücher",
   "pluginsStatusNeeds": "Benötigt {settings}",
   "pluginsStatusBuiltIn": "{version} · integriert",
   "pluginsStatusFromFolder": "{version} · aus einem Ordner",

@@ -2935,6 +2935,298 @@ func (msgs Messages) AppShareMenu() string {
 	return Catalog.Format(msgs.locale, "appShareMenu", nil)
 }
 
+// ReaderRead says "Read"
+// in the language the app shows.
+func ReaderRead() string { return In(i18n.Locale()).ReaderRead() }
+
+// ReaderRead says "Read"
+// in the language of msgs.
+func (msgs Messages) ReaderRead() string {
+	return Catalog.Format(msgs.locale, "readerRead", nil)
+}
+
+// ReaderContinue says "Continue · {percent}%"
+// in the language the app shows.
+func ReaderContinue(percent int) string { return In(i18n.Locale()).ReaderContinue(percent) }
+
+// ReaderContinue says "Continue · {percent}%"
+// in the language of msgs.
+func (msgs Messages) ReaderContinue(percent int) string {
+	return Catalog.Format(msgs.locale, "readerContinue", map[string]any{"percent": percent})
+}
+
+// ReaderNoPlugin says "No reader plugin can open {format} books"
+// in the language the app shows.
+func ReaderNoPlugin(format string) string { return In(i18n.Locale()).ReaderNoPlugin(format) }
+
+// ReaderNoPlugin says "No reader plugin can open {format} books"
+// in the language of msgs.
+func (msgs Messages) ReaderNoPlugin(format string) string {
+	return Catalog.Format(msgs.locale, "readerNoPlugin", map[string]any{"format": format})
+}
+
+// ReaderChapterN says "Chapter {n}"
+// in the language the app shows.
+func ReaderChapterN(n int) string { return In(i18n.Locale()).ReaderChapterN(n) }
+
+// ReaderChapterN says "Chapter {n}"
+// in the language of msgs.
+func (msgs Messages) ReaderChapterN(n int) string {
+	return Catalog.Format(msgs.locale, "readerChapterN", map[string]any{"n": n})
+}
+
+// ReaderChapterOf says "Chapter {current} of {total}"
+// in the language the app shows.
+func ReaderChapterOf(current int, total int) string {
+	return In(i18n.Locale()).ReaderChapterOf(current, total)
+}
+
+// ReaderChapterOf says "Chapter {current} of {total}"
+// in the language of msgs.
+func (msgs Messages) ReaderChapterOf(current int, total int) string {
+	return Catalog.Format(msgs.locale, "readerChapterOf", map[string]any{"current": current, "total": total})
+}
+
+// ReaderProgress says "{percent}%"
+// in the language the app shows.
+func ReaderProgress(percent int) string { return In(i18n.Locale()).ReaderProgress(percent) }
+
+// ReaderProgress says "{percent}%"
+// in the language of msgs.
+func (msgs Messages) ReaderProgress(percent int) string {
+	return Catalog.Format(msgs.locale, "readerProgress", map[string]any{"percent": percent})
+}
+
+// ReaderContents says "Contents"
+// in the language the app shows.
+func ReaderContents() string { return In(i18n.Locale()).ReaderContents() }
+
+// ReaderContents says "Contents"
+// in the language of msgs.
+func (msgs Messages) ReaderContents() string {
+	return Catalog.Format(msgs.locale, "readerContents", nil)
+}
+
+// ReaderBookmarks says "Bookmarks"
+// in the language the app shows.
+func ReaderBookmarks() string { return In(i18n.Locale()).ReaderBookmarks() }
+
+// ReaderBookmarks says "Bookmarks"
+// in the language of msgs.
+func (msgs Messages) ReaderBookmarks() string {
+	return Catalog.Format(msgs.locale, "readerBookmarks", nil)
+}
+
+// ReaderNoBookmarks says "No bookmarks yet. Press B to mark your place."
+// in the language the app shows.
+func ReaderNoBookmarks() string { return In(i18n.Locale()).ReaderNoBookmarks() }
+
+// ReaderNoBookmarks says "No bookmarks yet. Press B to mark your place."
+// in the language of msgs.
+func (msgs Messages) ReaderNoBookmarks() string {
+	return Catalog.Format(msgs.locale, "readerNoBookmarks", nil)
+}
+
+// ReaderAddBookmark says "Bookmark this chapter"
+// in the language the app shows.
+func ReaderAddBookmark() string { return In(i18n.Locale()).ReaderAddBookmark() }
+
+// ReaderAddBookmark says "Bookmark this chapter"
+// in the language of msgs.
+func (msgs Messages) ReaderAddBookmark() string {
+	return Catalog.Format(msgs.locale, "readerAddBookmark", nil)
+}
+
+// ReaderRemoveBookmark says "Remove bookmark"
+// in the language the app shows.
+func ReaderRemoveBookmark() string { return In(i18n.Locale()).ReaderRemoveBookmark() }
+
+// ReaderRemoveBookmark says "Remove bookmark"
+// in the language of msgs.
+func (msgs Messages) ReaderRemoveBookmark() string {
+	return Catalog.Format(msgs.locale, "readerRemoveBookmark", nil)
+}
+
+// ReaderTextSize says "Text size"
+// in the language the app shows.
+func ReaderTextSize() string { return In(i18n.Locale()).ReaderTextSize() }
+
+// ReaderTextSize says "Text size"
+// in the language of msgs.
+func (msgs Messages) ReaderTextSize() string {
+	return Catalog.Format(msgs.locale, "readerTextSize", nil)
+}
+
+// ReaderLineSpacing says "Line spacing"
+// in the language the app shows.
+func ReaderLineSpacing() string { return In(i18n.Locale()).ReaderLineSpacing() }
+
+// ReaderLineSpacing says "Line spacing"
+// in the language of msgs.
+func (msgs Messages) ReaderLineSpacing() string {
+	return Catalog.Format(msgs.locale, "readerLineSpacing", nil)
+}
+
+// ReaderTheme says "Page color"
+// in the language the app shows.
+func ReaderTheme() string { return In(i18n.Locale()).ReaderTheme() }
+
+// ReaderTheme says "Page color"
+// in the language of msgs.
+func (msgs Messages) ReaderTheme() string {
+	return Catalog.Format(msgs.locale, "readerTheme", nil)
+}
+
+// ReaderThemePaper says "Paper"
+// in the language the app shows.
+func ReaderThemePaper() string { return In(i18n.Locale()).ReaderThemePaper() }
+
+// ReaderThemePaper says "Paper"
+// in the language of msgs.
+func (msgs Messages) ReaderThemePaper() string {
+	return Catalog.Format(msgs.locale, "readerThemePaper", nil)
+}
+
+// ReaderThemeSepia says "Sepia"
+// in the language the app shows.
+func ReaderThemeSepia() string { return In(i18n.Locale()).ReaderThemeSepia() }
+
+// ReaderThemeSepia says "Sepia"
+// in the language of msgs.
+func (msgs Messages) ReaderThemeSepia() string {
+	return Catalog.Format(msgs.locale, "readerThemeSepia", nil)
+}
+
+// ReaderThemeGreen says "Green"
+// in the language the app shows.
+func ReaderThemeGreen() string { return In(i18n.Locale()).ReaderThemeGreen() }
+
+// ReaderThemeGreen says "Green"
+// in the language of msgs.
+func (msgs Messages) ReaderThemeGreen() string {
+	return Catalog.Format(msgs.locale, "readerThemeGreen", nil)
+}
+
+// ReaderThemeNight says "Night"
+// in the language the app shows.
+func ReaderThemeNight() string { return In(i18n.Locale()).ReaderThemeNight() }
+
+// ReaderThemeNight says "Night"
+// in the language of msgs.
+func (msgs Messages) ReaderThemeNight() string {
+	return Catalog.Format(msgs.locale, "readerThemeNight", nil)
+}
+
+// ReaderEndOfChapter says "End of chapter"
+// in the language the app shows.
+func ReaderEndOfChapter() string { return In(i18n.Locale()).ReaderEndOfChapter() }
+
+// ReaderEndOfChapter says "End of chapter"
+// in the language of msgs.
+func (msgs Messages) ReaderEndOfChapter() string {
+	return Catalog.Format(msgs.locale, "readerEndOfChapter", nil)
+}
+
+// ReaderNextChapter says "Next chapter"
+// in the language the app shows.
+func ReaderNextChapter() string { return In(i18n.Locale()).ReaderNextChapter() }
+
+// ReaderNextChapter says "Next chapter"
+// in the language of msgs.
+func (msgs Messages) ReaderNextChapter() string {
+	return Catalog.Format(msgs.locale, "readerNextChapter", nil)
+}
+
+// ReaderPrevChapter says "Previous chapter"
+// in the language the app shows.
+func ReaderPrevChapter() string { return In(i18n.Locale()).ReaderPrevChapter() }
+
+// ReaderPrevChapter says "Previous chapter"
+// in the language of msgs.
+func (msgs Messages) ReaderPrevChapter() string {
+	return Catalog.Format(msgs.locale, "readerPrevChapter", nil)
+}
+
+// ReaderTheEnd says "The end"
+// in the language the app shows.
+func ReaderTheEnd() string { return In(i18n.Locale()).ReaderTheEnd() }
+
+// ReaderTheEnd says "The end"
+// in the language of msgs.
+func (msgs Messages) ReaderTheEnd() string {
+	return Catalog.Format(msgs.locale, "readerTheEnd", nil)
+}
+
+// ReaderBack says "Back to library"
+// in the language the app shows.
+func ReaderBack() string { return In(i18n.Locale()).ReaderBack() }
+
+// ReaderBack says "Back to library"
+// in the language of msgs.
+func (msgs Messages) ReaderBack() string {
+	return Catalog.Format(msgs.locale, "readerBack", nil)
+}
+
+// ReaderClose says "Close"
+// in the language the app shows.
+func ReaderClose() string { return In(i18n.Locale()).ReaderClose() }
+
+// ReaderClose says "Close"
+// in the language of msgs.
+func (msgs Messages) ReaderClose() string {
+	return Catalog.Format(msgs.locale, "readerClose", nil)
+}
+
+// ReaderLoading says "Setting the page…"
+// in the language the app shows.
+func ReaderLoading() string { return In(i18n.Locale()).ReaderLoading() }
+
+// ReaderLoading says "Setting the page…"
+// in the language of msgs.
+func (msgs Messages) ReaderLoading() string {
+	return Catalog.Format(msgs.locale, "readerLoading", nil)
+}
+
+// ReaderFailed says "This book couldn’t be opened"
+// in the language the app shows.
+func ReaderFailed() string { return In(i18n.Locale()).ReaderFailed() }
+
+// ReaderFailed says "This book couldn’t be opened"
+// in the language of msgs.
+func (msgs Messages) ReaderFailed() string {
+	return Catalog.Format(msgs.locale, "readerFailed", nil)
+}
+
+// ReaderRetry says "Try again"
+// in the language the app shows.
+func ReaderRetry() string { return In(i18n.Locale()).ReaderRetry() }
+
+// ReaderRetry says "Try again"
+// in the language of msgs.
+func (msgs Messages) ReaderRetry() string {
+	return Catalog.Format(msgs.locale, "readerRetry", nil)
+}
+
+// ReaderTruncated says "This book is longer than Dalibre reads at once, so it stops here."
+// in the language the app shows.
+func ReaderTruncated() string { return In(i18n.Locale()).ReaderTruncated() }
+
+// ReaderTruncated says "This book is longer than Dalibre reads at once, so it stops here."
+// in the language of msgs.
+func (msgs Messages) ReaderTruncated() string {
+	return Catalog.Format(msgs.locale, "readerTruncated", nil)
+}
+
+// ReaderNotes says "Notes"
+// in the language the app shows.
+func ReaderNotes() string { return In(i18n.Locale()).ReaderNotes() }
+
+// ReaderNotes says "Notes"
+// in the language of msgs.
+func (msgs Messages) ReaderNotes() string {
+	return Catalog.Format(msgs.locale, "readerNotes", nil)
+}
+
 // WidgetsRemoveTag says "Remove {label}"
 // in the language the app shows.
 func WidgetsRemoveTag(label string) string { return In(i18n.Locale()).WidgetsRemoveTag(label) }
@@ -2973,6 +3265,38 @@ func WidgetsClose() string { return In(i18n.Locale()).WidgetsClose() }
 // in the language of msgs.
 func (msgs Messages) WidgetsClose() string {
 	return Catalog.Format(msgs.locale, "widgetsClose", nil)
+}
+
+// PluginsReaderNote says "{name} lays out the books you open in Dalibre: chapters, paragraphs, and where you left off."
+// in the language the app shows.
+func PluginsReaderNote(name string) string { return In(i18n.Locale()).PluginsReaderNote(name) }
+
+// PluginsReaderNote says "{name} lays out the books you open in Dalibre: chapters, paragraphs, and where you left off."
+// in the language of msgs.
+func (msgs Messages) PluginsReaderNote(name string) string {
+	return Catalog.Format(msgs.locale, "pluginsReaderNote", map[string]any{"name": name})
+}
+
+// PluginsConsentReadBooks says "{name} lays out the books you open: it reads their text while you read them."
+// in the language the app shows.
+func PluginsConsentReadBooks(name string) string {
+	return In(i18n.Locale()).PluginsConsentReadBooks(name)
+}
+
+// PluginsConsentReadBooks says "{name} lays out the books you open: it reads their text while you read them."
+// in the language of msgs.
+func (msgs Messages) PluginsConsentReadBooks(name string) string {
+	return Catalog.Format(msgs.locale, "pluginsConsentReadBooks", map[string]any{"name": name})
+}
+
+// PluginsReadsBooks says "Reads books"
+// in the language the app shows.
+func PluginsReadsBooks() string { return In(i18n.Locale()).PluginsReadsBooks() }
+
+// PluginsReadsBooks says "Reads books"
+// in the language of msgs.
+func (msgs Messages) PluginsReadsBooks() string {
+	return Catalog.Format(msgs.locale, "pluginsReadsBooks", nil)
 }
 
 // PluginsStatusNeeds says "Needs {settings}"

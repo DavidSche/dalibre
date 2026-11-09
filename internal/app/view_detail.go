@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"html"
+	"math"
 	"regexp"
 	"sort"
 	"strings"
@@ -133,6 +134,18 @@ func (a *App) bookDetail(c *ui.Context, b *calibre.Book) {
 			}
 		})
 	})
+	if f, ok := a.readableFormat(b); ok {
+		progress := a.bookProgress(b)
+		label := locales.ReaderRead()
+		if progress > 0.005 {
+			label = locales.ReaderContinue(int(math.Round(progress * 100)))
+		}
+		ui.Row(c).FillWidth().Children(func() {
+			if widgets.Button(c, widgets.Primary, icons.BookOpen, label).Grow(1).Clicked() {
+				a.openReader(b, f)
+			}
+		})
+	}
 	widgets.Hairline(c)
 	// Details.
 	ui.Column(c).Gap(theme.Space12).AlignItems(ui.Stretch).Children(func() {
@@ -228,9 +241,18 @@ func (a *App) bookDetail(c *ui.Context, b *calibre.Book) {
 			if r.Hovered() {
 				r.Background(pal().Hover)
 			}
-			r.OnClick(func() { a.openBook(b, f.Format) })
+			r.OnClick(func() {
+				if a.readerPlugin(f.Format) != nil {
+					a.openReader(b, f.Format)
+					return
+				}
+				a.openBook(b, f.Format)
+			})
 			r.ContextMenu(func(m *ui.Menu) {
-				if m.Item(locales.CommonOpen()).Chosen() {
+				if a.readerPlugin(f.Format) != nil && m.Item(locales.ReaderRead()).Icon(icons.Menu(icons.BookOpen)).Chosen() {
+					a.openReader(b, f.Format)
+				}
+				if m.Item(locales.CommonOpen()).Icon(icons.Menu(icons.External)).Chosen() {
 					a.openBook(b, f.Format)
 				}
 				if shareSupported && m.Item(locales.DetailShare()).Chosen() {

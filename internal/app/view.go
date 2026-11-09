@@ -32,6 +32,10 @@ func (a *App) view(c *ui.Context) {
 	a.toasts = nil
 
 	a.shortcuts(c)
+	if a.rd.open {
+		a.readerView(c)
+		return
+	}
 
 	if a.lib == nil {
 		a.welcomeScreen(c)
@@ -80,6 +84,10 @@ func (a *App) view(c *ui.Context) {
 }
 
 func (a *App) shortcuts(c *ui.Context) {
+	if a.rd.open {
+		a.readerShortcuts(c)
+		return
+	}
 	c.OnWindowShortcut(ui.Cmd, ui.KeyO, func() {
 		if a.lib != nil {
 			a.chooseBooks()

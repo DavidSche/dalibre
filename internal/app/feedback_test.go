@@ -31,7 +31,7 @@ func TestFeedback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if u.Path != "/djyde/dalibre/issues/new" || u.Query().Get("labels") != "bug" {
+	if u.Path != "/DavidSche/dalibre/issues/new" || u.Query().Get("labels") != "bug" {
 		t.Errorf("bug report URL %s", u)
 	}
 	if body := u.Query().Get("body"); !strings.Contains(body, "Dalibre 1.2.3 · ") {
