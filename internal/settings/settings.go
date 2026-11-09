@@ -36,6 +36,8 @@ type Settings struct {
 	// Reading is how the user reads books in Dalibre, and where they
 	// left off in each.
 	Reading Reading `json:"reading,omitzero"`
+	// MCP is serving the library to the user's agents.
+	MCP MCP `json:"mcp,omitzero"`
 
 	path string
 }
@@ -137,6 +139,34 @@ func (o *OPDS) Catalog(id string) *Catalog {
 	return nil
 }
 
+// MCP is serving the open library to the user's own agents over the
+// Model Context Protocol, on this computer only.
+type MCP struct {
+	On   bool `json:"on,omitempty"`
+	Port int  `json:"port,omitempty"` // DefaultMCPPort when 0
+	// ReadOnly keeps agents from editing, adding and removing books; they
+	// have every tool otherwise.
+	ReadOnly bool `json:"readOnly,omitempty"`
+	// Token is what agents send to be let in; made when the server first
+	// starts. The stdio bridge reads it from here.
+	Token string `json:"token,omitempty"`
+}
+
+// DefaultMCPPort is where the MCP server listens unless the user picks
+// another port.
+const DefaultMCPPort = 8765
+
+// AllowsChanges reports whether agents may change the library.
+func (m MCP) AllowsChanges() bool { return !m.ReadOnly }
+
+// ServerPort is the port the MCP server listens on.
+func (m MCP) ServerPort() int {
+	if m.Port <= 0 || m.Port > 65535 {
+		return DefaultMCPPort
+	}
+	return m.Port
+}
+
 // PluginState is what the user decided about a plugin.
 type PluginState struct {
 	Disabled bool `json:"disabled,omitempty"`
@@ -232,7 +262,8 @@ func (s *Settings) Save() error {
 		return err
 	}
 	tmp := s.path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+	// Only the user may read it: it holds the MCP token.
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		return err
 	}
 	return os.Rename(tmp, s.path)

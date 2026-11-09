@@ -240,9 +240,6 @@
   "catalogSectionLabel": "OPDS catalogs",
   "catalogSectionTitle": "OPDS CATALOGS",
   "catalogAdd": "Add catalog…",
-  "catalogSharing": "Sharing over OPDS",
-  "catalogShareFailed": "Couldn’t share over OPDS",
-  "catalogShareStarting": "Starting to share…",
   "catalogTitleDefault": "Catalog",
   "catalogSettingsTooltip": "Catalog settings",
   "catalogRefresh": "Refresh",
@@ -813,5 +810,161 @@
   "mainFeedback": "Feedback",
   "mainFeedbackReportBug": "Report a bug…",
   "mainFeedbackRequestFeature": "Request a feature…",
-  "mainFeedbackViewIssues": "View issues on GitHub"
+  "mainFeedbackViewIssues": "View issues on GitHub",
+  "settingsSectionMCP": "MCP",
+  "sharingSettingsTooltip": "{name} settings",
+  "sharingOff": "Off",
+  "mcpBody": "AI agents on this computer, like Claude Code and Cursor, can search and read this library over MCP while Dalibre is open.",
+  "mcpRunning": "Running · {status}",
+  "mcpNoAgentYet": "No agent has used it yet",
+  "mcpAgentUsed": "{agent} used it {ago}",
+  "mcpAnAgent": "An agent",
+  "mcpPortInUse": "Can’t start: port {port} is in use. Pick another port.",
+  "mcpCantStart": "Can’t start: {error}",
+  "mcpAllowChanges": "Let agents edit, add and remove books",
+  "mcpToken": "Token",
+  "mcpNewToken": "New token",
+  "mcpNewTokenMade": "Made a new token. Agents set up with the old one need the new setup.",
+  "mcpConnect": "Connect an agent",
+  "mcpCopySetup": "Copy the setup for {client}",
+  "mcpCopiedSetup": "Copied the setup for {client}",
+  "mcpHintClaudeCode": "Run it in a terminal.",
+  "mcpHintClaudeDesktop": "Add it to claude_desktop_config.json, then restart Claude Desktop.",
+  "mcpHintCursor": "Add it to ~/.cursor/mcp.json.",
+  "mcpNote": "Only apps on this computer can connect, with the token.",
+  "mcpAgentsCount": "{count, plural, one {# agent} other {# agents}}",
+  "@mcpAgentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAgentsWorking": "{agents} at work",
+  "mcpRunningReadOnly": "Running · read only",
+  "mcpRunningChanges": "Running · can change books",
+  "mcpAgentsHeading": "Agents",
+  "mcpReadOnlyNote": "Read only: agents can’t change books.",
+  "mcpAllowChangesButton": "Allow changes",
+  "mcpAgentLast": "{ago} · {count, plural, one {# call} other {# calls}}",
+  "@mcpAgentLast": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAgentWorking": "Working now · {count, plural, one {# call} other {# calls}}",
+  "@mcpAgentWorking": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpActivity": "Activity",
+  "mcpClear": "Clear",
+  "mcpNoCalls": "No calls yet",
+  "mcpNow": "now",
+  "mcpCallMeta": "{agent} · {time}",
+  "mcpSearchedLibrary": "Searched the library · {count, plural, one {# book} other {# books}}",
+  "@mcpSearchedLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpSearched": "Searched “{query}” · {count, plural, one {# book} other {# books}}",
+  "@mcpSearched": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpFoundBooks": "Looked for “{query}” in Get books · {count, plural, one {# result} other {# results}}",
+  "@mcpFoundBooks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpRead": "Read “{title}”",
+  "mcpReadMany": "Read {count, plural, one {# book} other {# books}}",
+  "@mcpReadMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpListed": "{kind, select, authors {Listed authors} series {Listed series} tags {Listed tags} publishers {Listed publishers} languages {Listed languages} formats {Listed formats} other {Listed {kind}}}",
+  "mcpEdited": "Edited “{title}”",
+  "mcpEditedMany": "Edited {count, plural, one {# book} other {# books}}",
+  "@mcpEditedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpSetCover": "Changed the cover of “{title}”",
+  "mcpSetCoverMany": "Changed {count, plural, one {# cover} other {# covers}}",
+  "@mcpSetCoverMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAdded": "Added “{title}”",
+  "mcpAddedMany": "Added {count, plural, one {# book} other {# books}}",
+  "@mcpAddedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpRemoved": "Removed “{title}”",
+  "mcpRemovedMany": "Removed {count, plural, one {# book} other {# books}}",
+  "@mcpRemovedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAddedFormat": "Added {format} to “{title}”",
+  "mcpRemovedFormat": "Removed {format} from “{title}”",
+  "mcpDownloaded": "Downloaded “{title}”",
+  "mcpDownloadedMany": "Downloaded {count, plural, one {# book} other {# books}}",
+  "@mcpDownloadedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpFoundMetadata": "Looked up metadata for “{title}”",
+  "mcpTools": "Tools",
+  "mcpToolsCount": "Agents can use {used} of {total}",
+  "mcpGroupRead": "Search and read",
+  "mcpGroupChange": "Change the library",
+  "mcpGroupSources": "Get books",
+  "mcpToolsOff": "Off until changes are allowed",
+  "mcpToolSearchBooks": "Search the library by title, author, series, tag and more.",
+  "mcpToolGetBook": "Read a book’s details, description and file paths.",
+  "mcpToolListFacets": "List authors, series, tags, publishers, languages or formats.",
+  "mcpToolUpdateBooks": "Edit the metadata of one or more books.",
+  "mcpToolSetCover": "Replace a book’s cover.",
+  "mcpToolAddBooks": "Add e-book files to the library.",
+  "mcpToolAddFormat": "Add a file to a book as a format, as after a conversion.",
+  "mcpToolRemoveFormat": "Delete one format of a book.",
+  "mcpToolRemoveBooks": "Move books to the Trash.",
+  "mcpToolFindBooks": "Search Get books’ sources.",
+  "mcpToolDownloadBook": "Add a book from Get books to the library.",
+  "mcpToolFindMetadata": "Look up a book’s metadata with metadata plugins."
 }

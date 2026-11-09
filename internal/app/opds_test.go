@@ -228,9 +228,14 @@ func TestShareLibrary(t *testing.T) {
 	}
 	tt := ui.NewTester(a.View, 1440, 900)
 	tt.Frame()
-	if !tt.HasText("Sharing over OPDS") {
-		t.Fatalf("sidebar: %q", tt.Texts())
+	if err := tt.Click("OPDS"); err != nil {
+		t.Fatalf("toolbar: %v; %q", err, tt.Texts())
 	}
+	tt.Frame()
+	if !tt.HasText(a.shareAddress()) {
+		t.Fatalf("sharing popover: %q", tt.Texts())
+	}
+	a.sharingOpen = false
 	a.openSettings(sectionOPDS)
 	tt.Frame()
 	if !tt.HasText(a.shareAddress()) || !tt.HasText("Require a username and password") {

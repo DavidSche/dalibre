@@ -32,11 +32,15 @@ const faq = [
   },
   {
     q: "Does Dalibre convert e-book formats?",
-    a: "Not yet. We are working on it. Until then, keep using calibre on the same library to convert between EPUB, MOBI, AZW3 or PDF.",
+    a: "Not yet. We are working on it. Until then, keep using calibre on the same library to convert between EPUB, MOBI, AZW3 or PDF, or ask an AI agent connected over MCP: it can convert a book with calibre's ebook-convert and add the result to it.",
   },
   {
     q: "How do I get books onto my e-reader?",
     a: "Turn on sharing and Dalibre serves your library over OPDS on your Wi-Fi. Reading apps such as KOReader, Moon+ Reader, Thorium and KyBook browse it and download the books you pick. No cables, no cloud, no account.",
+  },
+  {
+    q: "Can AI agents use my library?",
+    a: "Yes. Turn on MCP and agents such as Claude Code, Claude Desktop and Cursor can search your library, edit metadata, add books and convert formats with the tools they already have. Only programs on your computer can connect, with a token, and Dalibre shows every call they make.",
   },
   {
     q: "Which platforms does Dalibre run on?",
@@ -65,6 +69,7 @@ const schema = [
       "Get books from catalogues and OPDS servers",
       "Send books to e-readers over OPDS",
       "Sandboxed JavaScript plugins",
+      "MCP server for AI agents such as Claude Code, Claude Desktop and Cursor",
     ],
   },
   {
@@ -135,6 +140,7 @@ export async function search({ text, page }) {
         </a>
         <div class="flex items-center gap-1 text-sm text-sand-11 sm:gap-6">
           <a href="#plugins" class="hidden hover:text-ink sm:inline">Plugins</a>
+          <a href="#mcp" class="hidden hover:text-ink sm:inline">MCP</a>
           <a href="/docs/" class="px-2 hover:text-ink sm:px-0">Docs</a>
           <a href="/#download" class="rounded-full border border-sand-6 px-3 py-1 text-xs font-medium text-ink transition hover:border-sand-9">Download</a>
           <a href="https://github.com/DavidSche/dalibre" aria-label="GitHub" class="p-1 transition hover:text-ink">
@@ -211,6 +217,21 @@ export async function search({ text, page }) {
             <span class="font-mono text-xs text-sand-11">
               <span data-download-size>{release.downloads[0].size}</span> · v{release.version}
             </span>
+          </div>
+          <div class="rise mt-8" style="animation-delay:.28s">
+            <p class="font-mono text-[10px] tracking-widest text-sand-9 uppercase">Sponsored by</p>
+            <a
+              href="https://nowdex.app/?utm_source=dalibre&utm_medium=referral&utm_campaign=sponsor"
+              target="_blank"
+              rel="noopener"
+              class="group mt-2.5 inline-flex items-center gap-3 grayscale transition hover:grayscale-0"
+            >
+              <img src="/sponsors/nowdex.png" alt="" width="32" height="32" class="size-8 rounded-[8px] opacity-70 transition group-hover:opacity-100" />
+              <span class="text-sm leading-tight">
+                <span class="block font-medium text-sand-11 transition group-hover:text-ink">nowdex.app</span>
+                <span class="block text-sand-9">Display AI agent quota on your phone</span>
+              </span>
+            </a>
           </div>
 
           <!-- App window, redrawn from the Figma file -->
@@ -392,12 +413,126 @@ export async function search({ text, page }) {
         </div>
       </section>
 
+      <!-- MCP -->
+      <section id="mcp" class="scroll-mt-14 border-t border-sand-4 bg-paper-2">
+        <div class="mx-auto max-w-6xl px-5 py-24 sm:py-32">
+          <div class="max-w-2xl">
+            <p class="font-mono text-xs tracking-widest text-accent uppercase">03 · MCP</p>
+            <h2 class="mt-4 font-serif text-5xl leading-[1.02] tracking-tight sm:text-6xl">
+              Your AI agent<br /><em class="text-accent">knows your shelves.</em>
+            </h2>
+            <p class="mt-6 max-w-xl leading-relaxed text-sand-11">
+              Turn on MCP and Claude Code, Claude Desktop, Cursor or any MCP
+              client can search your library, fix its metadata, add books, and
+              convert formats with the tools it already has. It stays on your
+              computer, and Dalibre shows every call it makes.
+            </p>
+          </div>
+
+          <div class="mt-14 grid gap-5 lg:grid-cols-[1.3fr_1fr]">
+            <!-- The agent's side -->
+            <div class="overflow-hidden rounded-2xl bg-ink text-[#eeeeec] shadow-2xl shadow-ink/10">
+              <div class="flex items-center gap-3 border-b border-white/10 px-4 py-3 text-xs">
+                <span class="flex gap-1.5">
+                  <i class="size-2.5 rounded-full bg-white/15"></i>
+                  <i class="size-2.5 rounded-full bg-white/15"></i>
+                  <i class="size-2.5 rounded-full bg-white/15"></i>
+                </span>
+                <span class="font-mono text-white/50">Your agent</span>
+              </div>
+              <div class="space-y-4 overflow-x-auto p-6 font-mono text-[13px] leading-6">
+                <p class="text-white"><span class="text-[#9eb1ff]">›</span> Tag every Liu Cixin book “Hard SF”, and make an AZW3 of Dune for my Kindle.</p>
+                <ul class="space-y-1.5 whitespace-nowrap text-white/60">
+                  <li><span class="text-[#3dd68c]">●</span> <span class="text-white">search_books</span> {"{"}"author": "Liu Cixin"{"}"} <span class="text-white/40">→ 3 books</span></li>
+                  <li><span class="text-[#3dd68c]">●</span> <span class="text-white">update_books</span> {"{"}"ids": [3, 4, 9], "patch": {"{"}"add_tags": ["Hard SF"]{"}"}{"}"}</li>
+                  <li><span class="text-[#3dd68c]">●</span> <span class="text-white">get_book</span> {"{"}"id": 5{"}"} <span class="text-white/40">→ Dune - Frank Herbert.epub</span></li>
+                  <li><span class="text-[#3dd68c]">●</span> <span class="text-white">$</span> ebook-convert "Dune - Frank Herbert.epub" /tmp/Dune.azw3</li>
+                  <li><span class="text-[#3dd68c]">●</span> <span class="text-white">add_format</span> {"{"}"id": 5, "path": "/tmp/Dune.azw3"{"}"}</li>
+                </ul>
+                <p class="text-white">Done: 3 books are tagged “Hard SF”, and Dune now has an AZW3.</p>
+              </div>
+            </div>
+
+            <!-- Dalibre's side: the MCP popover -->
+            <div class="rounded-2xl border border-sand-6 bg-paper p-2 text-sm shadow-xl shadow-ink/5">
+              <div class="flex items-center gap-3 px-3 pt-2 pb-3">
+                <div class="min-w-0 flex-1">
+                  <p class="font-semibold">MCP</p>
+                  <p class="text-xs text-green">Running · can change books</p>
+                </div>
+                <span class="flex h-4 w-7 items-center justify-end rounded-full bg-accent px-0.5" aria-hidden="true"><i class="size-3 rounded-full bg-white"></i></span>
+              </div>
+              <div class="border-t border-sand-4 px-3 py-3">
+                <p class="text-[11px] font-semibold tracking-wider text-sand-9 uppercase">Agents</p>
+                <div class="mt-2 flex items-center gap-2.5">
+                  <span class="flex size-6 items-center justify-center rounded-md bg-[#cc7852] text-[10px] font-semibold text-white">CC</span>
+                  <div class="min-w-0 flex-1">
+                    <p class="font-medium">Claude Code</p>
+                    <p class="text-xs text-green">Working now · 5 calls</p>
+                  </div>
+                  <i class="size-2 rounded-full bg-green"></i>
+                </div>
+              </div>
+              <div class="border-t border-sand-4 px-3 pt-3 pb-1">
+                <p class="text-[11px] font-semibold tracking-wider text-sand-9 uppercase">Activity</p>
+                <ul class="mt-1">
+                  {[
+                    ["M5 12h14M12 5v14", "Added AZW3 to “Dune”", "10:42"],
+                    ["M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z", "Read “Dune”", "10:41"],
+                    ["M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z", "Edited 3 books", "10:41"],
+                    ["m21 21-4.34-4.34M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0", "Searched the library · 3 books", "10:40"],
+                  ].map(([d, text, time]) => (
+                    <li class="flex items-start gap-2.5 py-2">
+                      <svg class="mt-0.5 size-4 shrink-0 text-sand-11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d={d} /></svg>
+                      <div>
+                        <p>{text}</p>
+                        <p class="text-xs text-sand-9">Claude Code · {time}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <ul class="mt-10 grid gap-x-10 gap-y-6 text-sm sm:grid-cols-3">
+            <li>
+              <p class="font-medium">On your computer only</p>
+              <p class="mt-1 leading-relaxed text-sand-11">The server listens on 127.0.0.1, and only programs with its token get in.</p>
+            </li>
+            <li>
+              <p class="font-medium">Every call in sight</p>
+              <p class="mt-1 leading-relaxed text-sand-11">The toolbar shows the agent at work; its popover lists what each agent did.</p>
+            </li>
+            <li>
+              <p class="font-medium">Read only, if you like</p>
+              <p class="mt-1 leading-relaxed text-sand-11">Agents get every tool by default. One switch keeps them to searching and reading.</p>
+            </li>
+          </ul>
+
+          <div class="mt-12 flex flex-wrap items-center gap-3">
+            <a
+              href="/docs/mcp/#connect-an-agent"
+              class="rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper transition hover:bg-black"
+            >
+              Connect your agent →
+            </a>
+            <a
+              href="/docs/mcp/"
+              class="rounded-full border border-sand-6 bg-paper px-5 py-2.5 text-sm font-medium transition hover:border-sand-9"
+            >
+              Read the MCP docs
+            </a>
+          </div>
+        </div>
+      </section>
+
       <!-- Send to device -->
-      <section id="devices" class="scroll-mt-14 border-t border-sand-4 bg-paper-2">
+      <section id="devices" class="scroll-mt-14 border-t border-sand-4">
         <div class="mx-auto max-w-6xl px-5 py-24 sm:py-32">
           <div class="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
             <div class="max-w-2xl">
-              <p class="font-mono text-xs tracking-widest text-green uppercase">03 · Send to device</p>
+              <p class="font-mono text-xs tracking-widest text-green uppercase">04 · Send to device</p>
               <h2 class="mt-4 font-serif text-5xl leading-[1.02] tracking-tight sm:text-6xl">
                 From your library<br />to <em class="text-green">your e-reader.</em>
               </h2>
@@ -423,10 +558,10 @@ export async function search({ text, page }) {
       </section>
 
       <!-- Calibre compatibility -->
-      <section id="calibre" class="scroll-mt-14 border-t border-sand-4">
+      <section id="calibre" class="scroll-mt-14 border-t border-sand-4 bg-paper-2">
         <div class="mx-auto grid max-w-6xl gap-12 px-5 py-24 sm:py-28 lg:grid-cols-2">
           <div>
-            <p class="font-mono text-xs tracking-widest text-green uppercase">04 · No migration</p>
+            <p class="font-mono text-xs tracking-widest text-green uppercase">05 · No migration</p>
             <h2 class="mt-4 font-serif text-5xl leading-[1.02] tracking-tight">
               Keep your library.<br />Keep calibre, too.
             </h2>
@@ -445,10 +580,10 @@ export async function search({ text, page }) {
       </section>
 
       <!-- FAQ -->
-      <section id="faq" class="scroll-mt-14 border-t border-sand-4 bg-paper-2">
+      <section id="faq" class="scroll-mt-14 border-t border-sand-4">
         <div class="mx-auto grid max-w-6xl gap-12 px-5 py-24 sm:py-28 lg:grid-cols-[1fr_1.6fr]">
           <div>
-            <p class="font-mono text-xs tracking-widest text-accent uppercase">05 · Questions</p>
+            <p class="font-mono text-xs tracking-widest text-accent uppercase">06 · Questions</p>
             <h2 class="mt-4 font-serif text-5xl leading-[1.02] tracking-tight">
               A calibre alternative,<br />answered.
             </h2>

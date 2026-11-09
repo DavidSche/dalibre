@@ -185,9 +185,6 @@
   "catalogSectionLabel": "OPDSカタログ",
   "catalogSectionTitle": "OPDSカタログ",
   "catalogAdd": "カタログを追加…",
-  "catalogSharing": "OPDS で共有中",
-  "catalogShareFailed": "OPDS で共有できませんでした",
-  "catalogShareStarting": "共有を開始しています…",
   "catalogTitleDefault": "カタログ",
   "catalogSettingsTooltip": "カタログの設定",
   "catalogRefresh": "更新",
@@ -631,5 +628,161 @@
   "mainFeedback": "フィードバック",
   "mainFeedbackReportBug": "不具合を報告…",
   "mainFeedbackRequestFeature": "機能をリクエスト…",
-  "mainFeedbackViewIssues": "GitHub で Issue を見る"
+  "mainFeedbackViewIssues": "GitHub で Issue を見る",
+  "settingsSectionMCP": "MCP",
+  "sharingSettingsTooltip": "{name}の設定",
+  "sharingOff": "オフ",
+  "mcpBody": "Claude Code や Cursor など、このコンピュータの AI Agent は、Dalibre が開いている間、MCP でこのライブラリを検索して読めます。",
+  "mcpRunning": "実行中 · {status}",
+  "mcpNoAgentYet": "まだどの Agent も使っていません",
+  "mcpAgentUsed": "{agent} が{ago}に使用",
+  "mcpAnAgent": "Agent",
+  "mcpPortInUse": "起動できません：ポート {port} は使用中です。別のポートを選んでください。",
+  "mcpCantStart": "起動できません：{error}",
+  "mcpAllowChanges": "Agent に本の編集・追加・削除を許可",
+  "mcpToken": "Token",
+  "mcpNewToken": "新しい Token",
+  "mcpNewTokenMade": "新しい Token を作成しました。古い Token で設定した Agent は設定し直してください。",
+  "mcpConnect": "Agent を接続",
+  "mcpCopySetup": "{client} の設定をコピー",
+  "mcpCopiedSetup": "{client} の設定をコピーしました",
+  "mcpHintClaudeCode": "ターミナルで実行します。",
+  "mcpHintClaudeDesktop": "claude_desktop_config.json に追加して、Claude Desktop を再起動します。",
+  "mcpHintCursor": "~/.cursor/mcp.json に追加します。",
+  "mcpNote": "接続できるのは、このコンピュータで Token を持つアプリだけです。",
+  "mcpAgentsCount": "{count, plural, other {# 個の Agent}}",
+  "@mcpAgentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAgentsWorking": "{agents}が作業中",
+  "mcpRunningReadOnly": "実行中 · 読み取り専用",
+  "mcpRunningChanges": "実行中 · 本を変更可能",
+  "mcpAgentsHeading": "Agent",
+  "mcpReadOnlyNote": "読み取り専用：Agent は本を変更できません。",
+  "mcpAllowChangesButton": "変更を許可",
+  "mcpAgentLast": "{ago} · {count, plural, other {# 回}}の呼び出し",
+  "@mcpAgentLast": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAgentWorking": "作業中 · {count, plural, other {# 回}}の呼び出し",
+  "@mcpAgentWorking": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpActivity": "アクティビティ",
+  "mcpClear": "消去",
+  "mcpNoCalls": "まだ呼び出しはありません",
+  "mcpNow": "たった今",
+  "mcpCallMeta": "{agent} · {time}",
+  "mcpSearchedLibrary": "ライブラリを検索 · {count, plural, other {# 冊}}",
+  "@mcpSearchedLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpSearched": "「{query}」を検索 · {count, plural, other {# 冊}}",
+  "@mcpSearched": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpFoundBooks": "本を入手で「{query}」を検索 · {count, plural, other {# 件}}",
+  "@mcpFoundBooks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpRead": "「{title}」を読み込み",
+  "mcpReadMany": "{count, plural, other {# 冊}}を読み込み",
+  "@mcpReadMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpListed": "{kind, select, authors {著者を一覧} series {シリーズを一覧} tags {タグを一覧} publishers {出版社を一覧} languages {言語を一覧} formats {形式を一覧} other {{kind} を一覧}}",
+  "mcpEdited": "「{title}」を編集",
+  "mcpEditedMany": "{count, plural, other {# 冊}}を編集",
+  "@mcpEditedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpSetCover": "「{title}」の表紙を変更",
+  "mcpSetCoverMany": "{count, plural, other {# 冊}}の表紙を変更",
+  "@mcpSetCoverMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAdded": "「{title}」を追加",
+  "mcpAddedMany": "{count, plural, other {# 冊}}を追加",
+  "@mcpAddedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpRemoved": "「{title}」を削除",
+  "mcpRemovedMany": "{count, plural, other {# 冊}}を削除",
+  "@mcpRemovedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAddedFormat": "「{title}」に {format} を追加",
+  "mcpRemovedFormat": "「{title}」から {format} を削除",
+  "mcpDownloaded": "「{title}」をダウンロード",
+  "mcpDownloadedMany": "{count, plural, other {# 冊}}をダウンロード",
+  "@mcpDownloadedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpFoundMetadata": "「{title}」のメタデータを検索",
+  "mcpTools": "Tools",
+  "mcpToolsCount": "Agent が使えるのは {total} 個中 {used} 個",
+  "mcpGroupRead": "検索と読み取り",
+  "mcpGroupChange": "ライブラリの変更",
+  "mcpGroupSources": "本を入手",
+  "mcpToolsOff": "変更を許可するまでオフ",
+  "mcpToolSearchBooks": "タイトル、著者、シリーズ、タグなどでライブラリを検索します。",
+  "mcpToolGetBook": "本の詳細、説明、ファイルのパスを読み取ります。",
+  "mcpToolListFacets": "著者、シリーズ、タグ、出版社、言語、形式を一覧にします。",
+  "mcpToolUpdateBooks": "1 冊以上の本のメタデータを編集します。",
+  "mcpToolSetCover": "本の表紙を置き換えます。",
+  "mcpToolAddBooks": "電子書籍ファイルをライブラリに追加します。",
+  "mcpToolAddFormat": "変換後などに、ファイルを本の形式として追加します。",
+  "mcpToolRemoveFormat": "本の形式を 1 つ削除します。",
+  "mcpToolRemoveBooks": "本をゴミ箱に移します。",
+  "mcpToolFindBooks": "本を入手のソースを検索します。",
+  "mcpToolDownloadBook": "本を入手の本をライブラリに追加します。",
+  "mcpToolFindMetadata": "メタデータプラグインで本のメタデータを調べます。"
 }

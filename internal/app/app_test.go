@@ -482,3 +482,23 @@ func TestNarrowWindowToolbarFits(t *testing.T) {
 		shot(t, tt, "narrow-"+strconv.Itoa(w))
 	}
 }
+
+// TestDialogClearsCaptionButtons checks a dialog in a short window stays
+// below the window's caption buttons, as Windows draws them at the top
+// right, over where the Settings close button would grow to.
+func TestDialogClearsCaptionButtons(t *testing.T) {
+	a := newTestApp(t)
+	tt := ui.NewTester(a.View, 900, 560)
+	bar := ui.TitleBar{Height: 48, Right: 138}
+	tt.SetTitleBar(bar)
+	a.openSettings(sectionGeneral)
+	tt.Frame()
+	shot(t, tt, "settings-short")
+	r, ok := tt.Find("Close")
+	if !ok {
+		t.Fatalf("no close button; texts %q", tt.Texts())
+	}
+	if r.Y < bar.Height {
+		t.Errorf("close button at y=%v, under the caption buttons (to y=%v)", r.Y, bar.Height)
+	}
+}

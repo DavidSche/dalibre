@@ -86,6 +86,14 @@ type App struct {
 	deleteOpen bool
 	deleteIDs  []int64
 	jobsOpen   bool
+	// sharingOpen shows the Sharing popover, agentsOpen the AI agents one.
+	sharingOpen, agentsOpen bool
+	// agentsCall is the call whose arguments the AI agents popover shows.
+	agentsCall int64
+	// agentsWake is when the AI agents button is next due to change.
+	agentsWake time.Time
+	// agentIcons are the agents' own icons, decoded, by agent name.
+	agentIcons map[string]ui.ImageSource
 	// pickerOpen is which filter's picker is open, by kind; pickerQuery
 	// narrows its list.
 	pickerOpen  [catalog.ByLanguage + 1]bool
@@ -126,6 +134,9 @@ type App struct {
 	section      settingsSection
 	catEdit      catalogEdit // the Add or Edit catalog sheet
 	shareEdit    shareEdit   // Settings › OPDS's sharing fields
+	mcpEdit      mcpEdit     // Settings › MCP's port field
+	mcpTab       int         // the agent Connect an agent shows
+	mcpTicking   bool        // a rebuild is due to keep MCP's status current
 
 	// OPDS: the catalogs' sources, what checking each found (by catalog
 	// id), the catalog page, and the server sharing the library.
@@ -134,6 +145,8 @@ type App struct {
 	cp            catalogPage
 	share         *shareState
 	libShared     atomic.Pointer[calibre.Library]
+	// mcpSrv is the server serving the library to the user's agents.
+	mcpSrv *mcpState
 	// secrets keeps passwords: the system's credential store; nil in tests
 	// until they set one.
 	secrets secretStore
@@ -210,6 +223,7 @@ func (a *App) Attach(win *mygo.Window) {
 	a.findCalibreLibrary()
 	a.openLibrary(a.startupLibrary())
 	a.applyShare()
+	a.applyMCP()
 	a.checkUpdates(false)
 	a.au.updater = mygoUpdater{}
 	a.au.relaunch = mygo.App.Relaunch

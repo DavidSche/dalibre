@@ -426,6 +426,8 @@ func (a *App) toolbar(c *ui.Context) {
 			a.settings.HideDetail = !a.settings.HideDetail
 			a.saveSettings()
 		}
+		a.sharingButton(c)
+		a.agentsButton(c)
 		ui.Box(c).Size(1, 20).Background(pal().Border).Margin(0, theme.Space4)
 		label := locales.CommonAddBooks()
 		if compact {

@@ -62,30 +62,10 @@ func (a *App) catalogsNav(c *ui.Context) {
 	})
 }
 
-// settingsNav is Feedback and Settings at the sidebar's foot, and the
-// library's sharing while it runs.
+// settingsNav is Feedback and Settings at the sidebar's foot; sharing
+// shows in the toolbar (sharingButton).
 func (a *App) settingsNav(c *ui.Context) {
 	ui.Column(c).Padding(0, theme.Space8, theme.Space8, theme.Space8).Gap(theme.Space2).AlignItems(ui.Stretch).Children(func() {
-		if st := a.share; st != nil && a.settings.OPDS.Share.On {
-			label, col := locales.CatalogSharing(), pal().Success.FG
-			switch {
-			case st.err != nil:
-				label, col = locales.CatalogShareFailed(), pal().Danger.FG
-			case st.server == nil:
-				label, col = locales.CatalogShareStarting(), pal().IconMuted
-			}
-			row := ui.ButtonBase(c.Key("sharing")).Height(30).Radius(theme.RadiusSM).Padding(0, theme.Space8).Gap(theme.Space8).AlignItems(ui.Center).Label(label)
-			if a.share.server != nil {
-				row.Tooltip(a.shareAddress())
-			}
-			if row.Hovered() {
-				row.Background(pal().Hover)
-			}
-			row.OnClick(func() { a.openSettings(sectionOPDS) }).Children(func() {
-				ui.Icon(c, icons.Wifi).FontSize(16).TextColor(col)
-				ui.Text(c, label).FontSize(12).FontWeight(500).Grow(1).SingleLine()
-			})
-		}
 		a.feedbackNav(c)
 		row := ui.ButtonBase(c.Key("settings")).Height(30).Radius(theme.RadiusSM).Padding(0, theme.Space8).Gap(theme.Space8).AlignItems(ui.Center).Label(locales.CommonSettings())
 		if row.Hovered() {
@@ -131,6 +111,8 @@ func (a *App) catalogToolbar(c *ui.Context) {
 			a.settings.HideDetail = !a.settings.HideDetail
 			a.saveSettings()
 		}
+		a.sharingButton(c)
+		a.agentsButton(c)
 		if p != nil {
 			ui.Box(c).Size(1, 20).Background(pal().Border).Margin(0, theme.Space4)
 			if widgets.Button(c, widgets.Secondary, icons.Refresh, locales.CatalogRefresh()).Clicked() {

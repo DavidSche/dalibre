@@ -185,9 +185,6 @@
   "catalogSectionLabel": "OPDS 카탈로그",
   "catalogSectionTitle": "OPDS 카탈로그",
   "catalogAdd": "카탈로그 추가…",
-  "catalogSharing": "OPDS로 공유",
-  "catalogShareFailed": "OPDS로 공유할 수 없습니다",
-  "catalogShareStarting": "공유를 시작하는 중…",
   "catalogTitleDefault": "카탈로그",
   "catalogSettingsTooltip": "카탈로그 설정",
   "catalogRefresh": "새로고침",
@@ -821,5 +818,161 @@
   "mainFeedback": "피드백",
   "mainFeedbackReportBug": "버그 신고…",
   "mainFeedbackRequestFeature": "기능 요청…",
-  "mainFeedbackViewIssues": "GitHub에서 이슈 보기"
+  "mainFeedbackViewIssues": "GitHub에서 이슈 보기",
+  "settingsSectionMCP": "MCP",
+  "sharingSettingsTooltip": "{name} 설정",
+  "sharingOff": "꺼짐",
+  "mcpBody": "Claude Code, Cursor 같은 이 컴퓨터의 AI Agent가 Dalibre가 열려 있는 동안 MCP로 이 서재를 검색하고 읽을 수 있습니다.",
+  "mcpRunning": "실행 중 · {status}",
+  "mcpNoAgentYet": "아직 사용한 Agent가 없습니다",
+  "mcpAgentUsed": "{agent}이(가) {ago} 사용함",
+  "mcpAnAgent": "Agent",
+  "mcpPortInUse": "시작할 수 없음: 포트 {port}이(가) 사용 중입니다. 다른 포트를 고르세요.",
+  "mcpCantStart": "시작할 수 없음: {error}",
+  "mcpAllowChanges": "Agent가 책을 편집, 추가, 삭제하도록 허용",
+  "mcpToken": "Token",
+  "mcpNewToken": "새 Token",
+  "mcpNewTokenMade": "새 Token을 만들었습니다. 이전 Token으로 설정한 Agent는 다시 설정해야 합니다.",
+  "mcpConnect": "Agent 연결",
+  "mcpCopySetup": "{client} 설정 복사",
+  "mcpCopiedSetup": "{client} 설정을 복사했습니다",
+  "mcpHintClaudeCode": "터미널에서 실행하세요.",
+  "mcpHintClaudeDesktop": "claude_desktop_config.json에 추가한 다음 Claude Desktop을 다시 시작하세요.",
+  "mcpHintCursor": "~/.cursor/mcp.json에 추가하세요.",
+  "mcpNote": "이 컴퓨터에서 Token이 있는 앱만 연결할 수 있습니다.",
+  "mcpAgentsCount": "{count, plural, other {Agent #개}}",
+  "@mcpAgentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAgentsWorking": "{agents} 작업 중",
+  "mcpRunningReadOnly": "실행 중 · 읽기 전용",
+  "mcpRunningChanges": "실행 중 · 책 변경 가능",
+  "mcpAgentsHeading": "Agent",
+  "mcpReadOnlyNote": "읽기 전용: Agent가 책을 바꿀 수 없습니다.",
+  "mcpAllowChangesButton": "변경 허용",
+  "mcpAgentLast": "{ago} · {count, plural, other {#회 호출}}",
+  "@mcpAgentLast": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAgentWorking": "지금 작업 중 · {count, plural, other {#회 호출}}",
+  "@mcpAgentWorking": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpActivity": "활동",
+  "mcpClear": "지우기",
+  "mcpNoCalls": "아직 호출이 없습니다",
+  "mcpNow": "방금",
+  "mcpCallMeta": "{agent} · {time}",
+  "mcpSearchedLibrary": "서재 검색 · {count, plural, other {책 #권}}",
+  "@mcpSearchedLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpSearched": "“{query}” 검색 · {count, plural, other {책 #권}}",
+  "@mcpSearched": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpFoundBooks": "책 받기에서 “{query}” 찾음 · {count, plural, other {결과 #개}}",
+  "@mcpFoundBooks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpRead": "“{title}” 읽음",
+  "mcpReadMany": "{count, plural, other {책 #권}} 읽음",
+  "@mcpReadMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpListed": "{kind, select, authors {저자 목록} series {시리즈 목록} tags {태그 목록} publishers {출판사 목록} languages {언어 목록} formats {형식 목록} other {{kind} 목록}}",
+  "mcpEdited": "“{title}” 편집",
+  "mcpEditedMany": "{count, plural, other {책 #권}} 편집",
+  "@mcpEditedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpSetCover": "“{title}” 표지 변경",
+  "mcpSetCoverMany": "표지 {count, plural, other {#개}} 변경",
+  "@mcpSetCoverMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAdded": "“{title}” 추가",
+  "mcpAddedMany": "{count, plural, other {책 #권}} 추가",
+  "@mcpAddedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpRemoved": "“{title}” 삭제",
+  "mcpRemovedMany": "{count, plural, other {책 #권}} 삭제",
+  "@mcpRemovedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAddedFormat": "“{title}”에 {format} 추가",
+  "mcpRemovedFormat": "“{title}”에서 {format} 삭제",
+  "mcpDownloaded": "“{title}” 다운로드",
+  "mcpDownloadedMany": "{count, plural, other {책 #권}} 다운로드",
+  "@mcpDownloadedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpFoundMetadata": "“{title}” 메타데이터 찾음",
+  "mcpTools": "Tools",
+  "mcpToolsCount": "Agent가 {total}개 중 {used}개 사용 가능",
+  "mcpGroupRead": "검색 및 읽기",
+  "mcpGroupChange": "서재 변경",
+  "mcpGroupSources": "책 받기",
+  "mcpToolsOff": "변경을 허용하기 전까지 꺼짐",
+  "mcpToolSearchBooks": "제목, 저자, 시리즈, 태그 등으로 서재를 검색합니다.",
+  "mcpToolGetBook": "책의 세부 정보, 설명, 파일 경로를 읽습니다.",
+  "mcpToolListFacets": "저자, 시리즈, 태그, 출판사, 언어, 형식 목록을 만듭니다.",
+  "mcpToolUpdateBooks": "책 한 권 이상의 메타데이터를 편집합니다.",
+  "mcpToolSetCover": "책 표지를 바꿉니다.",
+  "mcpToolAddBooks": "전자책 파일을 서재에 추가합니다.",
+  "mcpToolAddFormat": "변환 후처럼, 파일을 책의 형식으로 추가합니다.",
+  "mcpToolRemoveFormat": "책의 형식 하나를 삭제합니다.",
+  "mcpToolRemoveBooks": "책을 휴지통으로 옮깁니다.",
+  "mcpToolFindBooks": "책 받기의 소스를 검색합니다.",
+  "mcpToolDownloadBook": "책 받기의 책을 서재에 추가합니다.",
+  "mcpToolFindMetadata": "메타데이터 플러그인으로 책의 메타데이터를 찾습니다."
 }

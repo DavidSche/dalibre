@@ -36,7 +36,7 @@ password manager, as installed apps only accept updates it signs.
 
 1. Bump `version` in `cmd/dalibre/mygo.json`, and add its `## <version>`
    section to [CHANGELOG.md](CHANGELOG.md): the update window shows it.
-2. Commit, then tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
+2. Commit, then tag and push: `git tag v0.3.0 && git push origin v0.3.0`.
 3. The [Release workflow](.github/workflows/release.yml) builds every
    platform into a draft release. Publish the draft, and installed apps
    update to it.
@@ -66,6 +66,7 @@ internal/
   catalog/            search, filters, sorting and sidebar counts (no UI)
   plugin/             plugins: manifest, sandboxed JS runtime, consent, packages
   reader/             text, pictures, tables and notes of EPUB, KEPUB and TXT books
+  mcp/                the MCP server: tools, call log, stdio bridge
   settings/           user settings persisted as JSON
   thumbs/             on-disk cover thumbnails
   app/                state, actions and views of the window
@@ -82,6 +83,14 @@ add a source as a plugin: a `plugin.json` and a JavaScript file, run
 sandboxed inside Dalibre. See
 [Writing Dalibre plugins](docs/plugins/README.md) and the
 [design](docs/plugins/design.md).
+
+## MCP
+
+Your own agents (Claude Code, Claude Desktop, Cursor…) can use the open
+library over MCP: search it, edit metadata, add books, and convert
+formats with their own tools. See
+[Using Dalibre with your agents](docs/mcp/README.md) and the
+[design](docs/mcp/design.md).
 
 ## Compatibility with calibre
 

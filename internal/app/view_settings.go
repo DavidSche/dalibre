@@ -28,6 +28,7 @@ const (
 	sectionLibrary
 	sectionOPDS
 	sectionPlugins
+	sectionMCP
 )
 
 // sections lists the Settings sections. id is the stable key; the title
@@ -42,6 +43,7 @@ var sections = []struct {
 	{sectionLibrary, "Library", locales.CommonLibrary, icons.Library},
 	{sectionOPDS, "OPDS", locales.SettingsSectionOPDS, icons.Rss},
 	{sectionPlugins, "Plugins", locales.SettingsSectionPlugins, icons.Puzzle},
+	{sectionMCP, "MCP", locales.SettingsSectionMCP, icons.Bot},
 }
 
 // settingsWidth is the Settings window's width: Plugins' list and plugin
@@ -80,6 +82,8 @@ func (a *App) settingsDialog(c *ui.Context) {
 				a.opdsPane(c)
 			case sectionPlugins:
 				a.pluginsPane(c)
+			case sectionMCP:
+				a.mcpPane(c)
 			}
 		})
 	}, func() {

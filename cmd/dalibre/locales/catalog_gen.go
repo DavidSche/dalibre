@@ -1937,36 +1937,6 @@ func (msgs Messages) CatalogAdd() string {
 	return Catalog.Format(msgs.locale, "catalogAdd", nil)
 }
 
-// CatalogSharing says "Sharing over OPDS"
-// in the language the app shows.
-func CatalogSharing() string { return In(i18n.Locale()).CatalogSharing() }
-
-// CatalogSharing says "Sharing over OPDS"
-// in the language of msgs.
-func (msgs Messages) CatalogSharing() string {
-	return Catalog.Format(msgs.locale, "catalogSharing", nil)
-}
-
-// CatalogShareFailed says "Couldn’t share over OPDS"
-// in the language the app shows.
-func CatalogShareFailed() string { return In(i18n.Locale()).CatalogShareFailed() }
-
-// CatalogShareFailed says "Couldn’t share over OPDS"
-// in the language of msgs.
-func (msgs Messages) CatalogShareFailed() string {
-	return Catalog.Format(msgs.locale, "catalogShareFailed", nil)
-}
-
-// CatalogShareStarting says "Starting to share…"
-// in the language the app shows.
-func CatalogShareStarting() string { return In(i18n.Locale()).CatalogShareStarting() }
-
-// CatalogShareStarting says "Starting to share…"
-// in the language of msgs.
-func (msgs Messages) CatalogShareStarting() string {
-	return Catalog.Format(msgs.locale, "catalogShareStarting", nil)
-}
-
 // CatalogTitleDefault says "Catalog"
 // in the language the app shows.
 func CatalogTitleDefault() string { return In(i18n.Locale()).CatalogTitleDefault() }
@@ -6013,4 +5983,736 @@ func MainFeedbackViewIssues() string { return In(i18n.Locale()).MainFeedbackView
 // in the language of msgs.
 func (msgs Messages) MainFeedbackViewIssues() string {
 	return Catalog.Format(msgs.locale, "mainFeedbackViewIssues", nil)
+}
+
+// SettingsSectionMCP says "MCP"
+// in the language the app shows.
+func SettingsSectionMCP() string { return In(i18n.Locale()).SettingsSectionMCP() }
+
+// SettingsSectionMCP says "MCP"
+// in the language of msgs.
+func (msgs Messages) SettingsSectionMCP() string {
+	return Catalog.Format(msgs.locale, "settingsSectionMCP", nil)
+}
+
+// SharingSettingsTooltip says "{name} settings"
+// in the language the app shows.
+func SharingSettingsTooltip(name string) string {
+	return In(i18n.Locale()).SharingSettingsTooltip(name)
+}
+
+// SharingSettingsTooltip says "{name} settings"
+// in the language of msgs.
+func (msgs Messages) SharingSettingsTooltip(name string) string {
+	return Catalog.Format(msgs.locale, "sharingSettingsTooltip", map[string]any{"name": name})
+}
+
+// SharingOff says "Off"
+// in the language the app shows.
+func SharingOff() string { return In(i18n.Locale()).SharingOff() }
+
+// SharingOff says "Off"
+// in the language of msgs.
+func (msgs Messages) SharingOff() string {
+	return Catalog.Format(msgs.locale, "sharingOff", nil)
+}
+
+// McpBody says "AI agents on this computer, like Claude Code and Cursor, can search and read this library over MCP while Dalibre is o…"
+// in the language the app shows.
+func McpBody() string { return In(i18n.Locale()).McpBody() }
+
+// McpBody says "AI agents on this computer, like Claude Code and Cursor, can search and read this library over MCP while Dalibre is o…"
+// in the language of msgs.
+func (msgs Messages) McpBody() string {
+	return Catalog.Format(msgs.locale, "mcpBody", nil)
+}
+
+// McpRunning says "Running · {status}"
+// in the language the app shows.
+func McpRunning(status string) string { return In(i18n.Locale()).McpRunning(status) }
+
+// McpRunning says "Running · {status}"
+// in the language of msgs.
+func (msgs Messages) McpRunning(status string) string {
+	return Catalog.Format(msgs.locale, "mcpRunning", map[string]any{"status": status})
+}
+
+// McpNoAgentYet says "No agent has used it yet"
+// in the language the app shows.
+func McpNoAgentYet() string { return In(i18n.Locale()).McpNoAgentYet() }
+
+// McpNoAgentYet says "No agent has used it yet"
+// in the language of msgs.
+func (msgs Messages) McpNoAgentYet() string {
+	return Catalog.Format(msgs.locale, "mcpNoAgentYet", nil)
+}
+
+// McpAgentUsed says "{agent} used it {ago}"
+// in the language the app shows.
+func McpAgentUsed(agent string, ago string) string { return In(i18n.Locale()).McpAgentUsed(agent, ago) }
+
+// McpAgentUsed says "{agent} used it {ago}"
+// in the language of msgs.
+func (msgs Messages) McpAgentUsed(agent string, ago string) string {
+	return Catalog.Format(msgs.locale, "mcpAgentUsed", map[string]any{"agent": agent, "ago": ago})
+}
+
+// McpAnAgent says "An agent"
+// in the language the app shows.
+func McpAnAgent() string { return In(i18n.Locale()).McpAnAgent() }
+
+// McpAnAgent says "An agent"
+// in the language of msgs.
+func (msgs Messages) McpAnAgent() string {
+	return Catalog.Format(msgs.locale, "mcpAnAgent", nil)
+}
+
+// McpPortInUse says "Can’t start: port {port} is in use. Pick another port."
+// in the language the app shows.
+func McpPortInUse(port string) string { return In(i18n.Locale()).McpPortInUse(port) }
+
+// McpPortInUse says "Can’t start: port {port} is in use. Pick another port."
+// in the language of msgs.
+func (msgs Messages) McpPortInUse(port string) string {
+	return Catalog.Format(msgs.locale, "mcpPortInUse", map[string]any{"port": port})
+}
+
+// McpCantStart says "Can’t start: {error}"
+// in the language the app shows.
+func McpCantStart(error string) string { return In(i18n.Locale()).McpCantStart(error) }
+
+// McpCantStart says "Can’t start: {error}"
+// in the language of msgs.
+func (msgs Messages) McpCantStart(error string) string {
+	return Catalog.Format(msgs.locale, "mcpCantStart", map[string]any{"error": error})
+}
+
+// McpAllowChanges says "Let agents edit, add and remove books"
+// in the language the app shows.
+func McpAllowChanges() string { return In(i18n.Locale()).McpAllowChanges() }
+
+// McpAllowChanges says "Let agents edit, add and remove books"
+// in the language of msgs.
+func (msgs Messages) McpAllowChanges() string {
+	return Catalog.Format(msgs.locale, "mcpAllowChanges", nil)
+}
+
+// McpToken says "Token"
+// in the language the app shows.
+func McpToken() string { return In(i18n.Locale()).McpToken() }
+
+// McpToken says "Token"
+// in the language of msgs.
+func (msgs Messages) McpToken() string {
+	return Catalog.Format(msgs.locale, "mcpToken", nil)
+}
+
+// McpNewToken says "New token"
+// in the language the app shows.
+func McpNewToken() string { return In(i18n.Locale()).McpNewToken() }
+
+// McpNewToken says "New token"
+// in the language of msgs.
+func (msgs Messages) McpNewToken() string {
+	return Catalog.Format(msgs.locale, "mcpNewToken", nil)
+}
+
+// McpNewTokenMade says "Made a new token. Agents set up with the old one need the new setup."
+// in the language the app shows.
+func McpNewTokenMade() string { return In(i18n.Locale()).McpNewTokenMade() }
+
+// McpNewTokenMade says "Made a new token. Agents set up with the old one need the new setup."
+// in the language of msgs.
+func (msgs Messages) McpNewTokenMade() string {
+	return Catalog.Format(msgs.locale, "mcpNewTokenMade", nil)
+}
+
+// McpConnect says "Connect an agent"
+// in the language the app shows.
+func McpConnect() string { return In(i18n.Locale()).McpConnect() }
+
+// McpConnect says "Connect an agent"
+// in the language of msgs.
+func (msgs Messages) McpConnect() string {
+	return Catalog.Format(msgs.locale, "mcpConnect", nil)
+}
+
+// McpCopySetup says "Copy the setup for {client}"
+// in the language the app shows.
+func McpCopySetup(client string) string { return In(i18n.Locale()).McpCopySetup(client) }
+
+// McpCopySetup says "Copy the setup for {client}"
+// in the language of msgs.
+func (msgs Messages) McpCopySetup(client string) string {
+	return Catalog.Format(msgs.locale, "mcpCopySetup", map[string]any{"client": client})
+}
+
+// McpCopiedSetup says "Copied the setup for {client}"
+// in the language the app shows.
+func McpCopiedSetup(client string) string { return In(i18n.Locale()).McpCopiedSetup(client) }
+
+// McpCopiedSetup says "Copied the setup for {client}"
+// in the language of msgs.
+func (msgs Messages) McpCopiedSetup(client string) string {
+	return Catalog.Format(msgs.locale, "mcpCopiedSetup", map[string]any{"client": client})
+}
+
+// McpHintClaudeCode says "Run it in a terminal."
+// in the language the app shows.
+func McpHintClaudeCode() string { return In(i18n.Locale()).McpHintClaudeCode() }
+
+// McpHintClaudeCode says "Run it in a terminal."
+// in the language of msgs.
+func (msgs Messages) McpHintClaudeCode() string {
+	return Catalog.Format(msgs.locale, "mcpHintClaudeCode", nil)
+}
+
+// McpHintClaudeDesktop says "Add it to claude_desktop_config.json, then restart Claude Desktop."
+// in the language the app shows.
+func McpHintClaudeDesktop() string { return In(i18n.Locale()).McpHintClaudeDesktop() }
+
+// McpHintClaudeDesktop says "Add it to claude_desktop_config.json, then restart Claude Desktop."
+// in the language of msgs.
+func (msgs Messages) McpHintClaudeDesktop() string {
+	return Catalog.Format(msgs.locale, "mcpHintClaudeDesktop", nil)
+}
+
+// McpHintCursor says "Add it to ~/.cursor/mcp.json."
+// in the language the app shows.
+func McpHintCursor() string { return In(i18n.Locale()).McpHintCursor() }
+
+// McpHintCursor says "Add it to ~/.cursor/mcp.json."
+// in the language of msgs.
+func (msgs Messages) McpHintCursor() string {
+	return Catalog.Format(msgs.locale, "mcpHintCursor", nil)
+}
+
+// McpNote says "Only apps on this computer can connect, with the token."
+// in the language the app shows.
+func McpNote() string { return In(i18n.Locale()).McpNote() }
+
+// McpNote says "Only apps on this computer can connect, with the token."
+// in the language of msgs.
+func (msgs Messages) McpNote() string {
+	return Catalog.Format(msgs.locale, "mcpNote", nil)
+}
+
+// McpAgentsCount says "{count, plural, one {# agent} other {# agents}}"
+// in the language the app shows.
+func McpAgentsCount(count int) string { return In(i18n.Locale()).McpAgentsCount(count) }
+
+// McpAgentsCount says "{count, plural, one {# agent} other {# agents}}"
+// in the language of msgs.
+func (msgs Messages) McpAgentsCount(count int) string {
+	return Catalog.Format(msgs.locale, "mcpAgentsCount", map[string]any{"count": count})
+}
+
+// McpAgentsWorking says "{agents} at work"
+// in the language the app shows.
+func McpAgentsWorking(agents string) string { return In(i18n.Locale()).McpAgentsWorking(agents) }
+
+// McpAgentsWorking says "{agents} at work"
+// in the language of msgs.
+func (msgs Messages) McpAgentsWorking(agents string) string {
+	return Catalog.Format(msgs.locale, "mcpAgentsWorking", map[string]any{"agents": agents})
+}
+
+// McpRunningReadOnly says "Running · read only"
+// in the language the app shows.
+func McpRunningReadOnly() string { return In(i18n.Locale()).McpRunningReadOnly() }
+
+// McpRunningReadOnly says "Running · read only"
+// in the language of msgs.
+func (msgs Messages) McpRunningReadOnly() string {
+	return Catalog.Format(msgs.locale, "mcpRunningReadOnly", nil)
+}
+
+// McpRunningChanges says "Running · can change books"
+// in the language the app shows.
+func McpRunningChanges() string { return In(i18n.Locale()).McpRunningChanges() }
+
+// McpRunningChanges says "Running · can change books"
+// in the language of msgs.
+func (msgs Messages) McpRunningChanges() string {
+	return Catalog.Format(msgs.locale, "mcpRunningChanges", nil)
+}
+
+// McpAgentsHeading says "Agents"
+// in the language the app shows.
+func McpAgentsHeading() string { return In(i18n.Locale()).McpAgentsHeading() }
+
+// McpAgentsHeading says "Agents"
+// in the language of msgs.
+func (msgs Messages) McpAgentsHeading() string {
+	return Catalog.Format(msgs.locale, "mcpAgentsHeading", nil)
+}
+
+// McpReadOnlyNote says "Read only: agents can’t change books."
+// in the language the app shows.
+func McpReadOnlyNote() string { return In(i18n.Locale()).McpReadOnlyNote() }
+
+// McpReadOnlyNote says "Read only: agents can’t change books."
+// in the language of msgs.
+func (msgs Messages) McpReadOnlyNote() string {
+	return Catalog.Format(msgs.locale, "mcpReadOnlyNote", nil)
+}
+
+// McpAllowChangesButton says "Allow changes"
+// in the language the app shows.
+func McpAllowChangesButton() string { return In(i18n.Locale()).McpAllowChangesButton() }
+
+// McpAllowChangesButton says "Allow changes"
+// in the language of msgs.
+func (msgs Messages) McpAllowChangesButton() string {
+	return Catalog.Format(msgs.locale, "mcpAllowChangesButton", nil)
+}
+
+// McpAgentLast says "{ago} · {count, plural, one {# call} other {# calls}}"
+// in the language the app shows.
+func McpAgentLast(count int, ago string) string { return In(i18n.Locale()).McpAgentLast(count, ago) }
+
+// McpAgentLast says "{ago} · {count, plural, one {# call} other {# calls}}"
+// in the language of msgs.
+func (msgs Messages) McpAgentLast(count int, ago string) string {
+	return Catalog.Format(msgs.locale, "mcpAgentLast", map[string]any{"count": count, "ago": ago})
+}
+
+// McpAgentWorking says "Working now · {count, plural, one {# call} other {# calls}}"
+// in the language the app shows.
+func McpAgentWorking(count int) string { return In(i18n.Locale()).McpAgentWorking(count) }
+
+// McpAgentWorking says "Working now · {count, plural, one {# call} other {# calls}}"
+// in the language of msgs.
+func (msgs Messages) McpAgentWorking(count int) string {
+	return Catalog.Format(msgs.locale, "mcpAgentWorking", map[string]any{"count": count})
+}
+
+// McpActivity says "Activity"
+// in the language the app shows.
+func McpActivity() string { return In(i18n.Locale()).McpActivity() }
+
+// McpActivity says "Activity"
+// in the language of msgs.
+func (msgs Messages) McpActivity() string {
+	return Catalog.Format(msgs.locale, "mcpActivity", nil)
+}
+
+// McpClear says "Clear"
+// in the language the app shows.
+func McpClear() string { return In(i18n.Locale()).McpClear() }
+
+// McpClear says "Clear"
+// in the language of msgs.
+func (msgs Messages) McpClear() string {
+	return Catalog.Format(msgs.locale, "mcpClear", nil)
+}
+
+// McpNoCalls says "No calls yet"
+// in the language the app shows.
+func McpNoCalls() string { return In(i18n.Locale()).McpNoCalls() }
+
+// McpNoCalls says "No calls yet"
+// in the language of msgs.
+func (msgs Messages) McpNoCalls() string {
+	return Catalog.Format(msgs.locale, "mcpNoCalls", nil)
+}
+
+// McpNow says "now"
+// in the language the app shows.
+func McpNow() string { return In(i18n.Locale()).McpNow() }
+
+// McpNow says "now"
+// in the language of msgs.
+func (msgs Messages) McpNow() string {
+	return Catalog.Format(msgs.locale, "mcpNow", nil)
+}
+
+// McpCallMeta says "{agent} · {time}"
+// in the language the app shows.
+func McpCallMeta(agent string, time_ string) string {
+	return In(i18n.Locale()).McpCallMeta(agent, time_)
+}
+
+// McpCallMeta says "{agent} · {time}"
+// in the language of msgs.
+func (msgs Messages) McpCallMeta(agent string, time_ string) string {
+	return Catalog.Format(msgs.locale, "mcpCallMeta", map[string]any{"agent": agent, "time": time_})
+}
+
+// McpSearchedLibrary says "Searched the library · {count, plural, one {# book} other {# books}}"
+// in the language the app shows.
+func McpSearchedLibrary(count int) string { return In(i18n.Locale()).McpSearchedLibrary(count) }
+
+// McpSearchedLibrary says "Searched the library · {count, plural, one {# book} other {# books}}"
+// in the language of msgs.
+func (msgs Messages) McpSearchedLibrary(count int) string {
+	return Catalog.Format(msgs.locale, "mcpSearchedLibrary", map[string]any{"count": count})
+}
+
+// McpSearched says "Searched “{query}” · {count, plural, one {# book} other {# books}}"
+// in the language the app shows.
+func McpSearched(count int, query string) string { return In(i18n.Locale()).McpSearched(count, query) }
+
+// McpSearched says "Searched “{query}” · {count, plural, one {# book} other {# books}}"
+// in the language of msgs.
+func (msgs Messages) McpSearched(count int, query string) string {
+	return Catalog.Format(msgs.locale, "mcpSearched", map[string]any{"count": count, "query": query})
+}
+
+// McpFoundBooks says "Looked for “{query}” in Get books · {count, plural, one {# result} other {# results}}"
+// in the language the app shows.
+func McpFoundBooks(count int, query string) string {
+	return In(i18n.Locale()).McpFoundBooks(count, query)
+}
+
+// McpFoundBooks says "Looked for “{query}” in Get books · {count, plural, one {# result} other {# results}}"
+// in the language of msgs.
+func (msgs Messages) McpFoundBooks(count int, query string) string {
+	return Catalog.Format(msgs.locale, "mcpFoundBooks", map[string]any{"count": count, "query": query})
+}
+
+// McpRead says "Read “{title}”"
+// in the language the app shows.
+func McpRead(title string) string { return In(i18n.Locale()).McpRead(title) }
+
+// McpRead says "Read “{title}”"
+// in the language of msgs.
+func (msgs Messages) McpRead(title string) string {
+	return Catalog.Format(msgs.locale, "mcpRead", map[string]any{"title": title})
+}
+
+// McpReadMany says "Read {count, plural, one {# book} other {# books}}"
+// in the language the app shows.
+func McpReadMany(count int) string { return In(i18n.Locale()).McpReadMany(count) }
+
+// McpReadMany says "Read {count, plural, one {# book} other {# books}}"
+// in the language of msgs.
+func (msgs Messages) McpReadMany(count int) string {
+	return Catalog.Format(msgs.locale, "mcpReadMany", map[string]any{"count": count})
+}
+
+// McpListed says "{kind, select, authors {Listed authors} series {Listed series} tags {Listed tags} publishers {Listed publishers} lang…"
+// in the language the app shows.
+func McpListed(kind string) string { return In(i18n.Locale()).McpListed(kind) }
+
+// McpListed says "{kind, select, authors {Listed authors} series {Listed series} tags {Listed tags} publishers {Listed publishers} lang…"
+// in the language of msgs.
+func (msgs Messages) McpListed(kind string) string {
+	return Catalog.Format(msgs.locale, "mcpListed", map[string]any{"kind": kind})
+}
+
+// McpEdited says "Edited “{title}”"
+// in the language the app shows.
+func McpEdited(title string) string { return In(i18n.Locale()).McpEdited(title) }
+
+// McpEdited says "Edited “{title}”"
+// in the language of msgs.
+func (msgs Messages) McpEdited(title string) string {
+	return Catalog.Format(msgs.locale, "mcpEdited", map[string]any{"title": title})
+}
+
+// McpEditedMany says "Edited {count, plural, one {# book} other {# books}}"
+// in the language the app shows.
+func McpEditedMany(count int) string { return In(i18n.Locale()).McpEditedMany(count) }
+
+// McpEditedMany says "Edited {count, plural, one {# book} other {# books}}"
+// in the language of msgs.
+func (msgs Messages) McpEditedMany(count int) string {
+	return Catalog.Format(msgs.locale, "mcpEditedMany", map[string]any{"count": count})
+}
+
+// McpSetCover says "Changed the cover of “{title}”"
+// in the language the app shows.
+func McpSetCover(title string) string { return In(i18n.Locale()).McpSetCover(title) }
+
+// McpSetCover says "Changed the cover of “{title}”"
+// in the language of msgs.
+func (msgs Messages) McpSetCover(title string) string {
+	return Catalog.Format(msgs.locale, "mcpSetCover", map[string]any{"title": title})
+}
+
+// McpSetCoverMany says "Changed {count, plural, one {# cover} other {# covers}}"
+// in the language the app shows.
+func McpSetCoverMany(count int) string { return In(i18n.Locale()).McpSetCoverMany(count) }
+
+// McpSetCoverMany says "Changed {count, plural, one {# cover} other {# covers}}"
+// in the language of msgs.
+func (msgs Messages) McpSetCoverMany(count int) string {
+	return Catalog.Format(msgs.locale, "mcpSetCoverMany", map[string]any{"count": count})
+}
+
+// McpAdded says "Added “{title}”"
+// in the language the app shows.
+func McpAdded(title string) string { return In(i18n.Locale()).McpAdded(title) }
+
+// McpAdded says "Added “{title}”"
+// in the language of msgs.
+func (msgs Messages) McpAdded(title string) string {
+	return Catalog.Format(msgs.locale, "mcpAdded", map[string]any{"title": title})
+}
+
+// McpAddedMany says "Added {count, plural, one {# book} other {# books}}"
+// in the language the app shows.
+func McpAddedMany(count int) string { return In(i18n.Locale()).McpAddedMany(count) }
+
+// McpAddedMany says "Added {count, plural, one {# book} other {# books}}"
+// in the language of msgs.
+func (msgs Messages) McpAddedMany(count int) string {
+	return Catalog.Format(msgs.locale, "mcpAddedMany", map[string]any{"count": count})
+}
+
+// McpRemoved says "Removed “{title}”"
+// in the language the app shows.
+func McpRemoved(title string) string { return In(i18n.Locale()).McpRemoved(title) }
+
+// McpRemoved says "Removed “{title}”"
+// in the language of msgs.
+func (msgs Messages) McpRemoved(title string) string {
+	return Catalog.Format(msgs.locale, "mcpRemoved", map[string]any{"title": title})
+}
+
+// McpRemovedMany says "Removed {count, plural, one {# book} other {# books}}"
+// in the language the app shows.
+func McpRemovedMany(count int) string { return In(i18n.Locale()).McpRemovedMany(count) }
+
+// McpRemovedMany says "Removed {count, plural, one {# book} other {# books}}"
+// in the language of msgs.
+func (msgs Messages) McpRemovedMany(count int) string {
+	return Catalog.Format(msgs.locale, "mcpRemovedMany", map[string]any{"count": count})
+}
+
+// McpAddedFormat says "Added {format} to “{title}”"
+// in the language the app shows.
+func McpAddedFormat(format string, title string) string {
+	return In(i18n.Locale()).McpAddedFormat(format, title)
+}
+
+// McpAddedFormat says "Added {format} to “{title}”"
+// in the language of msgs.
+func (msgs Messages) McpAddedFormat(format string, title string) string {
+	return Catalog.Format(msgs.locale, "mcpAddedFormat", map[string]any{"format": format, "title": title})
+}
+
+// McpRemovedFormat says "Removed {format} from “{title}”"
+// in the language the app shows.
+func McpRemovedFormat(format string, title string) string {
+	return In(i18n.Locale()).McpRemovedFormat(format, title)
+}
+
+// McpRemovedFormat says "Removed {format} from “{title}”"
+// in the language of msgs.
+func (msgs Messages) McpRemovedFormat(format string, title string) string {
+	return Catalog.Format(msgs.locale, "mcpRemovedFormat", map[string]any{"format": format, "title": title})
+}
+
+// McpDownloaded says "Downloaded “{title}”"
+// in the language the app shows.
+func McpDownloaded(title string) string { return In(i18n.Locale()).McpDownloaded(title) }
+
+// McpDownloaded says "Downloaded “{title}”"
+// in the language of msgs.
+func (msgs Messages) McpDownloaded(title string) string {
+	return Catalog.Format(msgs.locale, "mcpDownloaded", map[string]any{"title": title})
+}
+
+// McpDownloadedMany says "Downloaded {count, plural, one {# book} other {# books}}"
+// in the language the app shows.
+func McpDownloadedMany(count int) string { return In(i18n.Locale()).McpDownloadedMany(count) }
+
+// McpDownloadedMany says "Downloaded {count, plural, one {# book} other {# books}}"
+// in the language of msgs.
+func (msgs Messages) McpDownloadedMany(count int) string {
+	return Catalog.Format(msgs.locale, "mcpDownloadedMany", map[string]any{"count": count})
+}
+
+// McpFoundMetadata says "Looked up metadata for “{title}”"
+// in the language the app shows.
+func McpFoundMetadata(title string) string { return In(i18n.Locale()).McpFoundMetadata(title) }
+
+// McpFoundMetadata says "Looked up metadata for “{title}”"
+// in the language of msgs.
+func (msgs Messages) McpFoundMetadata(title string) string {
+	return Catalog.Format(msgs.locale, "mcpFoundMetadata", map[string]any{"title": title})
+}
+
+// McpTools says "Tools"
+// in the language the app shows.
+func McpTools() string { return In(i18n.Locale()).McpTools() }
+
+// McpTools says "Tools"
+// in the language of msgs.
+func (msgs Messages) McpTools() string {
+	return Catalog.Format(msgs.locale, "mcpTools", nil)
+}
+
+// McpToolsCount says "Agents can use {used} of {total}"
+// in the language the app shows.
+func McpToolsCount(used string, total string) string {
+	return In(i18n.Locale()).McpToolsCount(used, total)
+}
+
+// McpToolsCount says "Agents can use {used} of {total}"
+// in the language of msgs.
+func (msgs Messages) McpToolsCount(used string, total string) string {
+	return Catalog.Format(msgs.locale, "mcpToolsCount", map[string]any{"used": used, "total": total})
+}
+
+// McpGroupRead says "Search and read"
+// in the language the app shows.
+func McpGroupRead() string { return In(i18n.Locale()).McpGroupRead() }
+
+// McpGroupRead says "Search and read"
+// in the language of msgs.
+func (msgs Messages) McpGroupRead() string {
+	return Catalog.Format(msgs.locale, "mcpGroupRead", nil)
+}
+
+// McpGroupChange says "Change the library"
+// in the language the app shows.
+func McpGroupChange() string { return In(i18n.Locale()).McpGroupChange() }
+
+// McpGroupChange says "Change the library"
+// in the language of msgs.
+func (msgs Messages) McpGroupChange() string {
+	return Catalog.Format(msgs.locale, "mcpGroupChange", nil)
+}
+
+// McpGroupSources says "Get books"
+// in the language the app shows.
+func McpGroupSources() string { return In(i18n.Locale()).McpGroupSources() }
+
+// McpGroupSources says "Get books"
+// in the language of msgs.
+func (msgs Messages) McpGroupSources() string {
+	return Catalog.Format(msgs.locale, "mcpGroupSources", nil)
+}
+
+// McpToolsOff says "Off until changes are allowed"
+// in the language the app shows.
+func McpToolsOff() string { return In(i18n.Locale()).McpToolsOff() }
+
+// McpToolsOff says "Off until changes are allowed"
+// in the language of msgs.
+func (msgs Messages) McpToolsOff() string {
+	return Catalog.Format(msgs.locale, "mcpToolsOff", nil)
+}
+
+// McpToolSearchBooks says "Search the library by title, author, series, tag and more."
+// in the language the app shows.
+func McpToolSearchBooks() string { return In(i18n.Locale()).McpToolSearchBooks() }
+
+// McpToolSearchBooks says "Search the library by title, author, series, tag and more."
+// in the language of msgs.
+func (msgs Messages) McpToolSearchBooks() string {
+	return Catalog.Format(msgs.locale, "mcpToolSearchBooks", nil)
+}
+
+// McpToolGetBook says "Read a book’s details, description and file paths."
+// in the language the app shows.
+func McpToolGetBook() string { return In(i18n.Locale()).McpToolGetBook() }
+
+// McpToolGetBook says "Read a book’s details, description and file paths."
+// in the language of msgs.
+func (msgs Messages) McpToolGetBook() string {
+	return Catalog.Format(msgs.locale, "mcpToolGetBook", nil)
+}
+
+// McpToolListFacets says "List authors, series, tags, publishers, languages or formats."
+// in the language the app shows.
+func McpToolListFacets() string { return In(i18n.Locale()).McpToolListFacets() }
+
+// McpToolListFacets says "List authors, series, tags, publishers, languages or formats."
+// in the language of msgs.
+func (msgs Messages) McpToolListFacets() string {
+	return Catalog.Format(msgs.locale, "mcpToolListFacets", nil)
+}
+
+// McpToolUpdateBooks says "Edit the metadata of one or more books."
+// in the language the app shows.
+func McpToolUpdateBooks() string { return In(i18n.Locale()).McpToolUpdateBooks() }
+
+// McpToolUpdateBooks says "Edit the metadata of one or more books."
+// in the language of msgs.
+func (msgs Messages) McpToolUpdateBooks() string {
+	return Catalog.Format(msgs.locale, "mcpToolUpdateBooks", nil)
+}
+
+// McpToolSetCover says "Replace a book’s cover."
+// in the language the app shows.
+func McpToolSetCover() string { return In(i18n.Locale()).McpToolSetCover() }
+
+// McpToolSetCover says "Replace a book’s cover."
+// in the language of msgs.
+func (msgs Messages) McpToolSetCover() string {
+	return Catalog.Format(msgs.locale, "mcpToolSetCover", nil)
+}
+
+// McpToolAddBooks says "Add e-book files to the library."
+// in the language the app shows.
+func McpToolAddBooks() string { return In(i18n.Locale()).McpToolAddBooks() }
+
+// McpToolAddBooks says "Add e-book files to the library."
+// in the language of msgs.
+func (msgs Messages) McpToolAddBooks() string {
+	return Catalog.Format(msgs.locale, "mcpToolAddBooks", nil)
+}
+
+// McpToolAddFormat says "Add a file to a book as a format, as after a conversion."
+// in the language the app shows.
+func McpToolAddFormat() string { return In(i18n.Locale()).McpToolAddFormat() }
+
+// McpToolAddFormat says "Add a file to a book as a format, as after a conversion."
+// in the language of msgs.
+func (msgs Messages) McpToolAddFormat() string {
+	return Catalog.Format(msgs.locale, "mcpToolAddFormat", nil)
+}
+
+// McpToolRemoveFormat says "Delete one format of a book."
+// in the language the app shows.
+func McpToolRemoveFormat() string { return In(i18n.Locale()).McpToolRemoveFormat() }
+
+// McpToolRemoveFormat says "Delete one format of a book."
+// in the language of msgs.
+func (msgs Messages) McpToolRemoveFormat() string {
+	return Catalog.Format(msgs.locale, "mcpToolRemoveFormat", nil)
+}
+
+// McpToolRemoveBooks says "Move books to the Trash."
+// in the language the app shows.
+func McpToolRemoveBooks() string { return In(i18n.Locale()).McpToolRemoveBooks() }
+
+// McpToolRemoveBooks says "Move books to the Trash."
+// in the language of msgs.
+func (msgs Messages) McpToolRemoveBooks() string {
+	return Catalog.Format(msgs.locale, "mcpToolRemoveBooks", nil)
+}
+
+// McpToolFindBooks says "Search Get books’ sources."
+// in the language the app shows.
+func McpToolFindBooks() string { return In(i18n.Locale()).McpToolFindBooks() }
+
+// McpToolFindBooks says "Search Get books’ sources."
+// in the language of msgs.
+func (msgs Messages) McpToolFindBooks() string {
+	return Catalog.Format(msgs.locale, "mcpToolFindBooks", nil)
+}
+
+// McpToolDownloadBook says "Add a book from Get books to the library."
+// in the language the app shows.
+func McpToolDownloadBook() string { return In(i18n.Locale()).McpToolDownloadBook() }
+
+// McpToolDownloadBook says "Add a book from Get books to the library."
+// in the language of msgs.
+func (msgs Messages) McpToolDownloadBook() string {
+	return Catalog.Format(msgs.locale, "mcpToolDownloadBook", nil)
+}
+
+// McpToolFindMetadata says "Look up a book’s metadata with metadata plugins."
+// in the language the app shows.
+func McpToolFindMetadata() string { return In(i18n.Locale()).McpToolFindMetadata() }
+
+// McpToolFindMetadata says "Look up a book’s metadata with metadata plugins."
+// in the language of msgs.
+func (msgs Messages) McpToolFindMetadata() string {
+	return Catalog.Format(msgs.locale, "mcpToolFindMetadata", nil)
 }

@@ -4,7 +4,7 @@ Each version's section is the release notes that Dalibre's update window
 shows, so write them for readers of the app. `mygo build` needs a
 `## <version>` section for the version in `cmd/dalibre/mygo.json`.
 
-## 0.2.0
+## 0.3.0
 
 - Read books in Dalibre itself: a quiet, full-window page with the
   contents, bookmarks, your place kept, and type you can size, space and
@@ -20,6 +20,17 @@ shows, so write them for readers of the app. `mygo build` needs a
   chapters under them are indented instead of listed flat. Plugins can add
   a reader that lays books out their way; Dalibre extracts the text,
   pictures and tables and draws the page.
+
+## 0.2.0
+
+- Your own AI agents, such as Claude Code, Claude Desktop and Cursor, can
+  use your library over MCP: search it, read and edit metadata, add and
+  remove books, and convert formats with their own tools. Turn it on from
+  the new MCP button in the toolbar; Settings › MCP has the setup for each
+  agent and lists every tool.
+- While an agent works, the MCP button shows which one, and its popover
+  lists what each agent did.
+- Sharing the library over OPDS moves to its own button in the toolbar.
 
 ## 0.1.1
 

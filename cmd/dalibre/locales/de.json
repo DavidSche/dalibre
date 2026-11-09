@@ -185,9 +185,6 @@
   "catalogSectionLabel": "OPDS-Kataloge",
   "catalogSectionTitle": "OPDS-KATALOGE",
   "catalogAdd": "Katalog hinzufügen…",
-  "catalogSharing": "Freigabe über OPDS",
-  "catalogShareFailed": "Freigabe über OPDS nicht möglich",
-  "catalogShareStarting": "Freigabe wird gestartet…",
   "catalogTitleDefault": "Katalog",
   "catalogSettingsTooltip": "Katalogeinstellungen",
   "catalogRefresh": "Aktualisieren",
@@ -821,5 +818,161 @@
   "mainFeedback": "Feedback",
   "mainFeedbackReportBug": "Fehler melden…",
   "mainFeedbackRequestFeature": "Funktion vorschlagen…",
-  "mainFeedbackViewIssues": "Issues auf GitHub ansehen"
+  "mainFeedbackViewIssues": "Issues auf GitHub ansehen",
+  "settingsSectionMCP": "MCP",
+  "sharingSettingsTooltip": "Einstellungen für {name}",
+  "sharingOff": "Aus",
+  "mcpBody": "KI-Agenten auf diesem Computer, etwa Claude Code und Cursor, können diese Bibliothek über MCP durchsuchen und lesen, solange Dalibre geöffnet ist.",
+  "mcpRunning": "Läuft · {status}",
+  "mcpNoAgentYet": "Noch kein Agent hat sie genutzt",
+  "mcpAgentUsed": "{agent} hat sie {ago} genutzt",
+  "mcpAnAgent": "Ein Agent",
+  "mcpPortInUse": "Start nicht möglich: Port {port} ist belegt. Wähle einen anderen Port.",
+  "mcpCantStart": "Start nicht möglich: {error}",
+  "mcpAllowChanges": "Agenten dürfen Bücher bearbeiten, hinzufügen und entfernen",
+  "mcpToken": "Token",
+  "mcpNewToken": "Neues Token",
+  "mcpNewTokenMade": "Neues Token erstellt. Agenten mit dem alten Token müssen neu eingerichtet werden.",
+  "mcpConnect": "Agent verbinden",
+  "mcpCopySetup": "Einrichtung für {client} kopieren",
+  "mcpCopiedSetup": "Einrichtung für {client} kopiert",
+  "mcpHintClaudeCode": "Im Terminal ausführen.",
+  "mcpHintClaudeDesktop": "In claude_desktop_config.json einfügen und Claude Desktop neu starten.",
+  "mcpHintCursor": "In ~/.cursor/mcp.json einfügen.",
+  "mcpNote": "Nur Apps auf diesem Computer mit dem Token können sich verbinden.",
+  "mcpAgentsCount": "{count, plural, one {# Agent} other {# Agenten}}",
+  "@mcpAgentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAgentsWorking": "{agents} arbeitet",
+  "mcpRunningReadOnly": "Läuft · nur lesen",
+  "mcpRunningChanges": "Läuft · darf Bücher ändern",
+  "mcpAgentsHeading": "Agenten",
+  "mcpReadOnlyNote": "Nur lesen: Agenten können keine Bücher ändern.",
+  "mcpAllowChangesButton": "Änderungen erlauben",
+  "mcpAgentLast": "{ago} · {count, plural, one {# Aufruf} other {# Aufrufe}}",
+  "@mcpAgentLast": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAgentWorking": "Arbeitet gerade · {count, plural, one {# Aufruf} other {# Aufrufe}}",
+  "@mcpAgentWorking": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpActivity": "Aktivität",
+  "mcpClear": "Leeren",
+  "mcpNoCalls": "Noch keine Aufrufe",
+  "mcpNow": "gerade eben",
+  "mcpCallMeta": "{agent} · {time}",
+  "mcpSearchedLibrary": "Bibliothek durchsucht · {count, plural, one {# Buch} other {# Bücher}}",
+  "@mcpSearchedLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpSearched": "Nach „{query}“ gesucht · {count, plural, one {# Buch} other {# Bücher}}",
+  "@mcpSearched": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpFoundBooks": "In „Bücher holen“ nach „{query}“ gesucht · {count, plural, one {# Treffer} other {# Treffer}}",
+  "@mcpFoundBooks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpRead": "„{title}“ gelesen",
+  "mcpReadMany": "{count, plural, one {# Buch} other {# Bücher}} gelesen",
+  "@mcpReadMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpListed": "{kind, select, authors {Autoren aufgelistet} series {Reihen aufgelistet} tags {Schlagwörter aufgelistet} publishers {Verlage aufgelistet} languages {Sprachen aufgelistet} formats {Formate aufgelistet} other {{kind} aufgelistet}}",
+  "mcpEdited": "„{title}“ bearbeitet",
+  "mcpEditedMany": "{count, plural, one {# Buch} other {# Bücher}} bearbeitet",
+  "@mcpEditedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpSetCover": "Cover von „{title}“ geändert",
+  "mcpSetCoverMany": "{count, plural, one {# Cover} other {# Cover}} geändert",
+  "@mcpSetCoverMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAdded": "„{title}“ hinzugefügt",
+  "mcpAddedMany": "{count, plural, one {# Buch} other {# Bücher}} hinzugefügt",
+  "@mcpAddedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpRemoved": "„{title}“ entfernt",
+  "mcpRemovedMany": "{count, plural, one {# Buch} other {# Bücher}} entfernt",
+  "@mcpRemovedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAddedFormat": "{format} zu „{title}“ hinzugefügt",
+  "mcpRemovedFormat": "{format} aus „{title}“ entfernt",
+  "mcpDownloaded": "„{title}“ geladen",
+  "mcpDownloadedMany": "{count, plural, one {# Buch} other {# Bücher}} geladen",
+  "@mcpDownloadedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpFoundMetadata": "Metadaten für „{title}“ gesucht",
+  "mcpTools": "Tools",
+  "mcpToolsCount": "Agenten können {used} von {total} nutzen",
+  "mcpGroupRead": "Suchen und lesen",
+  "mcpGroupChange": "Bibliothek ändern",
+  "mcpGroupSources": "Bücher holen",
+  "mcpToolsOff": "Aus, bis Änderungen erlaubt sind",
+  "mcpToolSearchBooks": "Die Bibliothek nach Titel, Autor, Reihe, Schlagwort und mehr durchsuchen.",
+  "mcpToolGetBook": "Details, Beschreibung und Dateipfade eines Buchs lesen.",
+  "mcpToolListFacets": "Autoren, Reihen, Schlagwörter, Verlage, Sprachen oder Formate auflisten.",
+  "mcpToolUpdateBooks": "Metadaten eines oder mehrerer Bücher bearbeiten.",
+  "mcpToolSetCover": "Das Cover eines Buchs ersetzen.",
+  "mcpToolAddBooks": "E-Book-Dateien zur Bibliothek hinzufügen.",
+  "mcpToolAddFormat": "Eine Datei als Format zu einem Buch hinzufügen, etwa nach einer Umwandlung.",
+  "mcpToolRemoveFormat": "Ein Format eines Buchs löschen.",
+  "mcpToolRemoveBooks": "Bücher in den Papierkorb legen.",
+  "mcpToolFindBooks": "Die Quellen von „Bücher holen“ durchsuchen.",
+  "mcpToolDownloadBook": "Ein Buch aus „Bücher holen“ zur Bibliothek hinzufügen.",
+  "mcpToolFindMetadata": "Metadaten eines Buchs mit Metadaten-Plugins suchen."
 }

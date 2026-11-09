@@ -4,6 +4,9 @@
 package widgets
 
 import (
+	"strings"
+	"unicode"
+
 	"github.com/egoist/mygo/ui"
 
 	"dalibre/cmd/dalibre/locales"
@@ -198,8 +201,11 @@ func dialogFrame(c *ui.Context, open *bool, width float32, compact bool, header 
 		headPad = [4]float32{theme.Space6, theme.Space8, theme.Space6, theme.Space16}
 		footV, footH = theme.Space8, theme.Space16
 	}
+	// The panel stays below the window's caption buttons: in a short window
+	// it would otherwise grow up under them (Windows' sit on the right).
+	bar := c.TitleBar()
 	ui.DialogBase(c, open, func(backdrop, panel ui.Element) {
-		backdrop.Background(pal().Scrim)
+		backdrop.Background(pal().Scrim).Padding(bar.Height, 0)
 		panel.Width(width).MaxHeight(ui.Auto).Background(pal().SurfaceRaised).Border(1, pal().BorderSubtle).Radius(theme.RadiusXL).Clip().
 			Shadow(0, 2, 6, 0, ui.RGBA(26, 23, 18, 0.08)).Shadow(0, 24, 48, -8, ui.RGBA(26, 23, 18, 0.24)).AlignItems(ui.Stretch)
 		panel.Children(func() {
@@ -261,4 +267,96 @@ func FormatOption(c *ui.Context, name, title, description string, selected bool)
 			})
 		})
 	})
+}
+
+// IndicatorButton is the SharingIndicator component: an IconButton with a
+// dot of color at its top right when dot is true.
+func IndicatorButton(c *ui.Context, icon *ui.SVG, label string, active, dot bool, color ui.Color) ui.Element {
+	b := ui.ButtonBase(c).Size(theme.ControlM, theme.ControlM).Radius(theme.RadiusSM).Center().Label(label).Tooltip(label)
+	fg := pal().Icon
+	switch {
+	case active:
+		b.Background(pal().Selected)
+		fg = pal().TextAccent
+	case b.Hovered():
+		b.Background(pal().Hover)
+		fg = pal().Text
+	}
+	b.TextColor(fg).Children(func() {
+		ui.Icon(c, icon).FontSize(16)
+		if dot {
+			ui.Box(c).Absolute().Top(5).Right(4).Size(8, 8).Radius(4).Background(color).Border(1.5, pal().BgApp).PassThrough()
+		}
+	})
+	return b
+}
+
+// AgentAvatar is the AgentAvatar component: an agent's own icon when
+// there is one, else the initials of its name on a color from it.
+func AgentAvatar(c *ui.Context, name string, icon ui.ImageSource, size float32) ui.Element {
+	box := ui.Box(c).Size(size, size).Radius(size * 0.28).Center().Clip()
+	if icon != nil {
+		return box.Children(func() { ui.Image(c, icon).Size(size, size).Fit(ui.Contain) })
+	}
+	in := initials(name)
+	fs := size * 0.55
+	if len([]rune(in)) > 1 {
+		fs = size * 0.42
+	}
+	return box.Background(avatarColor(name)).Children(func() {
+		ui.Text(c, in).FontSize(fs).FontWeight(600).TextColor(ui.RGB(255, 255, 255)).SingleLine()
+	})
+}
+
+// initials are the first letters of name's first two words, as "CC" for
+// Claude Code, or its first letter.
+func initials(name string) string {
+	var out []rune
+	for _, w := range strings.FieldsFunc(name, func(r rune) bool { return r == ' ' || r == '-' || r == '_' || r == '.' }) {
+		r := []rune(w)
+		out = append(out, unicode.ToUpper(r[0]))
+		if len(out) == 2 {
+			break
+		}
+	}
+	if len(out) == 0 {
+		return "?"
+	}
+	return string(out)
+}
+
+// avatarColors are the colors AgentAvatar picks from, dark enough for
+// white initials.
+var avatarColors = []ui.Color{
+	ui.RGB(204, 120, 82), ui.RGB(140, 107, 191), ui.RGB(56, 61, 69), ui.RGB(46, 125, 110),
+	ui.RGB(52, 101, 164), ui.RGB(176, 74, 94), ui.RGB(130, 110, 52),
+}
+
+func avatarColor(name string) ui.Color {
+	var h uint32 = 2166136261
+	for _, b := range []byte(strings.ToLower(name)) {
+		h = (h ^ uint32(b)) * 16777619
+	}
+	return avatarColors[h%uint32(len(avatarColors))]
+}
+
+// AgentButton is the AgentIndicator while agents work: their avatars,
+// label and a live dot.
+func AgentButton(c *ui.Context, name, label string, open bool, avatars func()) ui.Element {
+	b := ui.ButtonBase(c).Height(theme.ControlM).Padding(0, theme.Space10, 0, theme.Space6).Gap(theme.Space6).Radius(theme.RadiusSM).AlignItems(ui.Center).Label(name).Tooltip(name)
+	bg := pal().Subtle
+	switch {
+	case open:
+		bg = pal().Selected
+	case b.Hovered():
+		bg = pal().Hover
+	}
+	b.Background(bg).Children(func() {
+		ui.Row(c).Gap(-6).AlignItems(ui.Center).Children(avatars)
+		ui.Text(c, label).FontSize(12).FontWeight(500).TextColor(pal().Text).SingleLine()
+		ui.Box(c).Size(14, 14).Radius(7).Background(pal().Success.FG.Alpha(0.25)).Center().Children(func() {
+			ui.Box(c).Size(8, 8).Radius(4).Background(pal().Success.FG)
+		})
+	})
+	return b
 }

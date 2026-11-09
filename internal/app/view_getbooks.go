@@ -114,6 +114,8 @@ func (a *App) getBooksToolbar(c *ui.Context) {
 			a.settings.HideDetail = !a.settings.HideDetail
 			a.saveSettings()
 		}
+		a.sharingButton(c)
+		a.agentsButton(c)
 		if one != nil && one.Manifest.Homepage != "" {
 			ui.Box(c).Size(1, 20).Background(pal().Border).Margin(0, theme.Space4)
 			if widgets.Button(c, widgets.Secondary, icons.External, locales.GetBooksOpenSite()).Tooltip(one.Manifest.Homepage).Clicked() {

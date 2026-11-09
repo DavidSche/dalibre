@@ -4,6 +4,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"runtime"
 
 	"github.com/egoist/mygo"
@@ -16,6 +17,10 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "mcp" {
+		serveMCP()
+		return
+	}
 	if err := theme.RegisterFonts(); err != nil {
 		log.Fatal(err)
 	}

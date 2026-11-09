@@ -185,9 +185,6 @@
   "catalogSectionLabel": "OPDS 目錄",
   "catalogSectionTitle": "OPDS 目錄",
   "catalogAdd": "新增目錄…",
-  "catalogSharing": "透過 OPDS 分享中",
-  "catalogShareFailed": "無法透過 OPDS 分享",
-  "catalogShareStarting": "正在開始分享…",
   "catalogTitleDefault": "目錄",
   "catalogSettingsTooltip": "目錄設定",
   "catalogRefresh": "重新整理",
@@ -631,5 +628,161 @@
   "mainFeedback": "意見回饋",
   "mainFeedbackReportBug": "回報問題…",
   "mainFeedbackRequestFeature": "建議新功能…",
-  "mainFeedbackViewIssues": "在 GitHub 上查看問題"
+  "mainFeedbackViewIssues": "在 GitHub 上查看問題",
+  "settingsSectionMCP": "MCP",
+  "sharingSettingsTooltip": "{name}設定",
+  "sharingOff": "已關閉",
+  "mcpBody": "這台電腦上的 AI Agent（如 Claude Code 和 Cursor）可在 Dalibre 開啟時透過 MCP 搜尋和讀取此書庫。",
+  "mcpRunning": "執行中 · {status}",
+  "mcpNoAgentYet": "尚無 Agent 使用過",
+  "mcpAgentUsed": "{agent} {ago}使用過",
+  "mcpAnAgent": "某個 Agent",
+  "mcpPortInUse": "無法啟動：埠 {port} 已被占用，請換一個埠。",
+  "mcpCantStart": "無法啟動：{error}",
+  "mcpAllowChanges": "允許 Agent 編輯、加入和移除書籍",
+  "mcpToken": "Token",
+  "mcpNewToken": "新 Token",
+  "mcpNewTokenMade": "已產生新 Token。用舊 Token 設定的 Agent 需要重新設定。",
+  "mcpConnect": "連接 Agent",
+  "mcpCopySetup": "拷貝 {client} 的設定",
+  "mcpCopiedSetup": "已拷貝 {client} 的設定",
+  "mcpHintClaudeCode": "在終端機中執行。",
+  "mcpHintClaudeDesktop": "加入 claude_desktop_config.json，然後重新啟動 Claude Desktop。",
+  "mcpHintCursor": "加入 ~/.cursor/mcp.json。",
+  "mcpNote": "只有這台電腦上持有 Token 的 App 可以連接。",
+  "mcpAgentsCount": "{count, plural, other {# 個 Agent}}",
+  "@mcpAgentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAgentsWorking": "{agents}正在工作",
+  "mcpRunningReadOnly": "執行中 · 唯讀",
+  "mcpRunningChanges": "執行中 · 可修改書籍",
+  "mcpAgentsHeading": "Agent",
+  "mcpReadOnlyNote": "唯讀：Agent 不能修改書籍。",
+  "mcpAllowChangesButton": "允許修改",
+  "mcpAgentLast": "{ago} · {count, plural, other {# 次呼叫}}",
+  "@mcpAgentLast": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAgentWorking": "正在工作 · {count, plural, other {# 次呼叫}}",
+  "@mcpAgentWorking": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpActivity": "活動",
+  "mcpClear": "清除",
+  "mcpNoCalls": "尚無呼叫",
+  "mcpNow": "剛剛",
+  "mcpCallMeta": "{agent} · {time}",
+  "mcpSearchedLibrary": "搜尋了書庫 · {count, plural, other {# 本書}}",
+  "@mcpSearchedLibrary": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpSearched": "搜尋了「{query}」 · {count, plural, other {# 本書}}",
+  "@mcpSearched": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpFoundBooks": "在取得書籍中尋找了「{query}」 · {count, plural, other {# 個結果}}",
+  "@mcpFoundBooks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpRead": "讀取了「{title}」",
+  "mcpReadMany": "讀取了 {count, plural, other {# 本書}}",
+  "@mcpReadMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpListed": "{kind, select, authors {列出了作者} series {列出了系列} tags {列出了標籤} publishers {列出了出版社} languages {列出了語言} formats {列出了格式} other {列出了 {kind}}}",
+  "mcpEdited": "編輯了「{title}」",
+  "mcpEditedMany": "編輯了 {count, plural, other {# 本書}}",
+  "@mcpEditedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpSetCover": "更換了「{title}」的封面",
+  "mcpSetCoverMany": "更換了 {count, plural, other {# 個封面}}",
+  "@mcpSetCoverMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAdded": "加入了「{title}」",
+  "mcpAddedMany": "加入了 {count, plural, other {# 本書}}",
+  "@mcpAddedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpRemoved": "移除了「{title}」",
+  "mcpRemovedMany": "移除了 {count, plural, other {# 本書}}",
+  "@mcpRemovedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpAddedFormat": "為「{title}」加入了 {format}",
+  "mcpRemovedFormat": "移除了「{title}」的 {format}",
+  "mcpDownloaded": "下載了「{title}」",
+  "mcpDownloadedMany": "下載了 {count, plural, other {# 本書}}",
+  "@mcpDownloadedMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "mcpFoundMetadata": "查詢了「{title}」的中繼資料",
+  "mcpTools": "Tools",
+  "mcpToolsCount": "Agent 可用 {used}/{total} 個",
+  "mcpGroupRead": "搜尋與讀取",
+  "mcpGroupChange": "修改書庫",
+  "mcpGroupSources": "取得書籍",
+  "mcpToolsOff": "允許修改後可用",
+  "mcpToolSearchBooks": "依書名、作者、系列、標籤等搜尋書庫。",
+  "mcpToolGetBook": "讀取書籍的詳細資料、簡介和檔案路徑。",
+  "mcpToolListFacets": "列出作者、系列、標籤、出版社、語言或格式。",
+  "mcpToolUpdateBooks": "編輯一本或多本書的中繼資料。",
+  "mcpToolSetCover": "更換書籍封面。",
+  "mcpToolAddBooks": "將電子書檔案加入書庫。",
+  "mcpToolAddFormat": "將檔案作為一種格式加入書中，例如轉換之後。",
+  "mcpToolRemoveFormat": "刪除書籍的一種格式。",
+  "mcpToolRemoveBooks": "將書移到垃圾桶。",
+  "mcpToolFindBooks": "搜尋取得書籍的來源。",
+  "mcpToolDownloadBook": "將取得書籍中的書加入書庫。",
+  "mcpToolFindMetadata": "以中繼資料外掛查詢書籍的中繼資料。"
 }

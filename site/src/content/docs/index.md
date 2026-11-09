@@ -7,8 +7,17 @@ Dalibre is a calm, fast desktop app for your e-books. It opens the calibre
 library you already have, in a single native binary, and grows with
 plugins anyone can write.
 
-These docs are for people who want to extend it. More guides for using
-the app will follow with the first release.
+These docs are for people who want to connect it to their agents or
+extend it. More guides for using the app will follow.
+
+## MCP
+
+Your own AI agents, such as Claude Code, Claude Desktop and Cursor, can
+use your library over MCP: search it, edit metadata, add books, and
+convert formats with their own tools.
+
+[**MCP**](/docs/mcp/) has the setup for each agent, examples of what to
+ask, and every tool. As plain Markdown: [`/docs/mcp.md`](/docs/mcp.md).
 
 ## Plugins
 
