@@ -20,6 +20,9 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  # A fork can start the release from the tag when a deploy key push did
+  # not trigger the tag event, or to rebuild a release by hand.
+  workflow_dispatch:
 
 permissions:
   contents: write # the draft release, and the uploads to it
