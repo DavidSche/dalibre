@@ -329,11 +329,13 @@ in Dalibre's reader. `book` is `{ id, title, authors, language, format }`.
 ```ts
 Document: { title, language, chapters: Chapter[], truncated }
 Chapter:  { title, depth?, blocks: Block[], continued?, notes? }
-Block:    { kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table",
+Block:    { kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table" | "code",
             text?, level?, src?, alt?, caption?, table? }
 Note:     { id?, label?, text }
 ```
 
+A `code` block is preformatted text: keep its line breaks and leading
+spaces, and the page sets it in a monospaced block that scrolls sideways.
 A `table` block holds text cells only: `{ caption?, rows: [{ cells: [{
 text, header?, colspan?, rowspan? }] }] }`. A `note` is a footnote or
 endnote shown after the chapter, and the text carries `[label]` where the

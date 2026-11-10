@@ -99,9 +99,18 @@ function clean(s) {
   return (s || "").replace(/\s+/g, " ").trim();
 }
 
+/** Code keeps its lines and the spaces that indent them. */
+function codeText(s) {
+  return (s || "")
+    .replace(/\r\n?/g, "\n")
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+$/gm, "")
+    .replace(/^\n+|\n+$/g, "");
+}
+
 /** @param {Dalibre.Block} b */
 function blockText(b) {
-  if (b.kind === "divider" || b.kind === "image") return "";
+  if (b.kind === "divider" || b.kind === "image" || b.kind === "code") return "";
   if (b.kind === "table") return clean((b.table && b.table.caption) || "");
   return clean(b.text);
 }
@@ -124,6 +133,10 @@ function stripBoilerplate(chapters) {
   for (const ch of chapters) {
     const blocks = [];
     for (const b of ch.blocks) {
+      if (b.kind === "code") {
+        if (started) blocks.push({ ...b });
+        continue;
+      }
       let text = b.text || "";
       if (!started) {
         const m = START.exec(text);
@@ -203,6 +216,11 @@ function normalizeBlocks(blocks, headers) {
     if (b.kind === "divider") {
       // A rule at the start or end has nothing to divide.
       if (out.length > 0) out.push({ kind: "divider", text: "" });
+      continue;
+    }
+    if (b.kind === "code") {
+      const text = codeText(b.text);
+      if (text) out.push({ kind: "code", text });
       continue;
     }
     if (b.kind === "table") {

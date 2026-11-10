@@ -748,6 +748,7 @@ func TestReaderOpen(t *testing.T) {
 				{title: "One", depth: 3, notes: [{id: "n1", label: "1", text: "A note"}], blocks: [
 					{kind: "heading", text: "One", level: 1},
 					{kind: "paragraph", text: "Hi[1]"},
+					{kind: "code", text: "  def f():\n      return 1"},
 					{kind: "image", src: "img/plate.png", alt: "A plate", caption: "The plate"},
 					{kind: "table", table: {caption: "Sizes", rows: [
 						{cells: [{text: "Hall", header: true}, {text: "Size", colspan: 99, rowspan: 2}]},
@@ -783,13 +784,16 @@ func TestReaderOpen(t *testing.T) {
 	if got.Chapters[0].Depth != 3 || got.Chapters[1].Depth != 6 {
 		t.Fatalf("depth %d, %d", got.Chapters[0].Depth, got.Chapters[1].Depth)
 	}
-	if len(got.Chapters[0].Blocks) != 4 {
+	if len(got.Chapters[0].Blocks) != 5 {
 		t.Fatalf("blocks %+v", got.Chapters[0].Blocks)
 	}
-	if b := got.Chapters[0].Blocks[2]; b.Kind != reader.Image || b.Src != "img/plate.png" || b.Caption != "The plate" {
+	if b := got.Chapters[0].Blocks[2]; b.Kind != reader.Code || b.Text != "  def f():\n      return 1" {
+		t.Fatalf("code %+v", b)
+	}
+	if b := got.Chapters[0].Blocks[3]; b.Kind != reader.Image || b.Src != "img/plate.png" || b.Caption != "The plate" {
 		t.Fatalf("image %+v", b)
 	}
-	tb := got.Chapters[0].Blocks[3]
+	tb := got.Chapters[0].Blocks[4]
 	if tb.Kind != reader.TableBlock || tb.Table == nil || tb.Table.Caption != "Sizes" || len(tb.Table.Rows) != 2 {
 		t.Fatalf("table %+v", tb)
 	}

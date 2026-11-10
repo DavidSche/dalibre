@@ -79,6 +79,26 @@ func epubBytes(t *testing.T) []byte {
 	return buf.Bytes()
 }
 
+func TestPreformattedLines(t *testing.T) {
+	h := parseHTML([]byte(`<html><body>
+		<pre><code><div>def f():</div><div>&nbsp;&nbsp;&nbsp;&nbsp;return 1</div><div>&nbsp;&nbsp;&nbsp;&nbsp;return 2</div></code></pre>
+		<p>After.</p>
+	</body></html>`))
+	blocks, _ := h.blocks("", nil, nil, nil, "", "")
+	if len(blocks) != 2 {
+		t.Fatalf("blocks %+v", blocks)
+	}
+	if blocks[0].Kind != Code {
+		t.Fatalf("kind %q", blocks[0].Kind)
+	}
+	if want := "def f():\n    return 1\n    return 2"; blocks[0].Text != want {
+		t.Fatalf("code %q, want %q", blocks[0].Text, want)
+	}
+	if blocks[1].Kind != Paragraph || blocks[1].Text != "After." {
+		t.Fatalf("after %+v", blocks[1])
+	}
+}
+
 func TestExtractEPUB(t *testing.T) {
 	d, err := Extract(writeFile(t, "book.epub", epubBytes(t)), "")
 	if err != nil {
@@ -100,7 +120,7 @@ func TestExtractEPUB(t *testing.T) {
 		kinds = append(kinds, b.Kind)
 		texts = append(texts, b.Text)
 	}
-	want := []string{Heading, Paragraph, Quote, Heading, Paragraph, Image}
+	want := []string{Heading, Paragraph, Quote, Heading, Code, Image}
 	if len(kinds) != len(want) {
 		t.Fatalf("kinds %v", kinds)
 	}
@@ -114,6 +134,9 @@ func TestExtractEPUB(t *testing.T) {
 	}
 	if ch.Blocks[3].Level != 3 {
 		t.Fatalf("level %d", ch.Blocks[3].Level)
+	}
+	if ch.Blocks[4].Text != "code   stays" {
+		t.Fatalf("code %q", ch.Blocks[4].Text)
 	}
 	img := ch.Blocks[5]
 	if img.Src == "" || img.Alt != "A plate" || img.Caption != "The plate" {

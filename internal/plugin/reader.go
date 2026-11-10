@@ -119,6 +119,25 @@ func (p *Plugin) OpenReader(ctx context.Context, book ReaderBook, doc reader.Doc
 	return out, nil
 }
 
+// cleanCodeText trims a code block's blank ends and trailing spaces, but
+// keeps the indentation on its lines.
+func cleanCodeText(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	s = strings.ReplaceAll(s, "\u00a0", " ")
+	lines := strings.Split(s, "\n")
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], " \t")
+	}
+	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return strings.Join(lines, "\n")
+}
+
 // parseReading reads what open returned. Unknown fields are ignored: a
 // reading may carry more than this Dalibre shows.
 func parseReading(raw json.RawMessage) (*Reading, error) {
@@ -143,8 +162,22 @@ func parseReading(raw json.RawMessage) (*Reading, error) {
 		kept := make([]reader.Block, 0, len(ch.Blocks))
 		for j, b := range ch.Blocks {
 			b.Kind = strings.ToLower(strings.TrimSpace(b.Kind))
-			b.Text = strings.TrimSpace(b.Text)
+			if b.Kind != reader.Code {
+				b.Text = strings.TrimSpace(b.Text)
+			}
 			switch b.Kind {
+			case reader.Code:
+				b.Text = cleanCodeText(b.Text)
+				b.Level, b.Src, b.Alt, b.Caption = 0, "", "", ""
+				b.Table = nil
+				if b.Text == "" {
+					warnings = append(warnings, fmt.Sprintf("%s.blocks[%d]: empty code; dropped", at, j))
+					continue
+				}
+				if n := len([]rune(b.Text)); n > MaxReadingBlockRunes {
+					warnings = append(warnings, fmt.Sprintf("%s.blocks[%d]: %d characters; cut to %d", at, j, n, MaxReadingBlockRunes))
+					b.Text = truncateRunes(b.Text, MaxReadingBlockRunes)
+				}
 			case reader.Paragraph, reader.Quote:
 				if b.Text == "" {
 					warnings = append(warnings, fmt.Sprintf("%s.blocks[%d]: empty %s; dropped", at, j, b.Kind))
@@ -186,7 +219,7 @@ func parseReading(raw json.RawMessage) (*Reading, error) {
 					continue
 				}
 			default:
-				warnings = append(warnings, fmt.Sprintf("%s.blocks[%d].kind: %q isn’t %q, %q, %q, %q, %q or %q; dropped", at, j, b.Kind, reader.Heading, reader.Paragraph, reader.Quote, reader.Divider, reader.Image, reader.TableBlock))
+				warnings = append(warnings, fmt.Sprintf("%s.blocks[%d].kind: %q isn’t %q, %q, %q, %q, %q, %q or %q; dropped", at, j, b.Kind, reader.Heading, reader.Paragraph, reader.Quote, reader.Divider, reader.Image, reader.TableBlock, reader.Code))
 				continue
 			}
 			if blocks++; blocks > MaxReadingBlocks {

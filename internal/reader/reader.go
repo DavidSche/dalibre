@@ -25,6 +25,7 @@ const (
 	Divider    = "divider"   // a rule between passages
 	Image      = "image"     // a picture from the book, Src names it
 	TableBlock = "table"     // a table, rows of cells of text
+	Code       = "code"      // preformatted text, as a book sets source code
 )
 
 // Limits on what is read of a book. A book over them is cut at a chapter
@@ -250,6 +251,11 @@ func cleanBlocks(in []Block) []Block {
 			if b.Table == nil {
 				continue
 			}
+		case Code:
+			b.Text, b.Level, b.Src, b.Alt, b.Caption = cleanCode(b.Text), 0, "", "", ""
+			if b.Text == "" {
+				continue
+			}
 		default:
 			b.Text = strings.TrimSpace(b.Text)
 			if b.Text == "" {
@@ -259,6 +265,25 @@ func cleanBlocks(in []Block) []Block {
 		out = append(out, b)
 	}
 	return out
+}
+
+// cleanCode trims a code block's blank ends and the spaces that trail
+// its lines, but keeps the leading spaces that indent the code.
+func cleanCode(s string) string {
+	s = strings.ReplaceAll(s, "\r\n", "\n")
+	s = strings.ReplaceAll(s, "\r", "\n")
+	s = strings.ReplaceAll(s, "\u00a0", " ")
+	lines := strings.Split(s, "\n")
+	for i := range lines {
+		lines[i] = strings.TrimRight(lines[i], " \t")
+	}
+	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return strings.Join(lines, "\n")
 }
 
 // cleanNotes trims a chapter's notes, drops the empty ones, and gives a

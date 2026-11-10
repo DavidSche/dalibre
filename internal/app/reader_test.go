@@ -74,6 +74,7 @@ func testEPUB(t *testing.T) []byte {
     <tr><td>First</td><td>12 paces</td></tr>
     <tr><td>Second</td><td>9 paces</td></tr>
   </table>
+  <pre><code><div>def hall():</div><div>&nbsp;&nbsp;&nbsp;&nbsp;return 12</div></code></pre>
   <aside id="n1" epub:type="footnote"><p>Measured by the tide.</p>
     <a href="#ref1" epub:type="backlink">↩</a></aside>
   <figure><img src="img/plate.png" alt="A painted hall"/><figcaption>The western wall</figcaption></figure>
@@ -143,6 +144,9 @@ func TestReaderOpensEPUB(t *testing.T) {
 	}
 	if !tt.HasText("Measured by the tide.") {
 		t.Fatalf("note missing: %q", tt.Texts())
+	}
+	if !tt.HasText("def hall():\n    return 12") {
+		t.Fatalf("code missing: %q", tt.Texts())
 	}
 	if notes := a.rd.chapters[0].Notes; len(notes) != 1 || notes[0].Label != "1" {
 		t.Fatalf("notes %+v", notes)

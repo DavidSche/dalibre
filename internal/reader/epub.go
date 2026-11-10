@@ -1202,13 +1202,7 @@ func (b *blockReader) walk(n *html.Node) {
 			b.quote--
 			return
 		case "pre":
-			b.flush()
-			b.pre++
-			for c := n.FirstChild; c != nil; c = c.NextSibling {
-				b.walk(c)
-			}
-			b.flush()
-			b.pre--
+			b.code(n)
 			return
 		case "br":
 			b.buf.WriteByte('\n')
@@ -1229,6 +1223,63 @@ func (b *blockReader) walk(n *html.Node) {
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		b.walk(c)
 	}
+}
+
+// code reads a preformatted block as one block. A converter often sets
+// each source line in a div instead of writing a line break; the line
+// boundaries are put back, and the leading spaces, which are what makes
+// source code readable, are kept.
+func (b *blockReader) code(n *html.Node) {
+	b.flush()
+	text := codeText(n)
+	if text == "" {
+		return
+	}
+	b.blocks = append(b.blocks, Block{Kind: Code, Text: text})
+}
+
+// codeText reads an element's text as code: block children end a line,
+// br ends a line, and every other character stays as the book wrote it.
+func codeText(root *html.Node) string {
+	var b strings.Builder
+	line := func() {
+		if b.Len() == 0 {
+			return
+		}
+		s := b.String()
+		if s[len(s)-1] != '\n' {
+			b.WriteByte('\n')
+		}
+	}
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		switch n.Type {
+		case html.TextNode:
+			b.WriteString(n.Data)
+			return
+		case html.ElementNode:
+			switch n.Data {
+			case "script", "style", "head", "nav", "noscript", "template":
+				return
+			case "br":
+				b.WriteByte('\n')
+				return
+			case "div", "p", "li", "tr", "section", "article", "blockquote",
+				"pre", "h1", "h2", "h3", "h4", "h5", "h6":
+				line()
+				for c := n.FirstChild; c != nil; c = c.NextSibling {
+					walk(c)
+				}
+				line()
+				return
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	walk(root)
+	return cleanCode(b.String())
 }
 
 // table reads a table as one block: its caption, rows and cells. Cells

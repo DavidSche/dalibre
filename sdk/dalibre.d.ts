@@ -174,7 +174,8 @@ declare namespace Dalibre {
 
   /** A piece of a chapter as Dalibre extracted it. */
   interface Block {
-    kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table";
+    kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table" | "code";
+    /** The block's text. Code keeps its line breaks and indentation. */
     text?: string;
     /** heading only, 1–6. */
     level?: number;

@@ -214,6 +214,8 @@ func (a *App) readerBlock(c *ui.Context, p theme.Reading, b reader.Block, labels
 		})
 	case reader.Image:
 		a.readerImage(c, p, b)
+	case reader.Code:
+		a.readerCode(c, p, b.Text, size)
 	case reader.TableBlock:
 		a.readerTable(c, p, b.Table)
 	default:
@@ -229,6 +231,23 @@ func (a *App) readerBlock(c *ui.Context, p theme.Reading, b reader.Block, labels
 		ui.Text(c, text).Font(theme.FontSerif).FontSize(size).LineHeight(float32(a.rd.lineHeight)).
 			Padding(0, theme.Space16, theme.Space12, theme.Space16)
 	}
+}
+
+// readerCode sets source code in a monospaced block: the lines and the
+// spaces that indent them stay as the book wrote them, and a long line
+// scrolls sideways rather than folding into the next.
+func (a *App) readerCode(c *ui.Context, p theme.Reading, text string, size float32) {
+	fs := size - 2
+	if fs < 12 {
+		fs = 12
+	}
+	ui.Column(c).Padding(0, theme.Space16, theme.Space12, theme.Space16).Children(func() {
+		ui.ScrollHorizontal(c).WidthPercent(100).MinWidth(0).Border(1, p.Border).
+			Radius(theme.RadiusSM).Background(p.Subtle).Children(func() {
+			ui.Text(c, text).Font(theme.FontMono).FontSize(fs).LineHeight(1.55).
+				PreserveSpaces().NoWrap().TextColor(p.Text).Padding(theme.Space12, theme.Space16)
+		})
+	})
 }
 
 // readerNoteLabels is the set of markers the chapter's notes answer.

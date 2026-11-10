@@ -203,10 +203,14 @@ sets the notes after the chapter. Up to 500 notes a chapter are read,
 8,000 characters each; an endnotes file outside the reading order is
 read for them.
 
+A `<pre>` is a `code` block. Its text keeps its line breaks and the
+spaces that indent it, and the page sets it in a monospaced block that
+scrolls sideways; pass it through rather than treating it as prose.
+
 ```ts
 Document: { title?: string, language?: string, chapters: Chapter[], truncated?: boolean }
 Chapter:  { title?: string, depth?: number, blocks: Block[], continued?: boolean, notes?: Note[] }
-Block:    { kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table",
+Block:    { kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table" | "code",
             text?: string, level?: number,
             src?: string, alt?: string, caption?: string,
             table?: { caption?: string, rows: { cells: { text: string, header?: boolean,
