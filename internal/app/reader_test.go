@@ -148,6 +148,9 @@ func TestReaderOpensEPUB(t *testing.T) {
 	if !tt.HasText("def hall():\n    return 12") {
 		t.Fatalf("code missing: %q", tt.Texts())
 	}
+	if r, ok := tt.Find("def hall():\n    return 12"); !ok || r.H < 20 {
+		t.Fatalf("code box %+v, %v", r, ok)
+	}
 	if notes := a.rd.chapters[0].Notes; len(notes) != 1 || notes[0].Label != "1" {
 		t.Fatalf("notes %+v", notes)
 	}
