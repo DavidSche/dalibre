@@ -657,6 +657,7 @@ func (h *htmlDoc) blocks(base string, e *epubFile, images map[string][]byte, not
 		}
 	}
 	b.flush()
+	b.finishCode()
 	return b.blocks, b.notes
 }
 
@@ -1099,11 +1100,15 @@ func normalizeBreaks(s string, max int) string {
 }
 
 type blockReader struct {
-	blocks []Block
-	buf    strings.Builder
-	runs   []Run
-	style  textStyle
-	quote  int
+	blocks                []Block
+	buf                   strings.Builder
+	runs                  []Run
+	style                 textStyle
+	monoRunes, plainRunes int
+	firstMono             bool
+	firstText             string
+	codeBuf               strings.Builder
+	quote                 int
 
 	// base is the content document's name in the zip, which the
 	// pictures' hrefs are relative to; epub reads them, into images.
@@ -1129,11 +1134,18 @@ type blockReader struct {
 
 func (b *blockReader) flush() {
 	raw, runs := b.buf.String(), b.runs
+	code := b.monoRunes > b.plainRunes || b.firstMono && codeComment(b.firstText)
 	b.buf.Reset()
 	b.runs = nil
+	b.monoRunes, b.plainRunes, b.firstMono, b.firstText = 0, 0, false, ""
 	if strings.TrimSpace(raw) == "" {
 		return
 	}
+	if code {
+		b.addCodeLine(raw)
+		return
+	}
+	b.finishCode()
 	runs = collapseRuns(runs, false)
 	text := RunsText(runs)
 	if text == "" {
@@ -1147,10 +1159,45 @@ func (b *blockReader) flush() {
 	b.blocks = append(b.blocks, Block{Kind: Paragraph, Text: text, Runs: runs})
 }
 
+// codeComment reports whether text starts like a comment, the clearest
+// sign of a code line whose explanatory words are set in the prose face.
+func codeComment(text string) bool {
+	for _, mark := range []string{"#", "//", "/*", "* ", "-- ", ";;", "%"} {
+		if strings.HasPrefix(text, mark) {
+			return true
+		}
+	}
+	return false
+}
+
+// addCodeLine joins a paragraph that the book sets in a monospaced font
+// to the code block being read. Converters often make each source line a
+// paragraph of its own; the line breaks are what make code readable.
+func (b *blockReader) addCodeLine(raw string) {
+	text := cleanCode(textMarks.Replace(raw))
+	if text == "" {
+		return
+	}
+	if b.codeBuf.Len() > 0 {
+		b.codeBuf.WriteByte('\n')
+	}
+	b.codeBuf.WriteString(text)
+}
+
+// finishCode adds the code block gathered from monospaced paragraphs.
+func (b *blockReader) finishCode() {
+	if b.codeBuf.Len() == 0 {
+		return
+	}
+	b.blocks = append(b.blocks, Block{Kind: Code, Text: b.codeBuf.String()})
+	b.codeBuf.Reset()
+}
+
 // textStyle is the emphasis over the text being read: a strong or em
-// element inside a paragraph turns it on for what it holds.
+// element inside a paragraph turns it on for what it holds. Mono marks
+// text the book sets in a monospaced font, which is usually source code.
 type textStyle struct {
-	bold, italic bool
+	bold, italic, mono bool
 }
 
 // write adds text to the block being read, in the emphasis over it.
@@ -1158,18 +1205,94 @@ func (b *blockReader) write(s string) {
 	if s == "" {
 		return
 	}
+	n := 0
+	for _, r := range s {
+		if !unicode.IsSpace(r) {
+			n++
+		}
+	}
+	if b.monoRunes+b.plainRunes == 0 && n > 0 {
+		b.firstMono = b.style.mono
+		b.firstText = strings.TrimLeftFunc(s, unicode.IsSpace)
+	}
+	if b.style.mono {
+		b.monoRunes += n
+	} else {
+		b.plainRunes += n
+	}
 	b.buf.WriteString(s)
 	b.runs = appendRun(b.runs, Run{Text: s, Bold: b.style.bold, Italic: b.style.italic})
 }
 
-// walkStyled reads n's children with bold and italic over them.
-func (b *blockReader) walkStyled(n *html.Node, bold, italic bool) {
+// writeBreak ends a line without deciding whether the block is code: a
+// br outside a monospaced span still belongs to a code line.
+func (b *blockReader) writeBreak() {
+	b.buf.WriteByte('\n')
+	b.runs = appendRun(b.runs, Run{Text: "\n", Bold: b.style.bold, Italic: b.style.italic})
+}
+
+// walkStyled reads n's children with bold, italic and mono over them.
+func (b *blockReader) walkStyled(n *html.Node, bold, italic, mono bool) {
 	prev := b.style
-	b.style = textStyle{bold: bold, italic: italic}
+	b.style = textStyle{bold: bold, italic: italic, mono: mono}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		b.walk(c)
 	}
 	b.style = prev
+}
+
+// The families that mean source code rather than prose. A book says so
+// inline when its converter drops the <pre> and sets each line in one of
+// these, which is the only clue left that a paragraph is a code line.
+var monospaceFonts = []string{
+	"source code pro", "monospace", "courier", "consolas", "menlo",
+	"monaco", "fira code", "fira mono", "jetbrains mono", "roboto mono",
+	"ubuntu mono", "inconsolata", "dejavu sans mono", "liberation mono",
+	"lucida console", "andale mono", "sf mono", "cascadia code",
+	"cascadia mono", "ibm plex mono", "noto sans mono", "pt mono",
+	"space mono", "anonymous pro", "iosevka",
+}
+
+// monoStyled reports whether n's own style sets a monospaced family.
+func monoStyled(n *html.Node) bool {
+	if face := strings.ToLower(attr(n, "face")); face != "" && monospaceFont(face) {
+		return true
+	}
+	style := strings.ToLower(attr(n, "style"))
+	for _, decl := range strings.Split(style, ";") {
+		name, value, ok := strings.Cut(decl, ":")
+		if !ok {
+			continue
+		}
+		switch strings.TrimSpace(name) {
+		case "font-family", "font":
+			if monospaceFont(value) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// monospaceFont reports whether a font-family value names a monospace face.
+func monospaceFont(value string) bool {
+	value = strings.ToLower(value)
+	for _, name := range monospaceFonts {
+		if strings.Contains(value, name) {
+			return true
+		}
+	}
+	return false
+}
+
+// blockElement reports whether a tag starts a new block of text.
+func blockElement(name string) bool {
+	switch name {
+	case "p", "div", "section", "article", "header", "footer", "main", "aside",
+		"li", "dd", "dt", "figcaption", "tr", "td", "th", "center", "address", "form":
+		return true
+	}
+	return false
 }
 
 func (b *blockReader) walk(n *html.Node) {
@@ -1196,18 +1319,26 @@ func (b *blockReader) walk(n *html.Node) {
 		case "title", "meta", "link":
 			return
 		case "strong", "b":
-			b.walkStyled(n, true, b.style.italic)
+			b.walkStyled(n, true, b.style.italic, b.style.mono || monoStyled(n))
 			return
 		case "em", "i":
-			b.walkStyled(n, b.style.bold, true)
+			b.walkStyled(n, b.style.bold, true, b.style.mono || monoStyled(n))
 			return
 		}
 		if lvl := headingLevel(n.Data); lvl > 0 {
 			b.flush()
+			b.finishCode()
 			runs := collapseRuns(inlineRuns(n, b.style), false)
 			if text := RunsText(runs); text != "" {
 				b.blocks = append(b.blocks, Block{Kind: Heading, Text: text, Level: lvl, Runs: CleanRuns(runs, text)})
 			}
+			return
+		}
+		if n.Data != "pre" && n.Data != "table" && n.Data != "a" && monoStyled(n) {
+			if blockElement(n.Data) {
+				b.flush()
+			}
+			b.walkStyled(n, b.style.bold, b.style.italic, true)
 			return
 		}
 		switch n.Data {
@@ -1233,6 +1364,7 @@ func (b *blockReader) walk(n *html.Node) {
 			return
 		case "blockquote":
 			b.flush()
+			b.finishCode()
 			b.quote++
 			for c := n.FirstChild; c != nil; c = c.NextSibling {
 				b.walk(c)
@@ -1244,10 +1376,11 @@ func (b *blockReader) walk(n *html.Node) {
 			b.code(n)
 			return
 		case "br":
-			b.write("\n")
+			b.writeBreak()
 			return
 		case "hr":
 			b.flush()
+			b.finishCode()
 			b.blocks = append(b.blocks, Block{Kind: Divider})
 			return
 		case "img":
@@ -1313,6 +1446,7 @@ func appendRun(out []Run, r Run) []Run {
 // source code readable, are kept.
 func (b *blockReader) code(n *html.Node) {
 	b.flush()
+	b.finishCode()
 	text := codeText(n)
 	if text == "" {
 		return
@@ -1369,6 +1503,7 @@ func codeText(root *html.Node) string {
 // table's text is flattened into its cell.
 func (b *blockReader) table(n *html.Node) {
 	b.flush()
+	b.finishCode()
 	t := &Table{}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		if c.Type == html.ElementNode && c.Data == "caption" {
@@ -1551,6 +1686,7 @@ func (b *blockReader) addImage(n *html.Node, caption string) {
 		return
 	}
 	b.flush()
+	b.finishCode()
 	alt := collapse(attr(n, "alt"), false)
 	if alt == "" {
 		alt = collapse(attr(n, "title"), false)

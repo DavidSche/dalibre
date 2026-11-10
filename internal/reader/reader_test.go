@@ -100,6 +100,33 @@ func TestPreformattedLines(t *testing.T) {
 	}
 }
 
+func TestMonospacedParagraphLines(t *testing.T) {
+	// Converters often drop <pre> and set each source line in a monospaced
+	// font, paragraph by paragraph. Those lines are still one code block.
+	doc := parseHTML([]byte(`<html><body>
+		<p><span style="font-family:'Source Code Pro'">import numpy as np</span></p>
+		<p><span style="font-family:'Source Code Pro'">x = np.arange(3)</span></p>
+		<p><span style="font-family:'PingFang SC'">A paragraph.</span></p>
+		<p><span style="font-family:'PingFang SC'"><span style="font-family:'Source Code Pro'"># </span>a comment in the prose face</span></p>
+		<p><span style="font-family:'Source Code Pro'">print(x)</span></p>
+		<p><span style="font-family:'PingFang SC'"><span style="font-family:'Source Code Pro'">torch</span> is a library.</span></p>
+	</body></html>`))
+	blocks, _ := doc.blocks("", nil, nil, nil, "", "")
+	var got []string
+	for _, b := range blocks {
+		got = append(got, b.Kind+": "+b.Text)
+	}
+	want := []string{
+		Code + ": import numpy as np\nx = np.arange(3)",
+		Paragraph + ": A paragraph.",
+		Code + ": # a comment in the prose face\nprint(x)",
+		Paragraph + ": torch is a library.",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("blocks %#v, want %#v", got, want)
+	}
+}
+
 func TestInlineEmphasis(t *testing.T) {
 	doc := parseHTML([]byte(`<html><body>
 		<p>A <strong>bold</strong> word, <em>italic</em> and <strong><em>both</em></strong>, plus <b>b</b> and <i>i</i>.</p>
