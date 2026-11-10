@@ -1,6 +1,7 @@
 // The host's side of a plugin's world, run as a script in its runtime before
 // the plugin. It turns three host functions that pass strings (JSON) into
-// the dalibre object and console, and calls the plugin's exports for the
+// the dalibre object and console (with two more for what an action asks the
+// app while it runs), and calls the plugin's exports for the
 // host, reporting each outcome back as JSON. The host functions are taken
 // off the global object, so only this code can call them. Its value is the
 // two functions the host calls: { load, call }. Everything else a plugin
@@ -8,7 +9,8 @@
 (() => {
   "use strict";
   const hostLog = __host_log, hostSettle = __host_settle, hostInfo = __host_info;
-  for (const k of ["__host_log", "__host_settle", "__host_info"]) delete globalThis[k];
+  const hostAsk = __host_ask, hostFlag = __host_flag, hostProgress = __host_progress;
+  for (const k of ["__host_log", "__host_settle", "__host_info", "__host_ask", "__host_flag", "__host_progress"]) delete globalThis[k];
   const { parse, stringify } = JSON;
   const { freeze, defineProperty, keys } = Object;
   const resolved = Promise.resolve.bind(Promise), rejected = Promise.reject.bind(Promise);
@@ -44,16 +46,43 @@
     }).join(" "));
   };
 
+  function error(kind, message) {
+    const e = new Error(message === undefined ? String(kind) : String(message));
+    e.name = "DalibreError";
+    e.kind = String(kind);
+    return e;
+  }
+
+  // ask asks the app for something an action may have of it while it
+  // runs, and gives its answer.
+  async function ask(op, arg) {
+    const r = parse(await hostAsk(op, stringify(arg ?? null)));
+    if (!r.ok) throw error(r.kind, r.message);
+    return r.value;
+  }
+
   const dalibre = freeze({
     api,
     plugin: freeze(plugin),
     settings: freeze(settings),
-    error(kind, message) {
-      const e = new Error(message === undefined ? String(kind) : String(message));
-      e.name = "DalibreError";
-      e.kind = String(kind);
-      return e;
-    },
+    error,
+    // Whether a form would show in a window, rather than be answered by
+    // whoever started the action.
+    get interactive() { return hostFlag("interactive") === "1"; },
+    form(spec) { return ask("form", spec); },
+    progress(done, total) { hostProgress(Math.trunc(Number(done)) || 0, Math.trunc(Number(total)) || 0); },
+    library: freeze({
+      async *books(options) {
+        const comments = !!(options && options.comments);
+        let after = 0;
+        for (;;) {
+          const page = await ask("books", { after, comments });
+          yield* page.books;
+          if (!page.more || page.books.length === 0) return;
+          after = page.books[page.books.length - 1].id;
+        }
+      },
+    }),
   });
   const fixed = (name, value) => defineProperty(globalThis, name, { value, writable: false, configurable: false });
   fixed("dalibre", dalibre);

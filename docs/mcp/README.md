@@ -199,6 +199,8 @@ Get books as soon as it works.
 | `test_plugin` | Calls a plugin's `search`, `collections`, `list`, `get`, `resolve`, `identify` or `process` and returns the result, logs and error. | |
 | `enable_plugin` | Turns a plugin on or off. | |
 | `remove_plugin` | Removes a plugin added from a folder; the folder stays. | |
+| `list_actions` | Lists what the plugins can do with books and the library: their actions. | |
+| `run_action` | Runs an action and returns what it found and wants changed. Forms are answered with `answers`; nothing is written without `apply`. | |
 
 Settings › MCP lists them too.
 

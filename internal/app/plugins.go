@@ -81,6 +81,9 @@ func granted(st *settings.PluginState, m *plugin.Manifest) bool {
 // plugins folder whose permissions the user granted, in the background.
 // The others wait for the user in pluginsPending.
 func (a *App) loadPlugins() {
+	if stop := a.act.cancel; stop != nil {
+		stop() // an action waiting on its form would keep its plugin from closing
+	}
 	dir, builtins, transport, store := a.pluginDir, a.builtins, a.pluginTransport, a.secrets
 	if dir == "" && !builtins {
 		a.pluginsSettled()

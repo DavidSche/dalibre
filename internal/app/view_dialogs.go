@@ -25,11 +25,14 @@ func (a *App) dialogs(c *ui.Context) {
 	a.editDialog(c)
 	a.deleteDialog(c)
 	a.settingsDialog(c)
+	a.pluginsDialog(c)
 	a.consentDialog(c)
 	a.notLibrarySheet(c)
 	a.createLibrarySheet(c)
 	a.importReviewSheet(c)
 	a.appUpdateDialog(c)
+	a.formDialog(c)
+	a.reviewDialog(c)
 }
 
 // ---- Edit metadata

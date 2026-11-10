@@ -55,6 +55,7 @@ const (
 	KindTimeout     ErrorKind = "timeout"     // the call ran out of time
 	KindPermission  ErrorKind = "permission"  // a request its permissions don't allow
 	KindScript      ErrorKind = "script"      // any other error in the script
+	KindCancelled   ErrorKind = "cancelled"   // the user cancelled a form the action asked
 )
 
 var thrownKinds = []ErrorKind{KindAuth, KindNotFound, KindRateLimited, KindUnavailable, KindInvalid}

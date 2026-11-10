@@ -219,3 +219,14 @@ func BookFileName(title, author string) string {
 	}
 	return name
 }
+
+// calibre keeps a comma in an author's name as "|", since it joins a
+// book's authors with commas elsewhere: "Herbert, Frank" is stored as
+// "Herbert| Frank".
+
+// AuthorName is an author's name as stored in authors.name, as calibre
+// shows it.
+func AuthorName(stored string) string { return strings.ReplaceAll(stored, "|", ",") }
+
+// storedAuthor is an author's name as calibre stores it.
+func storedAuthor(name string) string { return strings.ReplaceAll(name, ",", "|") }

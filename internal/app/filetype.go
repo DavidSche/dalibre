@@ -7,6 +7,7 @@ import (
 	"log"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"dalibre/cmd/dalibre/locales"
 	"dalibre/internal/calibre"
@@ -145,13 +146,20 @@ func bookInfo(b *calibre.Book, d *calibre.Details) plugin.BookInfo {
 	info := plugin.BookInfo{
 		ID: b.ID, Title: b.Title, Authors: nonNilStrings(b.Authors), Series: b.Series, SeriesIndex: b.SeriesIndex,
 		Tags: nonNilStrings(b.Tags), Publisher: b.Publisher, Languages: b.Languages, Rating: b.Rating,
-		Identifiers: d.Identifiers, Comments: d.Comments, Formats: nonNilStrings(b.Formats),
+		Identifiers: d.Identifiers, Comments: d.Comments, Formats: nonNilStrings(b.Formats), Size: b.Size,
 	}
 	if info.Identifiers == nil {
 		info.Identifiers = map[string]string{}
 	}
 	if !b.Pubdate.IsZero() {
 		info.Pubdate = b.Pubdate.Format("2006-01-02")
+	}
+	info.UUID, info.TitleSort, info.AuthorSort, info.HasCover = b.UUID, b.Sort, b.AuthorSort, b.HasCover
+	if !b.Timestamp.IsZero() {
+		info.Added = b.Timestamp.Format(time.RFC3339)
+	}
+	if !b.LastModified.IsZero() {
+		info.Modified = b.LastModified.Format(time.RFC3339)
 	}
 	return info
 }

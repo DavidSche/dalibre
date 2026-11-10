@@ -236,7 +236,7 @@ func TestReadTools(t *testing.T) {
 
 	// Write tools appear when changes are allowed.
 	s.SetAllowChanges(true)
-	if n := len(toolNames(t, cs)); n != 19 {
+	if n := len(toolNames(t, cs)); n != 21 {
 		t.Errorf("with changes: %d tools", n)
 	}
 	s.SetAllowChanges(false)
@@ -523,7 +523,7 @@ func TestBridge(t *testing.T) {
 
 	// The app runs: every tool, and the app sees who called.
 	cs := bridge(srv.URL+Path, "secret", "")
-	if n := len(toolNames(t, cs)); n != 19 {
+	if n := len(toolNames(t, cs)); n != 21 {
 		t.Errorf("through the app: %d tools", n)
 	}
 	var sr searchOut
@@ -559,4 +559,20 @@ func TestToolGroups(t *testing.T) {
 	if got := toolNames(t, connect(t, s)); !slices.Equal(got, all) {
 		t.Errorf("tools %v, groups %v", got, all)
 	}
+}
+
+// The host's actions: one that asks a form.
+func (h *testHost) Actions(context.Context) []ActionInfo {
+	return []ActionInfo{{Plugin: "com.example.dups", PluginName: "Find Duplicates", ID: "find", Title: "Find duplicates", Scope: "library"}}
+}
+
+func (h *testHost) RunAction(_ context.Context, run ActionRun) (*ActionOutcome, error) {
+	switch {
+	case run.Plugin != "com.example.dups":
+		return nil, errors.New("no loaded plugin")
+	case run.Answers["by"] == nil:
+		return nil, &plugin.Error{Plugin: run.Plugin, Call: "run", Kind: plugin.KindInvalid, Msg: "asks for answers nobody is there to give; give them ahead: by (select: title | isbn)"}
+	}
+	return &ActionOutcome{Message: "by " + run.Answers["by"].(string), Applied: run.Apply,
+		Groups: []ActionGroup{{Title: "Dune", Books: []ActionBook{{ID: 1, Title: "Dune"}, {ID: 2, Title: "Dune"}}}}}, nil
 }

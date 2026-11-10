@@ -1,10 +1,12 @@
 package app
 
 import (
+	"errors"
 	"maps"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/egoist/mygo"
@@ -14,6 +16,7 @@ import (
 	"dalibre/internal/app/icons"
 	"dalibre/internal/app/theme"
 	"dalibre/internal/app/widgets"
+	"dalibre/internal/mcp"
 	"dalibre/internal/plugin"
 )
 
@@ -28,13 +31,68 @@ type pluginsState struct {
 	uninstall bool              // asking to uninstall sel
 }
 
-// openPlugins opens Settings at Plugins, on plugin id or the first.
+// openPlugins opens the Plugins window at Installed, on plugin id or the
+// first.
 func (a *App) openPlugins(id string) {
-	a.openSettings(sectionPlugins)
+	a.pluginsOpen, a.plTab = true, pluginsTabInstalled
+	a.checkUpdates(false)
 	if id != "" {
 		a.pl.sel = id
 	}
 }
+
+// openMarketplace opens the Plugins window at the Marketplace.
+func (a *App) openMarketplace() {
+	a.pluginsOpen, a.plTab = true, pluginsTabMarketplace
+	a.checkUpdates(false)
+	a.loadMarketplace(false)
+}
+
+// pluginsButton is the toolbar's Plugins button (Figma "18 · Plugin
+// marketplace"): it opens the Plugins window.
+func (a *App) pluginsButton(c *ui.Context) {
+	if widgets.IconButton(c, icons.Puzzle, locales.PluginsTitle(), a.pluginsOpen).Clicked() {
+		a.openPlugins("")
+	}
+}
+
+// pluginsDialog is the Plugins window: Installed and Marketplace, in tabs
+// of its header.
+func (a *App) pluginsDialog(c *ui.Context) {
+	if !a.pluginsOpen {
+		return
+	}
+	widgets.TallDialogFrame(c, &a.pluginsOpen, pluginsWidth, pluginsHeight, func() {
+		ui.Text(c, locales.PluginsTitle()).FontSize(16).FontWeight(600)
+		ui.Box(c).Width(theme.Space12)
+		a.pluginsTabs(c)
+		ui.Spacer(c)
+	}, func() {
+		ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
+			if a.plTab == pluginsTabMarketplace {
+				a.marketplacePane(c)
+			} else {
+				a.pluginsPane(c)
+			}
+		})
+	}, func() {
+		ui.Text(c, locales.PluginsSandboxNote()).FontSize(12).TextColor(pal().TextTertiary).Grow(1)
+		if widgets.Button(c, widgets.Ghost, icons.External, locales.PluginsWriteOne()).Tooltip(strings.TrimPrefix(mcp.PluginDocs, "https://")).Clicked() {
+			openURL(mcp.PluginDocs)
+		}
+		if widgets.Button(c, widgets.Primary, nil, locales.CommonDone()).Clicked() {
+			a.pluginsOpen = false
+		}
+	})
+	a.githubSheet(c)
+}
+
+// The Plugins window's size, as the window allows: wide enough for three
+// cards beside a plugin's details.
+const (
+	pluginsWidth  = 1200
+	pluginsHeight = 800
+)
 
 // pluginStatus says what state a plugin is in, as its row shows it.
 func (a *App) pluginStatus(k knownPlugin) (text string, tone ui.Color, loaded bool) {
@@ -68,7 +126,7 @@ func (a *App) pluginStatus(k knownPlugin) (text string, tone ui.Color, loaded bo
 
 func loadedOK(a *App, id string) bool { return a.pluginByID(id) != nil }
 
-// pluginsPane is Settings › Plugins: the plugins Dalibre found, and the
+// pluginsPane is the Plugins window's Installed tab: the plugins Dalibre found, and the
 // one chosen.
 func (a *App) pluginsPane(c *ui.Context) {
 	known := a.pluginsKnown
@@ -78,7 +136,7 @@ func (a *App) pluginsPane(c *ui.Context) {
 			a.pl.sel = known[0].manifest.ID
 		}
 	}
-	ui.Column(c).Width(248).Padding(theme.Space8).Gap(theme.Space2).Background(pal().Chrome).BorderWidth(0, 1, 0, 0).BorderColor(pal().BorderSubtle).AlignItems(ui.Stretch).Children(func() {
+	ui.Column(c).Width(320).Padding(theme.Space12).Gap(theme.Space2).Background(pal().Chrome).BorderWidth(0, 1, 0, 0).BorderColor(pal().BorderSubtle).AlignItems(ui.Stretch).Children(func() {
 		ui.Scroll(c).Grow(1).MinHeight(0).Gap(theme.Space2).AlignItems(ui.Stretch).Children(func() {
 			for _, k := range known {
 				a.pluginRow(c.Key(k.manifest.ID), k)
@@ -92,7 +150,7 @@ func (a *App) pluginsPane(c *ui.Context) {
 		})
 		a.pluginsFolderActions(c)
 	})
-	ui.Scroll(c).Grow(1).MinWidth(0).Padding(theme.Space20).Gap(theme.Space16).AlignItems(ui.Stretch).Children(func() {
+	ui.Scroll(c).Grow(1).MinWidth(0).Padding(theme.Space24).Gap(theme.Space16).AlignItems(ui.Stretch).Children(func() {
 		for _, k := range known {
 			if k.manifest.ID == a.pl.sel {
 				a.pluginPane(c, k)
@@ -271,6 +329,12 @@ func (a *App) pluginPane(c *ui.Context, k knownPlugin) {
 			if m.IsFileType() {
 				widgets.Tag(c, locales.PluginsCapBookFiles(), false, nil)
 			}
+			if m.HasLibraryAction() {
+				widgets.Tag(c, locales.MainNavTools(), false, nil)
+			}
+			if slices.ContainsFunc(m.Capabilities.Actions, func(act plugin.Action) bool { return act.Scope != plugin.ScopeLibrary }) {
+				widgets.Tag(c, locales.PluginsCapBookMenu(), false, nil)
+			}
 		})
 		if m.IsBookSource() {
 			ui.Text(c, locales.PluginsGetBooksNote(m.Name)).FontSize(12).TextColor(pal().TextTertiary)
@@ -371,6 +435,13 @@ func libraryPermission(c *ui.Context, m *plugin.Manifest, consent bool, had *plu
 	if !m.IsMetadataSource() && len(m.Hooks()) > 0 {
 		detail = locales.PluginsLibraryReadHooksDetail()
 	}
+	if len(m.Capabilities.Actions) > 0 {
+		// An action sees the books it runs on: every one, for a tool.
+		label, detail = locales.PluginsLibraryActions(), locales.PluginsLibraryActionsDetail()
+		if m.HasLibraryAction() {
+			detail = locales.PluginsLibraryAllDetail()
+		}
+	}
 	permissionItem(c, icons.Library, label, detail, false)
 }
 
@@ -413,15 +484,55 @@ func (a *App) pluginSettingsForm(c *ui.Context, m *plugin.Manifest, loaded bool)
 				hint = locales.PluginsRequired()
 			}
 			ui.Column(c.Key(s.Key)).Gap(theme.Space6).AlignItems(ui.Stretch).Children(func() {
-				ui.Row(c).Children(func() {
+				ui.Row(c).AlignItems(ui.Center).Children(func() {
 					ui.Text(c, s.Title).FontSize(12).FontWeight(500).TextColor(pal().TextSecondary).Grow(1)
 					if hint != "" {
 						ui.Text(c, hint).FontSize(12).TextColor(pal().TextTertiary)
 					}
+					if s.Type == plugin.SettingToggle {
+						cur := v
+						if cur == "" {
+							cur = s.Default
+						}
+						on := cur == "true"
+						ui.Switch(c, &on).Label(s.Title)
+						if on != (cur == "true") {
+							v = strconv.FormatBool(on)
+						}
+					}
 				})
-				if s.Type == "file" {
+				switch s.Type {
+				case plugin.SettingToggle:
+				case plugin.SettingSelect:
+					cur := v
+					if cur == "" {
+						cur = s.Default
+					}
+					names := make([]string, len(s.Options))
+					for i, o := range s.Options {
+						names[i] = o.Title
+						if names[i] == "" {
+							names[i] = o.Value
+						}
+					}
+					title := names[0]
+					for i, o := range s.Options {
+						if o.Value == cur {
+							title = names[i]
+						}
+					}
+					before := title
+					ui.Select(c, &title, names).Label(s.Title)
+					if title != before {
+						for i, o := range s.Options {
+							if names[i] == title {
+								v = o.Value
+							}
+						}
+					}
+				case plugin.SettingFileType:
 					a.fileSettingField(c, m, s, &v)
-				} else {
+				default:
 					in := ui.TextInput(c, &v).Label(s.Title).Placeholder(s.Default)
 					if s.Type == "secret" {
 						in.Password()
@@ -434,13 +545,19 @@ func (a *App) pluginSettingsForm(c *ui.Context, m *plugin.Manifest, loaded bool)
 			a.pl.values[s.Key] = v
 		}
 		// File settings apply as they are chosen; Save is for the others.
-		if !slices.ContainsFunc(m.Settings, func(s plugin.Setting) bool { return s.Type != "file" }) {
+		if !slices.ContainsFunc(m.Settings, func(s plugin.Setting) bool { return s.Type != plugin.SettingFileType }) {
 			return
 		}
 		changed := !maps.Equal(trimmed(a.pl.values), trimmed(saved))
 		ui.Row(c).Gap(theme.Space8).Children(func() {
 			ui.Spacer(c)
 			if widgets.Button(c, widgets.Primary, nil, locales.PluginsSaveSettings()).Disabled(!changed).Clicked() {
+				for _, st := range m.Settings {
+					if v := strings.TrimSpace(a.pl.values[st.Key]); st.Type == plugin.SettingNumber && v != "" && !plugin.IsNumber(v) {
+						a.toastError(errors.New(locales.PluginsNotANumber(st.Title)))
+						return
+					}
+				}
 				a.setPluginValues(m.ID, trimmed(a.pl.values))
 				a.toast("%s", locales.PluginsSavedSettings(m.Name))
 			}

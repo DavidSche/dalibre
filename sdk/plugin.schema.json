@@ -84,6 +84,28 @@
                 "onPostAdd": { "description": "Call postadd after a book was added, as calibre's on_postadd. Needs permissions.library.", "type": "boolean" },
                 "onPostDelete": { "description": "Call postdelete after a format was removed, as calibre's on_postdelete. Needs permissions.library.", "type": "boolean" }
               }
+            },
+            "actions": {
+              "description": "What the user runs on the books chosen, or on the whole library. Export run(action, input); needs permissions.library.",
+              "type": "array", "minItems": 1, "maxItems": 16,
+              "items": {
+                "type": "object", "additionalProperties": false, "required": ["id", "title", "scope"],
+                "properties": {
+                  "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+                  "title": { "description": "As the menu or the sidebar names it; end it in … when it asks something first: \"Find duplicates…\".", "type": "string", "minLength": 1, "maxLength": 64 },
+                  "icon": { "enum": ["puzzle", "sparkle", "copy", "check", "check-circle", "x", "layers", "file", "pencil", "tag", "search", "trash", "refresh", "replace", "bookmark", "book-open", "library", "database", "globe", "external"] },
+                  "scope": { "description": "\"books\": runs on the books chosen, from the book menu. \"library\": runs on every book, from the sidebar's Tools.", "enum": ["books", "library"] },
+                  "books": {
+                    "description": "How many books a \"books\" action takes.",
+                    "type": "object", "additionalProperties": false,
+                    "properties": { "min": { "type": "integer", "minimum": 0 }, "max": { "type": "integer", "minimum": 0 } }
+                  },
+                  "formats": { "description": "The formats a \"books\" action works on, upper case: every book must have one.", "type": "array", "items": { "type": "string", "pattern": "^[A-Z0-9_]+$" } },
+                  "files": { "description": "Give a \"books\" action a copy of each book's file, in /work.", "type": "boolean" },
+                  "covers": { "description": "Give a \"books\" action a copy of each book's cover, in /work, for the books that have one.", "type": "boolean" },
+                  "in": { "description": "\"results\": show the action only among the books this plugin's own results list.", "enum": ["results"] }
+                }
+              }
             }
           }
         }
@@ -102,7 +124,7 @@
           "type": "boolean"
         },
         "library": {
-          "description": "\"read\": see the details of the books the plugin is asked about; metadata sources and file type hooks need it. \"write\": also lets file type hooks change those details.",
+          "description": "\"read\": see the details of the books the plugin is asked about; metadata sources, file type hooks and actions need it. \"write\": also lets hooks and actions change those details without asking.",
           "enum": ["read", "write"]
         }
       }
@@ -114,10 +136,18 @@
         "properties": {
           "key": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$" },
           "title": { "type": "string", "minLength": 1 },
-          "type": { "enum": ["text", "secret", "file"] },
+          "type": { "enum": ["text", "secret", "file", "toggle", "select", "number"] },
           "description": { "type": "string" },
-          "default": { "type": "string" },
-          "required": { "type": "boolean" }
+          "default": { "description": "A toggle's is \"true\" or \"false\"; a select's, one of its options' values.", "type": "string" },
+          "required": { "type": "boolean" },
+          "options": {
+            "description": "A select's choices.",
+            "type": "array", "minItems": 1, "maxItems": 64,
+            "items": {
+              "type": "object", "additionalProperties": false, "required": ["value"],
+              "properties": { "value": { "type": "string" }, "title": { "type": "string" } }
+            }
+          }
         }
       }
     }

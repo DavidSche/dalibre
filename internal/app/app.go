@@ -121,6 +121,12 @@ type App struct {
 	loadSeq  int
 	loadWait []chan struct{}
 	pl       pluginsState
+	// plTab is the Plugins window's tab; mk the Marketplace's.
+	plTab       int
+	pluginsOpen bool // the Plugins window
+	mk          marketState
+	// marketURL is the Marketplace's index; plugin.MarketplaceURL when "".
+	marketURL string
 	// updates are newer versions of plugins installed from GitHub, by id.
 	updates         map[string]*pluginUpdate
 	updatesChecking bool
@@ -156,6 +162,9 @@ type App struct {
 	// until they set one.
 	secrets secretStore
 
+	// act is the plugins' actions: the one running, what it asks and found.
+	act actionState
+
 	// page is what the main column shows: the library or Get books.
 	page page
 	gb   getBooksState
@@ -177,6 +186,7 @@ type App struct {
 	editorToasts map[int64][]toastMsg
 	searchFocus  ui.Handle
 	mainBox      ui.Handle // the middle column, measured to fit the toolbar
+	gridBox      ui.Handle // the Marketplace's grid, measured to fit its cards
 }
 
 type toastMsg struct {
@@ -210,6 +220,11 @@ func New(settingsPath string) *App {
 	a.run = func(fn func()) { go fn() }
 	a.trash = mygo.Shell.TrashItem
 	a.au.version = mygo.App.Version()
+	if !mygo.IsDev() {
+		// Plugins needing a newer Dalibre are refused; a development
+		// build runs them all.
+		plugin.DalibreVersion = a.au.version
+	}
 	a.au.relaunch = func() {}
 	a.open = calibre.Open
 	a.query.Sort = catalog.SortKey(a.settings.Sort)
@@ -362,6 +377,7 @@ func (a *App) openLibrary(root string) {
 			a.curID, a.chosen = 0, ui.Selection[int64]{}
 			a.grid, a.table = ui.GridState{}, ui.ListState{}
 			a.query.Filter, a.query.Search, a.query.Shelf = catalog.Filter{}, "", catalog.AllBooks
+			a.act.results, a.act.review = nil, nil
 			a.setBooks(books)
 			a.settings.Opened(root)
 			a.saveSettings()
@@ -437,6 +453,11 @@ func (a *App) reload(after func()) {
 // visible returns the books the query selects, recomputed only when the
 // query or the books change.
 func (a *App) visible() []*calibre.Book {
+	if r := a.act.results; r != nil {
+		// An action's results are the list, in the action's groups.
+		r.build(a.byID, a.version)
+		return r.shown
+	}
 	k := shownKey{a.query, a.version}
 	if k != a.shownKey || a.shown == nil {
 		a.shown = catalog.Apply(a.books, a.query, a.booksTime)
@@ -569,7 +590,17 @@ func (a *App) removeBooks(ids []int64) {
 				if err != nil {
 					a.toastError(err)
 				}
-				a.toast("%s", locales.AppToastMovedToTrash(len(ids)))
+				// The books gone: none when the database refused, all when
+				// only a folder couldn't be moved.
+				gone := 0
+				for _, id := range ids {
+					if a.byID[id] == nil {
+						gone++
+					}
+				}
+				if gone > 0 {
+					a.toast("%s", locales.AppToastMovedToTrash(gone))
+				}
 			})
 		})
 	})

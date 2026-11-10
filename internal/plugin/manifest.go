@@ -32,6 +32,50 @@ import (
 	"strings"
 )
 
+// DalibreVersion is the version of the Dalibre running plugins, which a
+// manifest's dalibre field is held to; "" in a development build, which
+// holds them to nothing. The app and the CLI set it at start.
+var DalibreVersion string
+
+var dalibrePattern = regexp.MustCompile(`^>=\s*(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$`)
+
+// MinDalibre is the oldest Dalibre the plugin says it works in, as
+// "0.4.0"; "" when it says nothing.
+func (m *Manifest) MinDalibre() string {
+	return strings.TrimSpace(strings.TrimPrefix(m.Dalibre, ">="))
+}
+
+// NeedsDalibre is the Dalibre version the plugin needs when this one is
+// older, else "".
+func (m *Manifest) NeedsDalibre() string {
+	return NeedsDalibre(m.MinDalibre())
+}
+
+// NeedsDalibre is min when this Dalibre (DalibreVersion) is older, else
+// "".
+func NeedsDalibre(min string) string {
+	if min == "" || DalibreVersion == "" || !NewerVersion(min, DalibreVersion) {
+		return ""
+	}
+	return min
+}
+
+// FeaturesSince is the oldest Dalibre with what the manifest uses of plugin
+// API 1: "0.4.0" for actions and the newer kinds of settings, "" for what
+// every Dalibre has. A plugin using them should say so in its dalibre
+// field.
+func (m *Manifest) FeaturesSince() string {
+	if len(m.Capabilities.Actions) > 0 {
+		return "0.4.0"
+	}
+	for _, st := range m.Settings {
+		if st.Type == SettingToggle || st.Type == SettingSelect || st.Type == SettingNumber {
+			return "0.4.0"
+		}
+	}
+	return ""
+}
+
 // APIVersion is the plugin API this Dalibre implements. Within a version
 // the API only grows: new optional fields and functions, never a changed
 // or removed one. A manifest asking for a newer version is refused.
@@ -65,6 +109,9 @@ type Manifest struct {
 	Homepage    string `json:"homepage,omitempty"`
 	License     string `json:"license,omitempty"`
 	Main        string `json:"main,omitempty"` // main.js when empty
+	// Dalibre is the oldest Dalibre the plugin works in, as ">=0.4.0":
+	// for a plugin using what plugin API 1 gained after it began.
+	Dalibre string `json:"dalibre,omitempty"`
 	// Icon names the plugin's icon in Dalibre's set (Icons); "globe" when
 	// empty.
 	Icon         string       `json:"icon,omitempty"`
@@ -103,13 +150,27 @@ func (p Permissions) CanRead() bool { return p.Library == LibraryRead || p.Libra
 
 // Setting is a value the user gives a plugin, as an API key.
 type Setting struct {
-	Key         string `json:"key"`
-	Title       string `json:"title"`
-	Type        string `json:"type,omitempty"` // "text" (default), "secret" or "file"
+	Key   string `json:"key"`
+	Title string `json:"title"`
+	// Type is "text" (default), "secret", "file", "toggle" ("true" or
+	// "false"), "select" (one of Options' values) or "number".
+	Type        string `json:"type,omitempty"`
 	Description string `json:"description,omitempty"`
 	Default     string `json:"default,omitempty"`
 	Required    bool   `json:"required,omitempty"`
+	// Options are a select's choices.
+	Options []Option `json:"options,omitempty"`
 }
+
+// Setting types.
+const (
+	SettingText     = "text"
+	SettingSecret   = "secret"
+	SettingFileType = "file"
+	SettingToggle   = "toggle"
+	SettingSelect   = "select"
+	SettingNumber   = "number"
+)
 
 // Capabilities are what a plugin adds to Dalibre. In plugin.json they are
 // an object, {"bookSource": {...}}, or, as API 1 began, an array of names:
@@ -118,6 +179,102 @@ type Capabilities struct {
 	BookSource *BookSource `json:"bookSource,omitempty"`
 	Metadata   *Metadata   `json:"metadata,omitempty"`
 	FileType   *FileType   `json:"fileType,omitempty"`
+	Actions    []Action    `json:"actions,omitempty"`
+}
+
+// Action is something the user runs on books, or on the whole library,
+// as calibre's interface action plugins without the interface: the plugin
+// exports run(action, input), which returns what it found and what it
+// wants changed, and Dalibre shows and applies it.
+type Action struct {
+	ID string `json:"id"`
+	// Title names the action where it is chosen, ending in … when it asks
+	// something first: "Find duplicates…".
+	Title string `json:"title"`
+	// Icon names the action's icon in Dalibre's set (ActionIcons).
+	Icon string `json:"icon,omitempty"`
+	// Scope is ScopeBooks, to run on the books chosen, from the book menu,
+	// or ScopeLibrary, to run on every book, from the sidebar's Tools.
+	Scope string `json:"scope"`
+	// Books is how many books a ScopeBooks action takes.
+	Books *BookCount `json:"books,omitempty"`
+	// Formats, when set, are the formats a ScopeBooks action works on:
+	// every book must have one.
+	Formats []string `json:"formats,omitempty"`
+	// Files gives a ScopeBooks action a copy of each book's file, in
+	// /work.
+	Files bool `json:"files,omitempty"`
+	// Covers gives a ScopeBooks action a copy of each book's cover, in
+	// /work, for the books that have one.
+	Covers bool `json:"covers,omitempty"`
+	// In, when InResults, shows the action only among the books this
+	// plugin's own results list.
+	In string `json:"in,omitempty"`
+}
+
+// BookCount bounds how many books an action takes; 0 is no bound.
+type BookCount struct {
+	Min int `json:"min,omitempty"`
+	Max int `json:"max,omitempty"`
+}
+
+// What an Action runs on, and where it shows.
+const (
+	ScopeBooks   = "books"
+	ScopeLibrary = "library"
+	InResults    = "results"
+)
+
+// ActionIcons are the icons an action may pick, from Dalibre's own set.
+var ActionIcons = []string{
+	"puzzle", "sparkle", "copy", "check", "check-circle", "x", "layers", "file", "pencil", "tag", "search",
+	"trash", "refresh", "replace", "bookmark", "book-open", "library", "database", "globe", "external",
+}
+
+// MaxActions is how many actions a plugin may have.
+const MaxActions = 16
+
+// Takes reports whether the action can run on n books whose formats are
+// given, a list for each book.
+func (a *Action) Takes(formats [][]string) bool {
+	n := len(formats)
+	if a.Scope != ScopeBooks || n == 0 {
+		return false
+	}
+	if c := a.Books; c != nil && (n < c.Min || c.Max > 0 && n > c.Max) {
+		return false
+	}
+	if len(a.Formats) == 0 {
+		return true
+	}
+	for _, fs := range formats {
+		if !slices.ContainsFunc(fs, func(f string) bool { return slices.Contains(a.Formats, f) }) {
+			return false
+		}
+	}
+	return true
+}
+
+// Label is the action's title without the … that says it asks first: what
+// a job and a toast call it.
+func (a *Action) Label() string {
+	return strings.TrimSpace(strings.TrimSuffix(strings.TrimSuffix(strings.TrimSpace(a.Title), "…"), "..."))
+}
+
+// HasLibraryAction reports whether one of the plugin's actions runs on the
+// whole library, and so sees every book.
+func (m *Manifest) HasLibraryAction() bool {
+	return slices.ContainsFunc(m.Capabilities.Actions, func(a Action) bool { return a.Scope == ScopeLibrary })
+}
+
+// Action is the plugin's action called id, nil when it has none.
+func (m *Manifest) Action(id string) *Action {
+	for i := range m.Capabilities.Actions {
+		if m.Capabilities.Actions[i].ID == id {
+			return &m.Capabilities.Actions[i]
+		}
+	}
+	return nil
 }
 
 // FileType works on books' files, as calibre's file type plugins, with
@@ -232,6 +389,9 @@ func (c Capabilities) Names() []string {
 	}
 	if c.FileType != nil {
 		out = append(out, "fileType")
+	}
+	if len(c.Actions) > 0 {
+		out = append(out, "actions")
 	}
 	return out
 }
@@ -367,6 +527,10 @@ func (m *Manifest) check() error {
 		return errors.New("api is missing; this Dalibre implements api 1")
 	case m.API > APIVersion:
 		return fmt.Errorf("needs plugin API %d; this Dalibre has %d, update Dalibre", m.API, APIVersion)
+	case m.Dalibre != "" && !dalibrePattern.MatchString(m.Dalibre):
+		return fmt.Errorf("dalibre %q must be a version to start from, as \">=0.4.0\"", m.Dalibre)
+	case m.NeedsDalibre() != "":
+		return fmt.Errorf("needs Dalibre %s or newer; this is %s, update Dalibre", m.NeedsDalibre(), DalibreVersion)
 	case len(m.Capabilities.Names()) == 0:
 		return errors.New("capabilities are missing")
 	case m.Icon != "" && !slices.Contains(Icons, m.Icon):
@@ -405,6 +569,9 @@ func (m *Manifest) check() error {
 	if ft := m.Capabilities.FileType; ft != nil && len([]rune(ft.Title)) > 64 {
 		return errors.New("capabilities.fileType.title is over 64 characters")
 	}
+	if err := m.checkActions(); err != nil {
+		return fmt.Errorf("capabilities.%w", err)
+	}
 	if len(m.Hooks()) > 0 && !m.Permissions.CanRead() {
 		return errors.New(`a file type plugin's hooks see the books they run for: they need permissions.library "read" (or "write" to change them)`)
 	}
@@ -425,10 +592,72 @@ func (m *Manifest) check() error {
 			return fmt.Errorf("setting %q is defined twice", s.Key)
 		case strings.TrimSpace(s.Title) == "":
 			return fmt.Errorf("setting %q has no title", s.Key)
-		case s.Type != "" && s.Type != "text" && s.Type != "secret" && s.Type != "file":
-			return fmt.Errorf("setting %q: type must be \"text\", \"secret\" or \"file\"", s.Key)
+		case !slices.Contains([]string{"", SettingText, SettingSecret, SettingFileType, SettingToggle, SettingSelect, SettingNumber}, s.Type):
+			return fmt.Errorf("setting %q: type must be \"text\", \"secret\", \"file\", \"toggle\", \"select\" or \"number\"", s.Key)
+		case s.Type == SettingSelect && (len(s.Options) == 0 || len(s.Options) > 64):
+			return fmt.Errorf("setting %q: a select has 1 to 64 options", s.Key)
+		case s.Type != SettingSelect && len(s.Options) > 0:
+			return fmt.Errorf("setting %q: only a select has options", s.Key)
+		case s.Type == SettingSelect && s.Default != "" && !slices.ContainsFunc(s.Options, func(o Option) bool { return o.Value == s.Default }):
+			return fmt.Errorf("setting %q: default %q isn’t one of its options", s.Key, s.Default)
+		case s.Type == SettingToggle && s.Default != "" && s.Default != "true" && s.Default != "false":
+			return fmt.Errorf("setting %q: a toggle's default is \"true\" or \"false\"", s.Key)
+		case s.Type == SettingNumber && s.Default != "" && !numberPattern.MatchString(s.Default):
+			return fmt.Errorf("setting %q: default %q isn’t a number", s.Key, s.Default)
 		}
 		keys[s.Key] = true
+	}
+	return nil
+}
+
+var numberPattern = regexp.MustCompile(`^-?\d+(\.\d+)?$`)
+
+// IsNumber reports whether s is a number setting's value: digits, with
+// an optional minus and fraction.
+func IsNumber(s string) bool { return numberPattern.MatchString(s) }
+
+var actionIDPattern = regexp.MustCompile(`^[a-z][a-z0-9-]{0,31}$`)
+
+func (m *Manifest) checkActions() error {
+	as := m.Capabilities.Actions
+	if len(as) == 0 {
+		return nil
+	}
+	if len(as) > MaxActions {
+		return fmt.Errorf("actions: at most %d", MaxActions)
+	}
+	if !m.Permissions.CanRead() {
+		return errors.New(`actions see the books they run on: they need permissions.library "read" (or "write" to change them without asking)`)
+	}
+	ids := map[string]bool{}
+	for i := range as {
+		a := &as[i]
+		at := fmt.Sprintf("actions[%d]", i)
+		books := a.Scope == ScopeBooks
+		switch {
+		case !actionIDPattern.MatchString(a.ID):
+			return fmt.Errorf("%s.id %q must be lowercase letters, digits and '-', starting with a letter", at, a.ID)
+		case ids[a.ID]:
+			return fmt.Errorf("%s.id %q is used twice", at, a.ID)
+		case a.Label() == "" || len([]rune(a.Title)) > 64:
+			return fmt.Errorf("%s.title must be 1 to 64 characters", at)
+		case a.Icon != "" && !slices.Contains(ActionIcons, a.Icon):
+			return fmt.Errorf("%s.icon %q isn’t one of %s", at, a.Icon, strings.Join(ActionIcons, ", "))
+		case a.Scope != ScopeBooks && a.Scope != ScopeLibrary:
+			return fmt.Errorf("%s.scope must be %q or %q", at, ScopeBooks, ScopeLibrary)
+		case !books && (a.Books != nil || len(a.Formats) > 0 || a.Files || a.In != ""):
+			return fmt.Errorf("%s: books, formats, files and in are for an action with scope %q", at, ScopeBooks)
+		case a.In != "" && a.In != InResults:
+			return fmt.Errorf("%s.in must be %q (or left out)", at, InResults)
+		case a.Books != nil && (a.Books.Min < 0 || a.Books.Max < 0 || a.Books.Max > 0 && a.Books.Max < a.Books.Min):
+			return fmt.Errorf("%s.books: min and max must be 0 or more, and max not under min", at)
+		}
+		for j, f := range a.Formats {
+			if f == "" || f != strings.ToUpper(f) {
+				return fmt.Errorf("%s.formats[%d] %q must be a format in upper case, as \"EPUB\"", at, j, f)
+			}
+		}
+		ids[a.ID] = true
 	}
 	return nil
 }
@@ -548,6 +777,25 @@ func (p Permissions) Describe() []string {
 	case LibraryWrite:
 		out = append(out, "See and change the details of the books it runs for")
 	}
+	return out
+}
+
+// Asks lists what the plugin asks to do, as the user is asked to grant
+// it: its permissions, with what its actions see of the library.
+func (m *Manifest) Asks() []string {
+	out := m.Permissions.Describe()
+	if len(m.Capabilities.Actions) == 0 || m.Permissions.Library == "" {
+		return out
+	}
+	books := "the books you run it on"
+	if m.HasLibraryAction() {
+		books = "every book in your library"
+	}
+	s := "See the details of " + books
+	if m.Permissions.Library == LibraryWrite {
+		s += ", and change them"
+	}
+	out[len(out)-1] = s
 	return out
 }
 

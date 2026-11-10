@@ -285,8 +285,14 @@ func (a *App) bookMenu(b *calibre.Book) func(m *ui.Menu) {
 				a.editBook(b, "")
 			}
 		}
-		a.pluginActions(m, ids)
+		// The separator only parts Remove from what is above it: a
+		// selection may have nothing there.
+		above := !many
+		if a.pluginActions(m, ids) {
+			above = true
+		}
 		if dev := a.connectedDevice(); dev != nil {
+			above = true
 			item := m.Item(locales.WirelessSendTo(dev.Info().Name)).Icon(icons.Menu(icons.Wifi))
 			if a.device.sending > 0 {
 				item.Disabled(true)
@@ -310,7 +316,9 @@ func (a *App) bookMenu(b *calibre.Book) func(m *ui.Menu) {
 				a.revealBook(b)
 			}
 		}
-		m.Separator()
+		if above {
+			m.Separator()
+		}
 		del := locales.CommonRemoveFromLibrary()
 		if many {
 			del = locales.BooksMenuRemoveMany(len(ids))

@@ -80,10 +80,12 @@ declare namespace Dalibre {
     extra?: unknown;
   }
 
+  /** The formats Dalibre knows, as calibre names them. */
   type FormatName =
     | "EPUB" | "KEPUB" | "AZW3" | "AZW" | "MOBI" | "PDF" | "FB2" | "DJVU" | "CBZ" | "CBR" | "CB7"
     | "TXT" | "RTF" | "DOCX" | "ODT" | "HTMLZ" | "LIT" | "PRC" | "PDB" | "LRF" | "SNB" | "TCR";
 
+  /** A file of a result: its format, size and where to download it. */
   interface Format {
     format: FormatName;
     /** Bytes, if known; shown to the user. */
@@ -196,6 +198,16 @@ declare namespace Dalibre {
     rating?: number;
     comments?: string;
     formats: string[];
+    /** The size of the book's largest file, in bytes. */
+    size?: number;
+    uuid?: string;
+    /** calibre's sort strings: "Dune", "Herbert, Frank". */
+    titleSort?: string;
+    authorSort?: string;
+    /** When the book was added and last changed, RFC 3339. */
+    added?: string;
+    modified?: string;
+    hasCover: boolean;
   }
 
   /** A book's file a hook is handed: a copy in /work. */
@@ -229,6 +241,60 @@ declare namespace Dalibre {
     }>;
   };
 
+  /** The changes to a book's details a hook or an action asks for. */
+  type Changes = NonNullable<Exclude<HookResult, void>>["metadata"];
+
+  /** What run(action, input) gets. */
+  interface ActionInput {
+    /** The books chosen, in the user's order; empty for a "library" action. */
+    books: BookInfo[];
+    /** With "files": a copy of each book's file in /work, by book id. */
+    files?: Record<number, HookFile>;
+    /** With "covers": a copy of each book's cover in /work, by book id, for the books that have one. */
+    covers?: Record<number, string>;
+  }
+
+  /**
+   * What run returns, or null: what the action found and what it wants
+   * changed, which Dalibre shows and applies.
+   */
+  interface ActionResult {
+    /** How it went, in a few words: "No duplicates". */
+    message?: string;
+    /** Books to show, as a list under each group's title. */
+    groups?: { title: string; books: { id: number; note?: string }[] }[];
+    /** Changes to books' details: written at once with permissions.library "write", else shown first. */
+    changes?: { book: number; metadata: Changes }[];
+    /** Files to add as new books: paths in /work or /data, named after their format. */
+    add?: { path: string; metadata?: Changes }[];
+    /** Files to add to books; a file of the same format is kept as ORIGINAL_<format>. */
+    formats?: { book: number; path: string }[];
+    /** A page on one of the plugin's hosts, to open in the browser. */
+    open?: string;
+  }
+
+  /** What a plugin with actions exports. */
+  interface Actions {
+    /** action is the id of the action chosen. */
+    run(action: string, input: ActionInput): ActionResult | null | void | Promise<ActionResult | null | void>;
+  }
+
+  /** A field of a form: what it starts with is its value. */
+  type FormField =
+    | { key: string; title: string; type: "text"; value?: string }
+    | { key: string; title: string; type: "toggle"; value?: boolean }
+    | { key: string; title: string; type: "select"; value?: string; options: { value: string; title?: string }[] }
+    | { key: string; title: string; type: "multiselect"; value?: string[]; options: { value: string; title?: string }[] };
+
+  /** What dalibre.form asks: Dalibre draws it, under the action's title. */
+  interface Form {
+    /** The form's button; the action's title when left out. */
+    submit?: string;
+    fields: FormField[];
+    /** Start with the user's last answers to this action's form, as calibre plugins keep their options. */
+    remember?: boolean;
+  }
+
   /** What a file type plugin exports, after calibre's file type plugins. */
   interface FileType {
     /** As files are added (unless onImport is false), and from the book menu. */
@@ -246,12 +312,32 @@ declare const dalibre: {
   /** The plugin API version of the running Dalibre. */
   readonly api: number;
   readonly plugin: { readonly id: string; readonly version: string };
-  /** The user's values for the settings in plugin.json, by key; defaults when not set. */
+  /**
+   * The user's values for the settings in plugin.json, by key; defaults when not set.
+   * A toggle's is "true" or "false", a select's its option's value, a number's its digits.
+   */
   readonly settings: Readonly<Record<string, string>>;
   /** An Error the app understands: `throw dalibre.error("auth", "The API key was refused")`. */
   error(kind: Dalibre.ErrorKind, message?: string): Error;
+  /**
+   * In an action's run: asks the user a form and resolves to the answers by
+   * key (a string, a boolean for a toggle, a list for a multiselect).
+   * Cancelling rejects with an error of kind "cancelled", which ends the
+   * run quietly when left uncaught. The run's time doesn't count while
+   * the form is open. Where no window shows (an AI agent, the CLI), the
+   * answers come from whoever started the action.
+   */
+  form(form: Dalibre.Form): Promise<Record<string, string | boolean | string[]>>;
+  /** Whether dalibre.form would show in a window. */
+  readonly interactive: boolean;
+  /** In an action's run: the job's progress bar. total 0 when unknown. */
+  progress(done: number, total: number): void;
+  readonly library: {
+    /** In an action's run: every book in the library; with { comments: true }, with their comments. */
+    books(options?: { comments?: boolean }): AsyncGenerator<Dalibre.BookInfo, void, void>;
+  };
 };
 
 /** For CommonJS plugins; ES modules export their functions instead. */
-declare const module: { exports: Partial<Dalibre.Source & Dalibre.MetadataSource & Dalibre.FileType> };
-declare const exports: Partial<Dalibre.Source & Dalibre.MetadataSource & Dalibre.FileType>;
+declare const module: { exports: Partial<Dalibre.Source & Dalibre.MetadataSource & Dalibre.FileType & Dalibre.Actions> };
+declare const exports: Partial<Dalibre.Source & Dalibre.MetadataSource & Dalibre.FileType & Dalibre.Actions>;

@@ -160,6 +160,9 @@ type PluginState struct {
 	// user grants it again.
 	Granted *Grant            `json:"granted,omitempty"`
 	Values  map[string]string `json:"values,omitempty"` // the plugin's settings
+	// Answers are the last answers to its actions' forms that ask to be
+	// remembered, by action id and field key.
+	Answers map[string]map[string]any `json:"answers,omitempty"`
 	// Source is where the plugin was installed from, when it can be
 	// updated from there; nil for one installed from a file.
 	Source *PluginSource `json:"source,omitempty"`
@@ -179,6 +182,10 @@ type PluginSource struct {
 	Ref string `json:"ref"`
 	// Auto installs an update that asks for nothing new by itself.
 	Auto bool `json:"auto,omitempty"`
+	// Marketplace is true for a plugin installed from the Marketplace: its
+	// updates are the versions the Marketplace lists, and Ref the version
+	// installed.
+	Marketplace bool `json:"marketplace,omitempty"`
 }
 
 // Grant is the permissions granted to a plugin, as its manifest has them.

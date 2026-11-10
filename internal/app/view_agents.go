@@ -267,7 +267,7 @@ func toolIcon(tool string) *ui.SVG {
 		return icons.Download
 	case "reload_plugins":
 		return icons.Refresh
-	case "list_plugins", "create_plugin", "add_plugin", "test_plugin", "enable_plugin", "remove_plugin":
+	case "list_plugins", "create_plugin", "add_plugin", "test_plugin", "enable_plugin", "remove_plugin", "list_actions", "run_action":
 		return icons.Puzzle
 	}
 	return icons.Bot
@@ -339,6 +339,18 @@ func (a *App) callSummary(call mcp.Call) string {
 		return locales.McpAddedPlugin(filepath.Base(args.Path))
 	case "reload_plugins":
 		return locales.McpReloadedPlugins()
+	case "list_actions":
+		return locales.McpListedActions()
+	case "run_action":
+		var run mcp.ActionRun
+		json.Unmarshal(call.Args, &run)
+		label := run.Action
+		for _, p := range a.plugins {
+			if act := p.Manifest.Action(run.Action); p.Manifest.ID == run.Plugin && act != nil {
+				label = act.Label()
+			}
+		}
+		return locales.McpRanAction(label)
 	}
 	// The plugin tools name a plugin by its id, a string.
 	var pl struct {

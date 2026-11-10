@@ -231,10 +231,18 @@ func Uninstall(root, id string) error {
 // leaving out hidden files, and returns the package's path. The plugin
 // must load.
 func Pack(dir, out string) (string, error) {
-	p, err := Load(dir, Options{Logf: func(string, ...any) {}})
+	// A plugin using node:fs loads only with folders of its own: give it
+	// throwaway ones.
+	data, err := os.MkdirTemp("", "dalibre-pack-")
 	if err != nil {
 		return "", err
 	}
+	defer os.RemoveAll(data)
+	p, err := Load(dir, Options{DataDir: data, Logf: func(string, ...any) {}})
+	if err != nil {
+		return "", err
+	}
+	defer p.Close()
 	m := p.Manifest
 	dst := filepath.Join(out, m.ID+"-"+m.Version+PackageExt)
 	f, err := os.Create(dst)

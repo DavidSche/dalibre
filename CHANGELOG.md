@@ -4,6 +4,14 @@ Each version's section is the release notes that Dalibre's update window
 shows, so write them for readers of the app. `mygo build` needs a
 `## <version>` section for the version in `cmd/dalibre/mygo.json`.
 
+## 0.4.0
+
+- Plugins have their own window, from the toolbar's Plugins button, with
+  a Marketplace of calibre's most used plugins and the community's.
+- Plugin actions run on the books you choose or the whole library, from
+  the book menu or the sidebar's Tools.
+- Removing books works in libraries made before calibre 8.
+
 ## 0.3.0
 
 - File type plugins work on books' files, as calibre's do: when books are

@@ -73,6 +73,7 @@ func (a *App) multiDetail(c *ui.Context, ids []int64) {
 		})
 		ui.Text(c, locales.DetailBooksSelected(len(ids))).FontWeight(600).FontSize(18)
 		ui.Column(c).Gap(theme.Space8).Width(220).AlignItems(ui.Stretch).Children(func() {
+			a.selectionActions(c, ids)
 			if widgets.Button(c, widgets.Secondary, icons.Trash, locales.CommonRemoveFromLibrary()).Clicked() {
 				a.askDelete(ids)
 			}

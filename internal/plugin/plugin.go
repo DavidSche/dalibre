@@ -84,6 +84,8 @@ type Plugin struct {
 	exported []string                 // the functions the script exports
 	ctx      context.Context          // of the call in progress
 	settled  *string                  // the outcome of the call in progress, as JSON
+	host     *ActionHost              // what the action in progress may ask the app
+	limit    *deadline                // the time the call in progress has left
 	srcSize  int64                    // bytes of script loaded into rt
 	closed   bool
 }
@@ -195,6 +197,9 @@ func (p *Plugin) checkExports() error {
 	if m.RunsOnImport() && !slices.Contains(p.exported, "process") {
 		return &Error{Plugin: m.ID, Kind: KindInvalid, Msg: "a file type plugin that runs on import must export process"}
 	}
+	if len(m.Capabilities.Actions) > 0 && !slices.Contains(p.exported, "run") {
+		return &Error{Plugin: m.ID, Kind: KindInvalid, Msg: "a plugin with actions must export run"}
+	}
 	for _, h := range m.Hooks() {
 		if !slices.Contains(p.exported, h) {
 			return &Error{Plugin: m.ID, Kind: KindInvalid, Msg: fmt.Sprintf("a file type plugin with %s must export %s", hookFlag(h), h)}
@@ -236,15 +241,21 @@ func (p *Plugin) start() error {
 		return err
 	}
 	host := map[string]func([]any) (any, error){
-		"__host_info":   p.hostInfo,
-		"__host_log":    p.hostLog,
-		"__host_settle": p.hostSettle,
+		"__host_info":     p.hostInfo,
+		"__host_log":      p.hostLog,
+		"__host_settle":   p.hostSettle,
+		"__host_flag":     p.hostFlag,
+		"__host_progress": p.hostProgress,
 	}
 	for name, fn := range host {
 		if err := rt.SetGlobal(name, hostFunc(fn)); err != nil {
 			p.stop()
 			return err
 		}
+	}
+	if err := rt.SetGlobal("__host_ask", moejs.NativeFunc(p.hostAsk)); err != nil {
+		p.stop()
+		return err
 	}
 	entry, err := rt.RunScript(script)
 	if err == nil {
@@ -531,6 +542,11 @@ func (p *Plugin) call(ctx context.Context, name string, args ...any) (json.RawMe
 
 // callWithin is call with timeout in place of CallTimeout.
 func (p *Plugin) callWithin(ctx context.Context, timeout time.Duration, name string, args ...any) (json.RawMessage, error) {
+	return p.callHosted(ctx, timeout, nil, name, args...)
+}
+
+// callHosted is callWithin for a call that may ask host: an action's run.
+func (p *Plugin) callHosted(ctx context.Context, timeout time.Duration, host *ActionHost, name string, args ...any) (json.RawMessage, error) {
 	if missing := p.MissingSettings(); len(missing) > 0 {
 		return nil, &Error{Plugin: p.Manifest.ID, Call: name, Kind: KindSettings,
 			Msg: "needs " + strings.Join(missing, ", ") + " in its settings"}
@@ -557,6 +573,8 @@ func (p *Plugin) callWithin(ctx context.Context, timeout time.Duration, name str
 	if !slices.Contains(p.exported, name) {
 		return nil, &Error{Plugin: p.Manifest.ID, Call: name, Kind: KindInvalid, Msg: "isn’t exported"}
 	}
+	p.host = host
+	defer func() { p.host = nil }()
 	var out json.RawMessage
 	if err := p.invoke(ctx, timeout, name, &out, p.invokeFn, moejs.String(name), moejs.String(string(data))); err != nil {
 		return nil, err
@@ -578,8 +596,12 @@ type outcome struct {
 // ran out of time, or failed inside, is stopped, to start afresh on the
 // next call.
 func (p *Plugin) invoke(ctx context.Context, timeout time.Duration, call string, out any, fn moejs.Value, args ...moejs.Value) (err error) {
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+	// The call's time is a timer rather than the context's deadline, so
+	// that it stops while the user answers a form.
+	ctx, cancel := context.WithCancelCause(ctx)
+	defer cancel(nil)
+	p.limit = newDeadline(timeout, func() { cancel(context.DeadlineExceeded) })
+	defer p.limit.stop()
 	rt, loop := p.rt, p.loop
 	rt.ClearInterrupt()
 	p.ctx, p.settled = ctx, nil
@@ -613,15 +635,19 @@ func (p *Plugin) invoke(ctx context.Context, timeout time.Duration, call string,
 	})
 	fail := func(kind ErrorKind, msg string) error {
 		p.stop()
-		return &Error{Plugin: p.Manifest.ID, Call: call, Kind: kind, Msg: msg, Err: ctx.Err()}
+		cause := context.Cause(ctx)
+		if cause != nil && !errors.Is(cause, context.DeadlineExceeded) {
+			cause = context.Canceled
+		}
+		return &Error{Plugin: p.Manifest.ID, Call: call, Kind: kind, Msg: msg, Err: cause}
 	}
 	var internal *moejs.InternalError
 	switch {
 	case ctx.Err() != nil:
-		if errors.Is(ctx.Err(), context.Canceled) {
-			return fail(KindTimeout, "canceled")
+		if errors.Is(context.Cause(ctx), context.DeadlineExceeded) {
+			return fail(KindTimeout, "took too long")
 		}
-		return fail(KindTimeout, "took too long")
+		return fail(KindTimeout, "canceled")
 	case errors.As(jsErr, &internal):
 		return fail(KindScript, fmt.Sprint("the interpreter failed: ", internal.Value))
 	case p.settled == nil && jsErr != nil:
@@ -662,7 +688,7 @@ func (p *Plugin) thrown(call string, o outcome) *Error {
 		e.Msg = "threw an error with no message"
 	}
 	if k := ErrorKind(o.Error.Kind); k != "" {
-		if slices.Contains(thrownKinds, k) || k == KindPermission || k == KindTimeout {
+		if slices.Contains(thrownKinds, k) || k == KindPermission || k == KindTimeout || k == KindCancelled {
 			e.Kind = k
 		} else {
 			e.Msg = fmt.Sprintf("%s (unknown error kind %q)", e.Msg, k)

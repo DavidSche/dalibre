@@ -54,7 +54,7 @@ leaves signing out, so local builds are signed ad hoc.
 cmd/
   dalibre/            the app: main.go, mygo.json, resources/icon.png
   seed/               creates a sample calibre library for development
-  dalibre-plugin/     CLI for plugin authors: init, check, search, download, pack, install
+  dalibre-plugin/     CLI for plugin authors (npm: dalibre-plugin): init, check, dev, docs, pack, install
 plugins/
   gutenberg/          Project Gutenberg, built into the app (dalibre.gutenberg)
   googlebooks/        Google Books metadata lookup, built into the app (dalibre.googlebooks)
@@ -81,7 +81,8 @@ Get books (in the sidebar) searches and browses book sources and adds
 what you pick to your library. Project Gutenberg is built in; anyone can
 add a source as a plugin: a `plugin.json` and a JavaScript file, run
 sandboxed inside Dalibre. See
-[Writing Dalibre plugins](docs/plugins/README.md) and the
+[Writing Dalibre plugins](docs/plugins/README.md), also in the CLI
+(`npx dalibre-plugin@latest docs`), and the
 [design](docs/plugins/design.md).
 
 ## MCP

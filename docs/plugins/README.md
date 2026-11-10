@@ -2,7 +2,7 @@
 
 A Dalibre plugin is a folder with a `plugin.json` and a JavaScript (or
 TypeScript) module.
-Plugin API 1 has three capabilities; a plugin may have any of them:
+Plugin API 1 has four capabilities; a plugin may have any of them:
 
 - A **book source** searches and browses a catalogue and says where each
   book's file is. Dalibre shows every book source in its **Get books**
@@ -16,6 +16,12 @@ Plugin API 1 has three capabilities; a plugin may have any of them:
   plugins do: each file Dalibre adds, and the books the user runs it on
   from the book menu. It cleans them up, converts them, or unlocks them
   with the user's own key.
+
+- **Actions** are what the user runs on the books they chose, from the
+  book menu, or on the whole library, from the sidebar's **Tools**: find
+  duplicates, check the library, merge books. An action returns what it
+  found and what it wants changed; Dalibre shows the books as a list and
+  applies the changes.
 
 Your plugin gives data and never draws UI.
 
@@ -33,7 +39,7 @@ limits of what the user granted.
 
 - [Quick start](#quick-start)
 - [plugin.json](#pluginjson)
-- [main.js](#mainjs): [`search`](#search), [filters](#filters), [`collections` and `list`](#collections-and-list), [`get`](#get), [`resolve`](#resolve), [`identify`](#identify), [`process`](#process)
+- [main.js](#mainjs): [`search`](#search), [filters](#filters), [`collections` and `list`](#collections-and-list), [`get`](#get), [`resolve`](#resolve), [`identify`](#identify), [`process`](#process), [`run`](#run)
 - [Runtime](#runtime): [what you can use](#what-you-can-use), [fetch](#fetch), [timers](#timers), [your folders](#your-folders), [the `dalibre` object](#the-dalibre-object), [errors](#errors), [TypeScript](#typescript-and-npm-packages)
 - [Permissions and limits](#permissions-and-limits)
 - [Testing](#testing)
@@ -44,20 +50,25 @@ limits of what the user granted.
 ## Quick start
 
 ```sh
-go build ./cmd/dalibre-plugin                    # in the Dalibre repository, for now
+npm i -g dalibre-plugin                          # or npx dalibre-plugin …; or download it from a Dalibre release
 
 dalibre-plugin init my-source --id com.example.books --name "Example Books"
 cd my-source
 # edit plugin.json and main.js
 dalibre-plugin check .
+dalibre-plugin dev .                             # add it to Dalibre, reloaded as you save
 dalibre-plugin search . "dune" --set apiKey=…
-dalibre-plugin get . "dune"
-dalibre-plugin download . "dune" --format EPUB
 dalibre-plugin pack .                            # com.example.books-0.1.0.dalibre-plugin
 ```
 
-`init` writes `dalibre.d.ts`, `jsconfig.json` and `plugin.schema.json`
-next to your code: with `// @ts-check` at the top of `main.js`, VS Code
+This guide comes with the tool, for the API of its version:
+`dalibre-plugin docs` lists its topics, `dalibre-plugin docs fetch` prints
+one, and `dalibre-plugin types Result` prints a type of `dalibre.d.ts`.
+
+`init` makes a repository ready for GitHub: `.gitignore`, and a workflow
+that checks the plugin on each push and publishes a release when you push
+a tag (see [Publishing](#publishing)). It also writes `dalibre.d.ts`,
+`jsconfig.json` and `plugin.schema.json` next to your code: with `// @ts-check` at the top of `main.js`, VS Code
 and other editors check your code and complete the API as you type.
 
 Prefer TypeScript? Write `main.ts` and set `"main": "main.ts"`: Dalibre
@@ -106,6 +117,7 @@ runs it as it is. See [TypeScript and npm packages](#typescript-and-npm-packages
 | `name` | **Required.** Shown to users; up to 64 characters. |
 | `version` | **Required.** [Semantic version](https://semver.org) of your plugin. |
 | `api` | **Required.** The plugin API you wrote for: `1`. |
+| `dalibre` | The oldest Dalibre your plugin works in, as `">=0.4.0"`, when it uses what plugin API 1 gained since it began (actions, `covers`, `remember`, toggle, select and number settings): an older Dalibre refuses it, and its Marketplace shows it as needing an update. `dalibre-plugin check` warns when you need it. |
 | `description` | One line, shown under your name in the Get books source picker and when the user installs: what the catalogue holds ("Over 70,000 free public-domain ebooks"). |
 | `author`, `homepage`, `license` | Shown when the user installs. `license` is an SPDX id. The page's Open site button opens `homepage`. |
 | `icon` | One of Dalibre's icons: `globe` (default), `library`, `book-open`, `database`, `network`, `building`, `bookmark`, `layers`. Never an image, so a plugin can't dress up as another app. |
@@ -114,7 +126,7 @@ runs it as it is. See [TypeScript and npm packages](#typescript-and-npm-packages
 | `permissions.hosts` | **Required for a source.** Every host your plugin reaches, through `fetch`, file downloads, covers **and redirects**. `*.example.com` matches any subdomain, not `example.com` itself. |
 | `permissions.library` | `"read"`: your plugin sees the details of the books it is asked about. **Required for a metadata source** and for [hooks](#hooks). `"write"`: your hooks may also change those details; the install dialog warns about it. |
 | `permissions.localNetwork` | Reach this computer and the local network: a home OPDS or Calibre server. Users are warned. Default `false`. |
-| `settings` | Values the user enters: up to 32. `type` is `text` (default), `secret` (masked, hidden in logs, and kept in the system's keychain rather than Dalibre's settings file) or `file`: a file the user chooses, such as a key, copied into `/data`; its value is the path you read it at (`await readFile(dalibre.settings.keyFile)`). `required` settings must be filled before your plugin is called. |
+| `settings` | Values the user enters: up to 32. `type` is `text` (default), `secret` (masked, hidden in logs, and kept in the system's keychain rather than Dalibre's settings file), `file` (a file the user chooses, such as a key, copied into `/data`; its value is the path you read it at: `await readFile(dalibre.settings.keyFile)`), `toggle` (a switch: `"true"` or `"false"`), `select` (one of its `options`, `[{ value, title? }]`, 1 to 64) or `number`. Values are strings, the `default` where unset. `required` settings must be filled before your plugin is called. |
 
 Unknown fields are errors, so a misspelt one is caught by `check`, not
 silently ignored.
@@ -374,6 +386,96 @@ hooks (`"onImport": false`, no `process`) isn't in the book menu.
 calibre's conversion hooks have no counterpart: Dalibre doesn't convert
 through plugins.
 
+### run
+
+A plugin with `"actions"` in its capabilities exports `run(action,
+input)`, called with the id of the action the user chose:
+
+```json
+"capabilities": {
+  "actions": [
+    { "id": "find", "title": "Find duplicates…", "icon": "copy", "scope": "library" },
+    { "id": "exempt", "title": "Not duplicates", "scope": "books", "books": { "min": 2 }, "in": "results" },
+    { "id": "merge", "title": "Merge into one book", "scope": "books",
+      "books": { "min": 2 }, "formats": ["EPUB"], "files": true }
+  ]
+},
+"permissions": { "hosts": [], "library": "read" }
+```
+
+- `scope`: `"books"` runs on the books chosen, from the book menu and the
+  selection's **Plugins** button; `"library"` runs on every book, from
+  the sidebar's **Tools**.
+- `title` is what the menu says; end it in `…` when the action asks
+  something first. `icon` is one of Dalibre's own (the schema lists
+  them).
+- `books` is how many books it takes (`min`, `max`), `formats` the
+  formats it works on (every book must have one): Dalibre greys the item
+  out otherwise, without running your code.
+- `files: true` gives you a copy of each book's file in `/work`;
+  `covers: true` a copy of each one's cover, for the books that have
+  one.
+- `in: "results"` shows the action only among the books your own results
+  list (below), where it comes first.
+
+```js
+export async function run(action, input) {
+  const { by } = await dalibre.form({
+    submit: "Find duplicates",
+    fields: [
+      { key: "by", title: "Compare", type: "select", value: "title",
+        options: [{ value: "title", title: "Title and author" }, { value: "isbn", title: "ISBN" }] },
+    ],
+  });
+  const seen = new Map();
+  let n = 0;
+  for await (const book of dalibre.library.books()) {
+    dalibre.progress(++n, 0);
+    const key = by === "isbn" ? book.identifiers.isbn : book.title + "|" + book.authors.join();
+    if (key) seen.set(key, [...(seen.get(key) ?? []), book]);
+  }
+  const groups = [...seen.values()].filter((books) => books.length > 1)
+    .map((books) => ({ title: books[0].title, books: books.map((b) => ({ id: b.id })) }));
+  return groups.length ? { groups } : { message: "No duplicates" };
+}
+```
+
+`input` is `{ books, files? }`: `books` are the books chosen, in the
+user's order, as a hook sees them (`id`, `title`, `authors`, `tags`,
+`identifiers`, `formats`, `comments`, `titleSort`, `authorSort`,
+`added`, `modified`, `hasCover`, `uuid`…), and empty for a `"library"`
+action; `files` has each book's file by book id (`{ path, name, format
+}`), and `covers` each one's cover's path. Authors are as calibre shows them: "Herbert, Frank", not
+calibre's stored "Herbert| Frank".
+
+While it runs, an action has three things only Dalibre can give:
+
+| | |
+|---|---|
+| `await dalibre.form({ submit?, fields, remember? })` | Asks the user, in a dialog Dalibre draws under your action's title, and resolves to the answers by `key`. A field is `{ key, title, type, value?, options? }` with `type` `"text"`, `"toggle"`, `"select"` or `"multiselect"`; `value` is what it starts with. With `remember: true` the form starts with the user's last answers to it instead, as calibre plugins keep their options. Cancel rejects with kind `"cancelled"`: leave it uncaught and the run ends quietly. Call it when you know what to ask (after reading the book, say), as often as you need. The run's time doesn't count while it is open. |
+| `dalibre.library.books(options?)` | An async iterator over every book in the library; `comments` only with `{ comments: true }`, which reads more. |
+| `dalibre.progress(done, total)` | The job's bar; `total` 0 when you don't know. |
+
+Return `null`, or what you found and want changed:
+
+| | Dalibre |
+|---|---|
+| `message` | says it in a toast: "No duplicates" |
+| `groups: [{ title, books: [{ id, note? }] }]` | opens the books as a list under each group's title, with `note` under a book's title. It is a book list like any other: the book menu and the detail panel work in it. A book shows once, under the first group that has it |
+| `changes: [{ book, metadata }]` | changes books' details, as a hook's `metadata`: at once with `"library": "write"` (and Undo), else shown to the user first, who applies them. A field left out stays as it is; `""` (or `[]`) clears it: `{ series: "" }` takes a book out of its series |
+| `add: [{ path, metadata? }]` | adds each file as a new book |
+| `formats: [{ book, path }]` | adds the file to the book; a file of the same format is kept as `ORIGINAL_<format>` |
+| `open` | opens the page in the browser; it must be on one of your hosts |
+
+An action never deletes: the books it ran on stay as they were.
+
+A run has 10 minutes and is a job the user can stop. Try it with
+`dalibre-plugin run . find --library ~/Calibre\ Library --answer by=isbn`
+or `dalibre-plugin run . merge a.epub b.epub`, or on books of a library
+with `--library DIR --book 12 --book 40`: without a window, the
+answers to your forms come from `--answer` (as from an AI agent), and
+`dalibre.interactive` is false. Your code is the same either way.
+
 ## Runtime
 
 ### What you can use
@@ -455,6 +557,7 @@ What only Dalibre can give you:
 | `dalibre.error(kind, message?)` | An `Error` Dalibre understands; see below. |
 | `dalibre.plugin` | `{ id, version }` from your manifest. |
 | `dalibre.api` | The plugin API version of the running Dalibre. |
+| `dalibre.form`, `dalibre.library`, `dalibre.progress`, `dalibre.interactive` | For an action while it runs; see [`run`](#run). |
 
 Everything in the `dalibre` object is frozen.
 
@@ -515,7 +618,9 @@ declare:
 | Limit | |
 |---|---|
 | One call (`search`, `list`, `get`, `resolve`…) | 60 seconds; then the script is stopped |
-| One `process` call | 10 minutes |
+| One `process` call, one action's `run` | 10 minutes, not counting the time a form is open |
+| A form | 24 fields, 500 options a field |
+| An action's results | 2000 groups; 200 files to add |
 | Memory | Not limited, as calibre doesn't limit its plugins |
 | Requests per call | 50 |
 | One `fetch` response | 16 MB (files go through the download) |
@@ -554,8 +659,11 @@ dalibre-plugin download . "dune" --item 3 --format PDF -o /tmp
 `--set key=value` gives a setting; otherwise the values saved in Dalibre
 for your plugin's id are used. Logs and warnings go to stderr.
 
-To try it in the app, use Settings › Plugins › Add plugin › From a
-folder… and pick your plugin's folder. Dalibre loads the plugin from
+To try it in the app, run `dalibre-plugin dev .` with Dalibre open and
+its MCP server on (Settings › MCP): it adds the folder to Dalibre and
+prints each reload, with its errors and what you must allow or fill in.
+Or use Plugins › Add plugin › From a folder… and pick your plugin's
+folder. Either way Dalibre loads the plugin from
 that folder, not a copy, and reloads it a moment after you save a change
 (hidden files and `node_modules` aside). Remove takes it out of Dalibre
 and leaves the folder alone. `dalibre-plugin install` takes a folder or
@@ -572,7 +680,12 @@ your folder, leaving out hidden files and `node_modules`. Users install
 the file. Publish it as a GitHub release asset, with your source next to
 it.
 
-Users can install straight from your repository: Settings › Plugins ›
+The workflow `init` writes (`.github/workflows/plugin.yml`) does this
+for you: bump `version` in `plugin.json`, then
+`git tag v0.2.0 && git push origin v0.2.0`. It checks the plugin, makes
+sure the tag matches the version, packs it, and creates the release.
+
+Users can install straight from your repository: Plugins ›
 Install from GitHub, with `owner/repo` or a github.com link. They pick
 one of your releases (the latest by default) or a branch:
 
@@ -586,6 +699,19 @@ Dalibre checks for updates at launch and once a day: a newer release
 that isn't a pre-release, or a new commit on the branch followed. An
 update that asks for no new permissions can install by itself; one that
 asks for more waits for the user. Bump `version` in each release.
+
+**The Marketplace.** Plugins › Marketplace (the toolbar's Plugins button) lists plugins users
+install with a click, from
+the plugins in [marketplace/](../../marketplace) and the community's.
+To list yours, open a pull request adding your repository to
+[marketplace/community.json](../../marketplace/community.json):
+`{ "repo": "ann/dalibre-example-books", "category":
+"sources", "calibre": "Example Books" }`. `category` is one of
+`library`, `metadata`, `epub`, `language`, `sources`; `calibre`,
+optional, names the calibre plugin yours does the work of. Your
+repository needs a release: the Marketplace lists the latest, checked
+with `dalibre-plugin check`, and picks up new ones within a day.
+Installing still shows users what your plugin asks for.
 
 Users see your name, author, description and what you ask for before
 they install. A plugin that asks for little, says what it does and links
@@ -602,7 +728,10 @@ its source gets installed.
 - A breaking change will be API 2, announced in Dalibre's release notes,
   with API 1 plugins kept running alongside it for a transition period.
 - A plugin declaring a newer `api` than the user's Dalibre isn't loaded,
-  and the user is told to update Dalibre.
+  and the user is told to update Dalibre; so is one whose `dalibre` asks
+  for a newer Dalibre. Each `dalibre-plugin` comes with a Dalibre
+  release of the same version (`dalibre-plugin version`) and holds your
+  plugin to what that release runs.
 
 **Moving from `dalibre.fetch`.** Earlier versions of API 1 had
 `dalibre.fetch` and `dalibre.log`; they are gone, for the standard
