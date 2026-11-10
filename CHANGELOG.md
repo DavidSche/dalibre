@@ -1,4 +1,4 @@
-## Unreleased
+## 0.4.0
 
 - Merged upstream djyde/dalibre 0.4.0:
   - Plugins have their own window, from the toolbar's Plugins button, with
