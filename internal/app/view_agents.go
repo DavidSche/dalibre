@@ -265,6 +265,10 @@ func toolIcon(tool string) *ui.SVG {
 		return icons.Trash
 	case "download_book":
 		return icons.Download
+	case "reload_plugins":
+		return icons.Refresh
+	case "list_plugins", "create_plugin", "add_plugin", "test_plugin", "enable_plugin", "remove_plugin":
+		return icons.Puzzle
 	}
 	return icons.Bot
 }
@@ -278,6 +282,8 @@ func (a *App) callSummary(call mcp.Call) string {
 		IDs    []int64 `json:"ids"`
 		Path   string  `json:"path"`
 		Format string  `json:"format"`
+		Call   string  `json:"call"`
+		On     *bool   `json:"enabled"`
 	}
 	json.Unmarshal(call.Args, &args)
 	title := ""
@@ -325,6 +331,30 @@ func (a *App) callSummary(call mcp.Call) string {
 		return book(locales.McpDownloaded, locales.McpDownloadedMany)
 	case "find_metadata":
 		return locales.McpFoundMetadata(title)
+	case "list_plugins":
+		return locales.McpListedPlugins()
+	case "create_plugin":
+		return locales.McpCreatedPlugin(filepath.Base(args.Path))
+	case "add_plugin":
+		return locales.McpAddedPlugin(filepath.Base(args.Path))
+	case "reload_plugins":
+		return locales.McpReloadedPlugins()
+	}
+	// The plugin tools name a plugin by its id, a string.
+	var pl struct {
+		ID string `json:"id"`
+	}
+	json.Unmarshal(call.Args, &pl)
+	switch name := a.pluginName(pl.ID); call.Tool {
+	case "test_plugin":
+		return locales.McpTestedPlugin(args.Call, name)
+	case "enable_plugin":
+		if args.On != nil && !*args.On {
+			return locales.McpDisabledPlugin(name)
+		}
+		return locales.McpEnabledPlugin(name)
+	case "remove_plugin":
+		return locales.McpRemovedPlugin(name)
 	}
 	return call.Tool
 }

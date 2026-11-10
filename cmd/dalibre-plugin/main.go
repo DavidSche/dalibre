@@ -10,13 +10,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/fs"
 	"maps"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/egoist/mygo"
 
@@ -39,14 +39,16 @@ const usage = `dalibre-plugin is for writing Dalibre plugins.
                                                       what Fetch metadata shows for a book
   dalibre-plugin open <dir> <book> [--format EPUB] [--json]
                                                       lay out a book as the reader page shows it
+  dalibre-plugin process <dir> <file> [--manual] [-o DIR]  run a file type plugin on a book's file
   dalibre-plugin pack <dir> [-o DIR]                  make <id>-<version>.dalibre-plugin
   dalibre-plugin install <package> [--yes]            install into Dalibre's plugins folder
   dalibre-plugin uninstall <id>
   dalibre-plugin installed                            list installed plugins
 
-search, list, get, download, identify and open take --set key=value for the
-plugin's settings, and --filter key=value for its filters; the
-values saved in Dalibre are used otherwise. The plugins folder is
+search, list, get, download, identify, open and process take --set key=value for
+the plugin's settings (a file setting takes a file's path, copied into the
+plugin's .data folder), and --filter key=value for its filters; the values saved
+in Dalibre are used otherwise. The plugins folder is
 $DALIBRE_PLUGINS, or Dalibre's in your configuration folder.
 `
 
@@ -60,7 +62,7 @@ func main() {
 	cmds := map[string]func(context.Context, []string) error{
 		"init": cmdInit, "check": cmdCheck, "search": cmdSearch, "download": cmdDownload,
 		"collections": cmdCollections, "list": cmdListCollection, "get": cmdGet, "identify": cmdIdentify,
-		"open": cmdOpen,
+		"open": cmdOpen, "process": cmdProcess,
 		"pack": cmdPack, "install": cmdInstall, "uninstall": cmdUninstall, "installed": cmdList,
 	}
 	cmd, ok := cmds[os.Args[1]]
@@ -143,13 +145,24 @@ func load(dir string, set setFlags) (*plugin.Plugin, error) {
 			values[st.Key] = string(v)
 		}
 	}
+	// The plugin's own folder is .data in its folder, which pack leaves
+	// out. A file setting given with --set is a file here, copied in.
+	own := filepath.Join(dir, ".data")
 	for k, v := range set {
-		if !slices.ContainsFunc(m.Settings, func(s plugin.Setting) bool { return s.Key == k }) {
+		i := slices.IndexFunc(m.Settings, func(s plugin.Setting) bool { return s.Key == k })
+		if i < 0 {
 			return nil, fmt.Errorf("--set %s: plugin.json has no setting %q", k, k)
+		}
+		if m.Settings[i].Type == "file" && v != "" {
+			p, err := plugin.StoreSettingFile(own, k, v)
+			if err != nil {
+				return nil, fmt.Errorf("--set %s: %w", k, err)
+			}
+			v = p
 		}
 		values[k] = v
 	}
-	return plugin.Load(dir, plugin.Options{Settings: values, Logf: func(f string, a ...any) {
+	return plugin.Load(dir, plugin.Options{Settings: values, DataDir: own, Logf: func(f string, a ...any) {
 		fmt.Fprintf(os.Stderr, f+"\n", a...)
 	}})
 }
@@ -165,29 +178,8 @@ func cmdInit(_ context.Context, args []string) error {
 	if *name == "" {
 		*name = *id
 	}
-	if entries, _ := os.ReadDir(dir); len(entries) > 0 {
-		return fmt.Errorf("%s isn’t empty", dir)
-	}
-	files := map[string]string{"dalibre.d.ts": "dalibre.d.ts", "plugin.schema.json": "plugin.schema.json"}
-	tmpl, err := templateFiles()
-	if err != nil {
+	if _, err := sdk.Init(dir, *id, *name); err != nil {
 		return err
-	}
-	for _, e := range tmpl {
-		files[e] = "template/" + e
-	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return err
-	}
-	for dst, src := range files {
-		data, err := sdk.Files.ReadFile(src)
-		if err != nil {
-			return err
-		}
-		text := strings.NewReplacer("{{ID}}", *id, "{{NAME}}", *name).Replace(string(data))
-		if err := os.WriteFile(filepath.Join(dir, dst), []byte(text), 0o644); err != nil {
-			return err
-		}
 	}
 	if _, err := plugin.ReadManifest(dir); err != nil {
 		return fmt.Errorf("%w (is %q a valid id? pass --id)", err, *id)
@@ -196,20 +188,10 @@ func cmdInit(_ context.Context, args []string) error {
 	return nil
 }
 
-// templateFiles lists the template's files.
-func templateFiles() ([]string, error) {
-	entries, err := fs.ReadDir(sdk.Files, "template")
-	var names []string
-	for _, e := range entries {
-		names = append(names, e.Name())
-	}
-	return names, err
-}
-
 func cmdCheck(_ context.Context, args []string) error {
 	fs := flag.NewFlagSet("check", flag.ExitOnError)
 	dir := parse(fs, args, "dir")[0]
-	p, err := plugin.Load(dir, plugin.Options{Logf: func(string, ...any) {}})
+	p, err := plugin.Load(dir, plugin.Options{DataDir: filepath.Join(dir, ".data"), Logf: func(string, ...any) {}})
 	if err != nil {
 		return err
 	}
@@ -630,6 +612,57 @@ func printPage(res plugin.Page) {
 	for _, w := range res.Warnings {
 		fmt.Fprintln(os.Stderr, "warning: search returned", w)
 	}
+}
+
+func cmdProcess(ctx context.Context, args []string) error {
+	fs := flag.NewFlagSet("process", flag.ExitOnError)
+	manual := fs.Bool("manual", false, `call it as the book menu does (reason "manual"), not as an import`)
+	out := fs.String("o", ".", "the folder to save the new file in")
+	set := setFlags{}
+	fs.Var(set, "set", "a setting, as key=value (repeatable)")
+	pos := parse(fs, args, "dir", "file")
+	p, err := load(pos[0], set)
+	if err != nil {
+		return err
+	}
+	defer p.Close()
+	reason := plugin.ReasonImport
+	if *manual {
+		reason = plugin.ReasonManual
+	}
+	start := time.Now()
+	r, err := p.Process(ctx, pos[1], reason, nil)
+	if err != nil {
+		return err
+	}
+	defer r.Done()
+	for _, line := range r.Report {
+		fmt.Println("·", line)
+	}
+	if r.File == "" {
+		fmt.Printf("left the file as it was (%s)\n", time.Since(start).Round(time.Millisecond))
+		return nil
+	}
+	dst := filepath.Join(*out, filepath.Base(r.File))
+	if same(dst, pos[1]) {
+		dst = filepath.Join(*out, strings.TrimSuffix(filepath.Base(r.File), filepath.Ext(r.File))+" (processed)"+filepath.Ext(r.File))
+	}
+	data, err := os.ReadFile(r.File)
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(dst, data, 0o644); err != nil {
+		return err
+	}
+	fmt.Printf("saved %s (%s, %.1f MB, %s)\n", dst, r.Format, float64(len(data))/(1<<20), time.Since(start).Round(time.Millisecond))
+	return nil
+}
+
+// same reports whether a and b are the same file's path.
+func same(a, b string) bool {
+	x, err1 := filepath.Abs(a)
+	y, err2 := filepath.Abs(b)
+	return err1 == nil && err2 == nil && x == y
 }
 
 func cmdDownload(ctx context.Context, args []string) error {

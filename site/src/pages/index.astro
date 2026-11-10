@@ -2,6 +2,19 @@
 import Footer from "../components/Footer.astro";
 import "../styles/global.css";
 import { Code } from "astro:components";
+import BookLock from "@lucide/astro/icons/book-lock";
+import Box from "@lucide/astro/icons/box";
+import Boxes from "@lucide/astro/icons/boxes";
+import Braces from "@lucide/astro/icons/braces";
+import Eye from "@lucide/astro/icons/eye";
+import FolderLock from "@lucide/astro/icons/folder-lock";
+import Globe from "@lucide/astro/icons/globe";
+import Laptop from "@lucide/astro/icons/laptop";
+import Library from "@lucide/astro/icons/library";
+import RefreshCw from "@lucide/astro/icons/refresh-cw";
+import ShieldCheck from "@lucide/astro/icons/shield-check";
+import Tags from "@lucide/astro/icons/tags";
+import Timer from "@lucide/astro/icons/timer";
 import AppWindow from "../components/AppWindow.astro";
 import SendToDevice from "../components/SendToDevice.astro";
 import Seo from "../components/Seo.astro";
@@ -18,6 +31,52 @@ const title = "Dalibre — a lightweight calibre alternative for your e-books";
 const description = `Dalibre is a lightweight calibre alternative: a fast, native e-book manager for macOS, Windows and Linux that opens your existing calibre library.`;
 
 // Shown in the FAQ section and given to search engines as FAQPage.
+const safety = [
+  {
+    icon: ShieldCheck,
+    title: "You grant access",
+    text: "Before a plugin installs, Dalibre lists every host it reaches and every permission it asks for. An update that asks for more stays off until you agree again.",
+  },
+  {
+    icon: Globe,
+    title: "Only those hosts",
+    text: "Every request, redirect and download is checked against the hosts you granted. Your computer and home network are refused unless you allow them.",
+  },
+  {
+    icon: FolderLock,
+    title: "Not your files",
+    text: "A plugin gets one folder of its own and can't read your disk or start a program. Dalibre does the downloads, and only Dalibre writes your library.",
+  },
+  {
+    icon: Boxes,
+    title: "Kept apart",
+    text: "Each plugin has its own runtime, settings and cookies, so one can't read another's API keys. Secret settings are masked in logs.",
+  },
+  {
+    icon: Timer,
+    title: "Can't hang the app",
+    text: "Every call has a time limit, and requests, downloads and stored data are capped. A plugin that runs out of time is stopped and loaded afresh.",
+  },
+];
+
+const builtins = [
+  {
+    name: "Project Gutenberg",
+    kind: "Book source",
+    does: "Search and browse over 70,000 free public-domain ebooks, by language. Most popular and Recently added lists.",
+  },
+  {
+    name: "NeoDB",
+    kind: "Metadata",
+    does: "Title, authors, series, tags, publisher, date, ISBN, cover and description from an open catalogue linked to Douban, Goodreads and more. No account needed.",
+  },
+  {
+    name: "Google Books",
+    kind: "Metadata",
+    does: "Title, authors, tags, publisher, date, ISBN, cover and description from Google Books. Add your own API key for a quota of your own.",
+  },
+];
+
 const faq = [
   {
     q: "Is Dalibre a calibre alternative?",
@@ -98,7 +157,7 @@ const manifest = `{
 
 const code = `// @ts-check
 export async function search({ text, page }) {
-  const res = await dalibre.fetch(
+  const res = await fetch(
     \`https://books.example.com/api?q=\${text}&p=\${page}\`
   );
   const { books, next } = await res.json();
@@ -340,31 +399,46 @@ export async function search({ text, page }) {
             </p>
           </div>
 
-          <div class="mt-14 grid gap-5 md:grid-cols-2">
-            <article class="rounded-2xl border border-sand-6 bg-paper p-7">
-              <div class="flex size-10 items-center justify-center rounded-lg bg-accent-soft text-accent">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
-              </div>
-              <h3 class="mt-5 text-lg font-medium">Book sources</h3>
-              <p class="mt-2 leading-relaxed text-sand-11">
-                Search and browse a catalogue from <b class="font-medium text-ink">Get books</b>.
-                Dalibre downloads the file and adds it to your library with
-                the metadata the plugin gave. OPDS catalogs work too.
+          <!-- Built in -->
+          <div class="mt-14">
+            <h3 class="font-mono text-xs tracking-widest text-sand-9 uppercase">Built in</h3>
+            <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {builtins.map((p) => (
+                <li class="rounded-2xl border border-sand-4 bg-paper-2 p-6">
+                  <div class:list={["flex items-center gap-2", p.kind === "Book source" ? "text-accent" : "text-violet"]}>
+                    {p.kind === "Book source" ? <Library size={16} stroke-width={1.75} aria-hidden="true" /> : <Tags size={16} stroke-width={1.75} aria-hidden="true" />}
+                    <span class="font-mono text-[11px]">{p.kind}</span>
+                  </div>
+                  <p class="mt-3 font-medium">{p.name}</p>
+                  <p class="mt-2 text-sm leading-relaxed text-sand-11">{p.does}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <!-- Safety -->
+          <div class="mt-20 grid gap-x-16 gap-y-8 lg:grid-cols-[1fr_1.6fr]">
+            <div>
+              <h3 class="text-xl font-medium tracking-tight sm:text-2xl">Safe to install, even from a stranger.</h3>
+              <p class="mt-3 leading-relaxed text-sand-11">
+                Dalibre treats every plugin as untrusted code. It runs in a
+                sandbox inside the app, and you decide what it may reach.
               </p>
-              <p class="mt-5 font-mono text-xs text-sand-9">Built in: Project Gutenberg</p>
-            </article>
-            <article class="rounded-2xl border border-sand-6 bg-paper p-7">
-              <div class="flex size-10 items-center justify-center rounded-lg bg-[#f4f0fe] text-violet">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg>
-              </div>
-              <h3 class="mt-5 text-lg font-medium">Metadata sources</h3>
-              <p class="mt-2 leading-relaxed text-sand-11">
-                Look a book up by title, authors and identifiers. Candidates
-                show up in <b class="font-medium text-ink">Fetch metadata</b>, next to your own
-                values; you pick which fields to take.
-              </p>
-              <p class="mt-5 font-mono text-xs text-sand-9">Built in: NeoDB (Douban, Goodreads and more)</p>
-            </article>
+              <a href="/docs/plugins/#permissions-and-limits" class="mt-4 inline-block text-sm font-medium text-violet hover:underline">
+                Permissions and limits →
+              </a>
+            </div>
+            <ul class="divide-y divide-sand-4 border-y border-sand-4">
+              {safety.map((s) => (
+                <li class="grid gap-x-8 gap-y-1 py-5 sm:grid-cols-[13rem_1fr]">
+                  <p class="flex items-center gap-2.5 self-start font-medium">
+                    <s.icon size={18} stroke-width={1.75} class="shrink-0 text-violet" aria-hidden="true" />
+                    {s.title}
+                  </p>
+                  <p class="leading-relaxed text-sand-11">{s.text}</p>
+                </li>
+              ))}
+            </ul>
           </div>
 
           <!-- Writing one -->
@@ -390,15 +464,18 @@ export async function search({ text, page }) {
 
           <ul class="mt-10 grid gap-x-10 gap-y-6 text-sm sm:grid-cols-3">
             <li>
-              <p class="font-medium">Sandboxed</p>
-              <p class="mt-1 leading-relaxed text-sand-11">Runs in QuickJS inside Dalibre, with only the hosts and library access it asks you for.</p>
+              <Box size={20} stroke-width={1.75} class="text-violet" aria-hidden="true" />
+              <p class="mt-3 font-medium">Sandboxed</p>
+              <p class="mt-1 leading-relaxed text-sand-11">Runs sandboxed inside Dalibre, with only the hosts and library access it asks you for.</p>
             </li>
             <li>
-              <p class="font-medium">Typed</p>
+              <Braces size={20} stroke-width={1.75} class="text-violet" aria-hidden="true" />
+              <p class="mt-3 font-medium">Typed</p>
               <p class="mt-1 leading-relaxed text-sand-11"><code class="font-mono text-xs">dalibre.d.ts</code> gives completions and checks in any editor. TypeScript welcome.</p>
             </li>
             <li>
-              <p class="font-medium">Live reload</p>
+              <RefreshCw size={20} stroke-width={1.75} class="text-violet" aria-hidden="true" />
+              <p class="mt-3 font-medium">Live reload</p>
               <p class="mt-1 leading-relaxed text-sand-11">Add a plugin from a folder and Dalibre reloads it each time you save. Share it from a GitHub repository.</p>
             </li>
           </ul>
@@ -504,15 +581,18 @@ export async function search({ text, page }) {
 
           <ul class="mt-10 grid gap-x-10 gap-y-6 text-sm sm:grid-cols-3">
             <li>
-              <p class="font-medium">On your computer only</p>
+              <Laptop size={20} stroke-width={1.75} class="text-accent" aria-hidden="true" />
+              <p class="mt-3 font-medium">On your computer only</p>
               <p class="mt-1 leading-relaxed text-sand-11">The server listens on 127.0.0.1, and only programs with its token get in.</p>
             </li>
             <li>
-              <p class="font-medium">Every call in sight</p>
+              <Eye size={20} stroke-width={1.75} class="text-accent" aria-hidden="true" />
+              <p class="mt-3 font-medium">Every call in sight</p>
               <p class="mt-1 leading-relaxed text-sand-11">The toolbar shows the agent at work; its popover lists what each agent did.</p>
             </li>
             <li>
-              <p class="font-medium">Read only, if you like</p>
+              <BookLock size={20} stroke-width={1.75} class="text-accent" aria-hidden="true" />
+              <p class="mt-3 font-medium">Read only, if you like</p>
               <p class="mt-1 leading-relaxed text-sand-11">Agents get every tool by default. One switch keeps them to searching and reading.</p>
             </li>
           </ul>

@@ -10,6 +10,7 @@
     "sdk": "mkdir -p public/sdk && cp ../sdk/dalibre.d.ts ../sdk/plugin.schema.json ../sdk/template/jsconfig.json public/sdk/"
   },
   "dependencies": {
+    "@lucide/astro": "^1.70.0",
     "@tailwindcss/vite": "^4.3.5",
     "astro": "^7.4.1",
     "tailwindcss": "^4.3.5"

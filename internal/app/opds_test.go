@@ -287,6 +287,13 @@ func (g *fakeGitHub) release(t *testing.T, version string, hosts string) {
 func TestInstallFromGitHubAndUpdate(t *testing.T) {
 	a := newTestApp(t)
 	a.pluginDir = t.TempDir()
+	// The plugin runtime keeps its data folder open until the plugin is
+	// closed, and Windows won't remove an open folder.
+	t.Cleanup(func() {
+		for _, p := range a.plugins {
+			p.Close()
+		}
+	})
 	gh := newFakeGitHub(t)
 	gh.release(t, "1.0.0", `"books.example.com"`)
 	a.github = &plugin.GitHub{API: gh.srv.URL}

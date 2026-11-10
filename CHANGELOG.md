@@ -1,8 +1,14 @@
-# Changelog
+## Unreleased
 
-Each version's section is the release notes that Dalibre's update window
-shows, so write them for readers of the app. `mygo build` needs a
-`## <version>` section for the version in `cmd/dalibre/mygo.json`.
+- Merged upstream djyde/dalibre 0.3.0:
+  - File type plugins work on books' files, as calibre's do: when books are
+    added, or from a book's menu.
+  - AI agents can write, try and install plugins over MCP.
+  - Plugins use standard APIs (fetch, timers, node:fs) and can be written in
+    TypeScript; `dalibre.fetch` and `dalibre.log` are removed.
+  - Plugin secrets such as API keys need to be entered again.
+  - Dalibre checks for updates every hour.
+- The reader plugin runs alongside the new plugin runtime.
 
 ## 0.3.1
 

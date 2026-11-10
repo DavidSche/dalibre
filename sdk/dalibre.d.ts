@@ -1,14 +1,18 @@
 // Type declarations for Dalibre plugins, plugin API 1.
 //
-// A plugin is an ES module (ES2023); CommonJS (module.exports) works too.
-// A book source exports search and, optionally, collections and list
-// (with "collections": true in plugin.json), get and resolve. A metadata
-// source exports identify. A reader exports open and declares the formats
-// it lays out. In plain JavaScript, put
-// this file next to main.js with the template's jsconfig.json and add
-// `// @ts-check` to main.js: editors then check your code and complete
-// the API. In TypeScript, compile to one module, for example with
-// `esbuild main.ts --bundle --format=esm --target=es2023 --outfile=main.js`.
+// A plugin is an ES module (ES2023), in JavaScript or TypeScript;
+// CommonJS (module.exports) works too. A book source exports search and,
+// optionally, collections and list (with "collections": true in
+// plugin.json), get and resolve. A metadata source exports identify. A
+// reader exports open and declares the formats it lays out. A file type
+// plugin exports process.
+//
+// Put this file next to main.js (or main.ts) with the template's
+// jsconfig.json (or a tsconfig.json with the same options). In JavaScript,
+// add `// @ts-check` to main.js: editors then check your code and complete
+// the API. The standard globals (fetch, URL, setTimeout, TextEncoder…)
+// come from TypeScript's "WebWorker" library; for node:fs and Buffer, add
+// @types/node (npm i -D @types/node).
 
 declare namespace Dalibre {
   /** What search is asked for. */
@@ -95,24 +99,6 @@ declare namespace Dalibre {
     headers?: Record<string, string>;
     /** The file's name; else the server's, else the title. The extension is fixed to the format. */
     filename?: string;
-  }
-
-  interface FetchInit {
-    method?: string;
-    headers?: Record<string, string>;
-    body?: string;
-  }
-
-  interface Response {
-    status: number;
-    statusText: string;
-    ok: boolean;
-    /** The final URL, after redirects. */
-    url: string;
-    /** Lowercase names. */
-    headers: Record<string, string>;
-    text(): string;
-    json(): any;
   }
 
   /** Kinds the app tells the user about differently. */
@@ -291,6 +277,90 @@ declare namespace Dalibre {
     /** Lay out the book the user opened: chapters, blocks, typography. */
     open(input: OpenInput): Reading | Promise<Reading>;
   }
+
+  /** A book's file, as process(file) gets it. */
+  interface File {
+    /** Where to read it: a copy of the file in /work, which you may change or write beside. */
+    path: string;
+    /** The file's own name: "Dune - Frank Herbert.epub". */
+    name: string;
+    /** Its format, upper case: "EPUB". */
+    format: string;
+    /** "import": Dalibre is adding it. "manual": the user ran the plugin on the book. */
+    reason: "import" | "manual";
+    /** The book it belongs to, when it is in the library (reason "manual"). */
+    book?: Book;
+  }
+
+  /**
+   * What process returns: null to leave the file as it is, or the new
+   * file's path (in /work or /data), with the extension of its format.
+   * report lines are shown to the user and in the CLI.
+   */
+  type Processed = null | string | { path?: string; report?: string[] };
+
+  /** A book as a hook sees it. */
+  interface BookInfo {
+    id: number;
+    title: string;
+    authors: string[];
+    series?: string;
+    seriesIndex?: number;
+    tags: string[];
+    publisher?: string;
+    /** "2006-01-02". */
+    pubdate?: string;
+    /** ISO 639-2: "eng". */
+    languages?: string[];
+    identifiers: Record<string, string>;
+    /** 0–10, as calibre keeps it. */
+    rating?: number;
+    comments?: string;
+    formats: string[];
+  }
+
+  /** A book's file a hook is handed: a copy in /work. */
+  interface HookFile {
+    path: string;
+    name: string;
+    format: string;
+  }
+
+  /** What a hook gets. */
+  interface HookEvent {
+    book: BookInfo;
+    /** postimport: the format added. postdelete: the format removed. */
+    format?: string;
+    /** postimport: the file added. */
+    file?: HookFile;
+    /** postadd: the new book's files. */
+    files?: HookFile[];
+  }
+
+  /**
+   * What a hook may return: null, or changes to the book's details, which
+   * Dalibre writes with permissions.library "write". Identifiers are
+   * merged; an empty value removes one.
+   */
+  type HookResult = null | void | {
+    metadata?: Partial<{
+      title: string; authors: string[]; series: string; seriesIndex: number; tags: string[];
+      publisher: string; pubdate: string; languages: string[]; identifiers: Record<string, string>;
+      rating: number; comments: string;
+    }>;
+  };
+
+  /** What a file type plugin exports, after calibre's file type plugins. */
+  interface FileType {
+    /** As files are added (unless onImport is false), and from the book menu. */
+    process(file: File): Processed | Promise<Processed>;
+    /** With onPostImport: after a file was added to a book. */
+    postimport?(event: HookEvent): HookResult | Promise<HookResult>;
+    /** With onPostAdd: after a book was added. */
+    postadd?(event: HookEvent): HookResult | Promise<HookResult>;
+    /** With onPostDelete: after a format was removed. */
+    postdelete?(event: HookEvent): HookResult | Promise<HookResult>;
+  }
 }
 
 declare const dalibre: {
@@ -299,25 +369,10 @@ declare const dalibre: {
   readonly plugin: { readonly id: string; readonly version: string };
   /** The user's values for the settings in plugin.json, by key; defaults when not set. */
   readonly settings: Readonly<Record<string, string>>;
-  /**
-   * The web's fetch, cut down. Only hosts in permissions.hosts, redirects
-   * included; at most 50 requests per call and 16 MB per response. Requests
-   * run one at a time, so Promise.all doesn't make them parallel.
-   */
-  fetch(url: string, init?: Dalibre.FetchInit): Promise<Dalibre.Response>;
   /** An Error the app understands: `throw dalibre.error("auth", "The API key was refused")`. */
   error(kind: Dalibre.ErrorKind, message?: string): Error;
-  log(...args: unknown[]): void;
-};
-
-declare const console: {
-  log(...args: unknown[]): void;
-  info(...args: unknown[]): void;
-  warn(...args: unknown[]): void;
-  error(...args: unknown[]): void;
-  debug(...args: unknown[]): void;
 };
 
 /** For CommonJS plugins; ES modules export their functions instead. */
-declare const module: { exports: Partial<Dalibre.Source & Dalibre.MetadataSource & Dalibre.ReaderSource> };
-declare const exports: Partial<Dalibre.Source & Dalibre.MetadataSource & Dalibre.ReaderSource>;
+declare const module: { exports: Partial<Dalibre.Source & Dalibre.MetadataSource & Dalibre.ReaderSource & Dalibre.FileType> };
+declare const exports: Partial<Dalibre.Source & Dalibre.MetadataSource & Dalibre.ReaderSource & Dalibre.FileType>;

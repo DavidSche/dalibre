@@ -1,7 +1,8 @@
 # Writing Dalibre plugins
 
-A Dalibre plugin is a folder with a `plugin.json` and a JavaScript file.
-Plugin API 1 has three capabilities; a plugin may have any of them:
+A Dalibre plugin is a folder with a `plugin.json` and a JavaScript (or
+TypeScript) module.
+Plugin API 1 has four capabilities; a plugin may have any of them:
 
 - A **book source** searches and browses a catalogue and says where each
   book's file is. Dalibre shows every book source in its **Get books**
@@ -16,21 +17,30 @@ Plugin API 1 has three capabilities; a plugin may have any of them:
   which returns chapters, paragraphs and typography. The reading page
   itself is Dalibre's, so every reader gets the same contents, bookmarks
   and page colors.
+- A **file type** plugin works on books' files, as calibre's file type
+  plugins do: each file Dalibre adds, and the books the user runs it on
+  from the book menu. It cleans them up, converts them, or unlocks them
+  with the user's own key.
 
 Your plugin gives data and never draws UI.
 
 The [Project Gutenberg plugin](../../plugins/gutenberg) (a book source),
-the [NeoDB plugin](../../plugins/neodb) (a metadata source) and the
+the [NeoDB plugin](../../plugins/neodb) and [Google Books
+plugin](../../plugins/googlebooks) (metadata sources), and the
 [Reader plugin](../../plugins/reader) (a reader) ship inside Dalibre;
 read them as worked examples.
 
 No build step and nothing to install besides the `dalibre-plugin` tool:
-plugins are plain JavaScript modules (ES2023), run sandboxed by the
-QuickJS interpreter built into Dalibre.
+plugins are JavaScript or TypeScript modules (ES2023), run sandboxed by
+the JavaScript engine built into Dalibre
+([moejs](https://github.com/MoeForge/moejs)). They use the standard APIs
+(`fetch`, `URL`, `setTimeout`, `TextEncoder`, `node:fs`…), within the
+limits of what the user granted.
 
 - [Quick start](#quick-start)
 - [plugin.json](#pluginjson)
-- [main.js](#mainjs): [`search`](#search), [filters](#filters), [`collections` and `list`](#collections-and-list), [`get`](#get), [`resolve`](#resolve), [`identify`](#identify), [`open`](#open), [the `dalibre` object](#the-dalibre-object), [errors](#errors)
+- [main.js](#mainjs): [`search`](#search), [filters](#filters), [`collections` and `list`](#collections-and-list), [`get`](#get), [`resolve`](#resolve), [`identify`](#identify), [`open`](#open), [`process`](#process)
+- [Runtime](#runtime): [what you can use](#what-you-can-use), [fetch](#fetch), [timers](#timers), [your folders](#your-folders), [the `dalibre` object](#the-dalibre-object), [errors](#errors), [TypeScript](#typescript-and-npm-packages)
 - [Permissions and limits](#permissions-and-limits)
 - [Testing](#testing)
 - [Publishing](#publishing)
@@ -56,10 +66,8 @@ dalibre-plugin pack .                            # com.example.books-0.1.0.dalib
 next to your code: with `// @ts-check` at the top of `main.js`, VS Code
 and other editors check your code and complete the API as you type.
 
-Prefer TypeScript? Write `main.ts` and compile it to one module:
-`esbuild main.ts --bundle --format=esm --target=es2023 --outfile=main.js`.
-Bundling is also how you use npm packages, as long as they don't need
-Node's built-ins or the browser's.
+Prefer TypeScript? Write `main.ts` and set `"main": "main.ts"`: Dalibre
+runs it as it is. See [TypeScript and npm packages](#typescript-and-npm-packages).
 
 ## plugin.json
 
@@ -107,20 +115,21 @@ Node's built-ins or the browser's.
 | `description` | One line, shown under your name in the Get books source picker and when the user installs: what the catalogue holds ("Over 70,000 free public-domain ebooks"). |
 | `author`, `homepage`, `license` | Shown when the user installs. `license` is an SPDX id. The page's Open site button opens `homepage`. |
 | `icon` | One of Dalibre's icons: `globe` (default), `library`, `book-open`, `database`, `network`, `building`, `bookmark`, `layers`. Never an image, so a plugin can't dress up as another app. |
-| `main` | The script, relative to `plugin.json`. Default `main.js`. |
-| `capabilities` | **Required.** `{"bookSource": {…}}`: `collections` (`true` when you export `collections` and `list`) and up to 4 `filters` ([below](#filters)). `{"metadata": {…}}`: a metadata source ([`identify`](#identify)). `{"reader": {…}}`: a reader, with the `formats` it lays out ([`open`](#open)). `["source"]`, the form API 1 began with, still means a book source with no filters or collections; `["metadata"]` works too. A reader declares an object, never the array form. |
+| `main` | The main module, relative to `plugin.json`: a `.js`, `.mjs`, `.ts` or `.mts` file. Default `main.js`. |
+| `capabilities` | **Required.** `{"bookSource": {…}}`: `collections` (`true` when you export `collections` and `list`) and up to 4 `filters` ([below](#filters)). `{"metadata": {…}}`: a metadata source ([`identify`](#identify)). `{"reader": {…}}`: a reader, with the `formats` it lays out ([`open`](#open)); it declares an object, never the array form. `{"fileType": {…}}`: a file type plugin ([`process`](#process)), with an optional `title` (what the book menu calls it, default your name), `onImport` (`false` to run only from the book menu), and `onPostImport`, `onPostAdd`, `onPostDelete` for [hooks](#hooks). `["source"]`, the form API 1 began with, still means a book source with no filters or collections; `["metadata"]` works too. |
 | `permissions.hosts` | **Required for a source.** Every host your plugin reaches, through `fetch`, file downloads, covers **and redirects**. `*.example.com` matches any subdomain, not `example.com` itself. |
-| `permissions.library` | `"read"`: your plugin sees the title, authors, identifiers and language of the books the user looks up with it. **Required for a metadata source**; the install dialog says so. |
+| `permissions.library` | `"read"`: your plugin sees the details of the books it is asked about. **Required for a metadata source** and for [hooks](#hooks). `"write"`: your hooks may also change those details; the install dialog warns about it. |
 | `permissions.localNetwork` | Reach this computer and the local network: a home OPDS or Calibre server. Users are warned. Default `false`. |
-| `settings` | Values the user enters: up to 32. `type` is `text` (default) or `secret` (masked, hidden in logs, and kept in the system's keychain rather than Dalibre's settings file). `required` settings must be filled before your plugin is called. |
+| `settings` | Values the user enters: up to 32. `type` is `text` (default), `secret` (masked, hidden in logs, and kept in the system's keychain rather than Dalibre's settings file) or `file`: a file the user chooses, such as a key, copied into `/data`; its value is the path you read it at (`await readFile(dalibre.settings.keyFile)`). `required` settings must be filled before your plugin is called. |
 
 Unknown fields are errors, so a misspelt one is caught by `check`, not
 silently ignored.
 
 ## main.js
 
-`main.js` is an ES module, run once when Dalibre loads the plugin. It
-exports the functions Dalibre calls:
+`main.js` (or the module `main` names, such as `main.ts`) is an ES
+module, run once when Dalibre loads the plugin. It exports the functions
+Dalibre calls:
 
 ```js
 // @ts-check
@@ -136,16 +145,17 @@ export async function resolve(item, format) { … }   // optional
 `export default { search, resolve }` and CommonJS
 (`module.exports = { search }`, `exports.search = …`) work too.
 
-- **Imports** are relative paths to `.js` files in your plugin's folder.
-  Package names (`"lodash"`) can't be imported: bundle them into your
-  code with esbuild.
+- **Imports** are relative paths to `.js`, `.mjs`, `.ts` or `.mts` files
+  in your plugin's folder; as in TypeScript, `"./lib.js"` finds `lib.ts`,
+  and `"./lib"` finds `lib.ts` or `lib.js`. `node:fs`, `node:fs/promises`
+  and `node:buffer` can be imported too. Package names (`"lodash"`) can't:
+  bundle them into your code with esbuild.
 - Modules are **strict mode**: writing to a read-only property (anything
   in `dalibre`) throws, as in browsers.
 - Your functions may be `async`. Keep state across calls in module
   variables (a token, a cache). It lasts until Dalibre quits or reloads
-  plugins, **or until a call runs out of time or memory**, after which
-  your module is loaded afresh; don't rely on it for anything that must
-  survive.
+  plugins, **or until a call runs out of time**, after which your module
+  is loaded afresh. What must survive goes in [`/data`](#your-folders).
 
 ### search
 
@@ -247,11 +257,12 @@ need a second request, or need headers:
 
 ```js
 exports.resolve = async function (item, format) {
-  const res = await dalibre.fetch(`https://api.example.com/books/${item.id}/download?format=${format}`, {
+  const res = await fetch(`https://api.example.com/books/${item.id}/download?format=${format}`, {
     headers: { Authorization: `Bearer ${dalibre.settings.apiKey}` },
   });
   if (res.status === 404) throw dalibre.error("notFound");
-  return { url: res.json().url, headers: { Authorization: `Bearer ${dalibre.settings.apiKey}` } };
+  const { url } = await res.json();
+  return { url, headers: { Authorization: `Bearer ${dalibre.settings.apiKey}` } };
 };
 ```
 
@@ -291,8 +302,9 @@ the library is sent.
 ```js
 export async function identify({ title, authors, identifiers }) {
   const q = identifiers.isbn || [title, authors[0]].filter(Boolean).join(" ");
-  const res = await dalibre.fetch(`https://api.example.com/books?q=${encodeURIComponent(q)}`);
-  return res.json().books.map((b) => ({
+  const res = await fetch(`https://api.example.com/books?q=${encodeURIComponent(q)}`);
+  const { books } = await res.json();
+  return books.map((b) => ({
     id: b.key, title: b.title, authors: b.authors, publisher: b.publisher, pubdate: b.date,
     identifiers: { isbn: b.isbn, example: b.key }, cover: b.image, description: b.summary,
   }));
@@ -390,20 +402,149 @@ a warning. A book with no chapters cannot
 be shown, so return at least one. Throwing an error shows its message on
 the reading page, with Try again.
 
-### The dalibre object
+### process
+
+A file type plugin declares `"fileType"` in its capabilities and exports
+`process(file)`. It gets a copy of a book's file and returns a new one:
+
+```js
+import { readFile, writeFile } from "node:fs/promises";
+
+export async function process(file) {
+  if (file.format !== "EPUB") return null;     // not for us: leave it
+  const cleaned = clean(await readFile(file.path));
+  if (!cleaned) return null;                   // nothing to change
+  await writeFile(file.path, cleaned);
+  return { path: file.path, report: ["Removed 3 unused fonts"] };
+}
+```
+
+- `file` is `{ path, name, format, reason, book? }`: `path` is the copy in
+  `/work`, `reason` is `"import"` as Dalibre adds the file or `"manual"`
+  from the book menu, which also gives `book` (`{ title, authors,
+  identifiers }`).
+- Return `null` to leave the file, or the new file's path (in `/work` or
+  `/data`, named with its format's extension), or `{ path, report }`.
+  Every added file comes to you: return `null` fast for others.
+- **As files are added** (dropped, Add books, Get books, Add format, an
+  AI agent), every file type plugin runs, one after the other, unless it
+  says `"onImport": false`. One that throws is passed over: the file is
+  added as it was, and the user is told.
+- **From the book menu**, your `title` runs at once on the book or the
+  selection, in the background, on each book's first format among EPUB,
+  AZW3, MOBI, PDF…. Dalibre keeps the old file as `ORIGINAL_EPUB`, and a
+  toast offers Undo. Throw `dalibre.error("auth", …)` when you need
+  something from the user, such as a key: the run stops and the user is
+  offered your settings.
+- You get the whole file and memory isn't limited; the call has 10
+  minutes. Try it with `dalibre-plugin process . "My Book.epub"`.
+
+### Hooks
+
+As calibre's file type plugins, yours can ask to be called after the
+library changed, with `permissions.library`:
+
+| Ask with | Export | Called after | calibre |
+|---|---|---|---|
+| `onPostImport` | `postimport(event)` | a file was added to a book | `on_postimport` |
+| `onPostAdd` | `postadd(event)` | a book was added | `on_postadd` |
+| `onPostDelete` | `postdelete(event)` | a format was removed | `on_postdelete` |
+
+`event` is `{ book, format?, file?, files? }`: `book` has the book's
+details (`id`, `title`, `authors`, `tags`, `identifiers`, `formats`…),
+`postimport` gets the `format` and `file` added (a copy in `/work`),
+`postadd` the new book's `files`, `postdelete` the `format` removed.
+Return `null`, or `{ metadata: { tags: [...book.tags, "Unlocked"] } }`:
+where calibre's hooks write the database, yours say what to change and
+Dalibre writes it, with `"library": "write"`. Hooks run in the
+background after the change; one that fails is logged. A plugin with only
+hooks (`"onImport": false`, no `process`) isn't in the book menu.
+calibre's conversion hooks have no counterpart: Dalibre doesn't convert
+through plugins.
+
+## Runtime
+
+### What you can use
 
 | | |
 |---|---|
-| `dalibre.fetch(url, init?)` | The web's `fetch`, cut down. `init` is `{ method?, headers?, body? }` with string values. It resolves to `{ status, statusText, ok, url, headers, text(), json() }`; `url` is the final URL after redirects, `headers` has lowercase names. It rejects for a host outside your permissions, a network failure or a response over 16 MB. Cookies are kept as a browser keeps them, for your plugin alone and in memory, and sent with later requests and downloads: sign in by posting a form once, and stay signed in until the plugin is loaded again. Requests run one at a time; `Promise.all` doesn't make them parallel. |
+| Network | `fetch`, `Request`, `Response`, `Headers`, `AbortController` |
+| Streams | `ReadableStream`, `WritableStream`, `TransformStream`, `TextDecoderStream`, `TextEncoderStream` |
+| Text and data | `URL`, `URLSearchParams`, `TextEncoder`, `TextDecoder`, `atob`, `btoa`, `structuredClone`, typed arrays, `Buffer` |
+| Time | `setTimeout`, `setInterval`, `setImmediate` and their `clear…`, `queueMicrotask`, `performance.now()` |
+| Files | `node:fs`, `node:fs/promises` over [your folders](#your-folders) |
+| Formatting | `Intl`, with the data of ten languages (en, zh, ja, ko, de, fr, es, pt, ru, it) |
+| Logging | `console.log/info/warn/error/debug`: to Dalibre's log and the CLI's stderr, with secret settings masked |
+
+Not there: `process`, `require` and Node's other modules, the DOM
+(`document`, `DOMParser`), `crypto`, `Blob`, `FormData`,
+`CompressionStream`, `WebAssembly`. Bundle a pure-JavaScript library when
+you need one of them (hashing, HTML parsing, zip).
+
+### fetch
+
+```js
+const res = await fetch(`https://api.example.com/search?q=${encodeURIComponent(text)}`);
+if (!res.ok) throw dalibre.error("unavailable", `example.com answered ${res.status}.`);
+const data = await res.json();
+```
+
+- Only hosts in `permissions.hosts`, redirects included, and not the
+  [local network](#permissions-and-limits) unless you ask for it.
+- At most 50 requests per call, 10 redirects per request, 16 MB per
+  response. Books are downloaded by Dalibre: return their URL.
+- Cookies are kept as a browser keeps them, for your plugin alone and in
+  memory, and sent with later requests and Dalibre's downloads: sign in
+  by posting a form once, and stay signed in until the plugin is loaded
+  again.
+- Dalibre sets the `User-Agent`. Requests run in parallel.
+- A refused request, a network failure or a response over the limit
+  rejects with a `TypeError` (`"fetch failed"`) whose `cause` says why.
+  Uncaught, it counts as `permission` (a host you didn't declare) or
+  `unavailable`.
+
+### Timers
+
+A call ends when the promise your export returns settles; until then
+Dalibre runs your timers, fetches and file operations, so
+`await new Promise((r) => setTimeout(r, 1000))` waits a second. The call's
+60 seconds include the waiting. A timer still set when the call settles
+fires during your next call; an exception in a timer's callback fails
+the call in progress.
+
+### Your folders
+
+Through `node:fs` your plugin sees two folders of its own, and nothing
+else: `/data` keeps what must survive restarts, such as a sign-in token,
+a cache or file settings; `/work` holds the files `process` is handed,
+emptied after each call.
+
+```js
+import { readFile, writeFile } from "node:fs/promises";
+
+const token = await readFile("/data/token", "utf8").catch(() => "");
+await writeFile("/data/token", newToken);
+```
+
+Relative paths are relative to `/data`, and nothing else can be reached
+(`EACCES`). `/data` holds 64 MB (`ENOSPC` when full); only your plugin
+sees the folders, and uninstalling the plugin deletes them. With
+`dalibre-plugin` they are in `.data` in your plugin's folder, which
+`pack` leaves out. There are no streams or file handles
+(`createReadStream`, `fs.open`): read and write whole files.
+
+### The dalibre object
+
+What only Dalibre can give you:
+
+| | |
+|---|---|
 | `dalibre.settings` | The user's values for your settings, by key (defaults where unset). Read-only. |
 | `dalibre.error(kind, message?)` | An `Error` Dalibre understands; see below. |
-| `dalibre.log(...)`, `console.log/info/warn/error/debug(...)` | To Dalibre's log and the CLI's stderr. Secret settings are masked. |
 | `dalibre.plugin` | `{ id, version }` from your manifest. |
 | `dalibre.api` | The plugin API version of the running Dalibre. |
 
-There is no `require`, file system, timers, `URL`, `URLSearchParams`,
-`TextEncoder` or `Intl`; use `encodeURIComponent`, or bundle a small
-library. Everything in the `dalibre` object is frozen.
+Everything in the `dalibre` object is frozen.
 
 ### Errors
 
@@ -419,9 +560,27 @@ do:
 | `invalid` | The query can't be searched (too short…) | Shows your message |
 
 Anything else thrown (a `TypeError`, a plain `Error`) is reported as a
-bug in the plugin, with your message; the CLI prints its stack. A network
-failure you don't catch counts as `unavailable`. Messages are shown to
-users: write them for readers, in a sentence.
+bug in the plugin, with your message; the CLI prints its stack. A
+`fetch` you don't catch counts as `unavailable` (the network) or
+`permission` (a host you didn't declare). Messages are shown to users:
+write them for readers, in a sentence.
+
+### TypeScript and npm packages
+
+Set `"main": "main.ts"`: Dalibre runs TypeScript as it is, dropping the
+types, and stack traces point into your `.ts` files. TypeScript that
+changes what the code does at run time can't be used (`enum`, namespaces
+with values, constructor parameter properties, decorators). Check types
+in your editor: `dalibre.d.ts` and `jsconfig.json` (or a `tsconfig.json`
+with the same options) give `Dalibre.*` and the standard globals; add
+`@types/node` for `node:fs` and `Buffer`.
+
+npm packages are bundled in, as long as they need nothing from the list
+of what's not there; pure-JavaScript ones such as `fflate` (zip) and
+`@noble/ciphers` do. Leave Node's modules to Dalibre:
+`esbuild main.ts --bundle --format=esm --target=es2023 --external:'node:*' --outfile=main.js`,
+then ship `main.js`. `self` is the global object, as in a Web Worker,
+for libraries that look for it.
 
 ## Permissions and limits
 
@@ -444,10 +603,13 @@ declare:
 | Limit | |
 |---|---|
 | One call (`search`, `list`, `get`, `resolve`…) | 60 seconds; then the script is stopped |
-| Memory | 64 MB for your plugin's interpreter; then the call fails |
+| One `process` call | 10 minutes |
+| Memory | Not limited, as calibre doesn't limit its plugins |
 | Requests per call | 50 |
 | One `fetch` response | 16 MB (files go through the download) |
 | Redirects per request | 10 |
+| `/data` | 64 MB |
+| A file setting's file | 16 MB |
 | Results per page | 100 |
 | Download | 2 GB |
 | Cover | 10 MB |
@@ -455,9 +617,8 @@ declare:
 | Package | 32 MB unpacked, 1000 files |
 
 Calls into one plugin run one at a time; different plugins run in
-parallel. A plugin that throws, times out or runs out of memory only
-fails that call; the next one runs normally (after a timeout or running
-out of memory, with the module loaded afresh).
+parallel. A plugin that throws or times out only fails that call; the
+next one runs normally (after a timeout, with the module loaded afresh).
 
 ## Testing
 
@@ -476,6 +637,7 @@ dalibre-plugin identify . "Dune" --author "Frank Herbert"   # what Fetch metadat
 dalibre-plugin identify . --isbn 9780441172719 --json
 dalibre-plugin open . book.epub              # how the reading page lays out a book
 dalibre-plugin open . book.epub --json
+dalibre-plugin process . "My Book.epub" -o out  # what a file type plugin makes of a file
 dalibre-plugin download . "dune" --item 3 --format PDF -o /tmp
 ```
 
@@ -488,6 +650,10 @@ that folder, not a copy, and reloads it a moment after you save a change
 (hidden files and `node_modules` aside). Remove takes it out of Dalibre
 and leaves the folder alone. `dalibre-plugin install` takes a folder or
 a package and installs a copy; restart Dalibre after it.
+
+Your own AI agent can do this loop for you over [MCP](../mcp/README.md#write-a-plugin): it starts
+the plugin, adds its folder, calls its functions and reads their
+results, logs and errors. You still allow the hosts it reaches.
 
 ## Publishing
 
@@ -528,6 +694,12 @@ its source gets installed.
 - A plugin declaring a newer `api` than the user's Dalibre isn't loaded,
   and the user is told to update Dalibre.
 
+**Moving from `dalibre.fetch`.** Earlier versions of API 1 had
+`dalibre.fetch` and `dalibre.log`; they are gone, for the standard
+`fetch` and `console`. Replace `dalibre.fetch(` with `fetch(`, and await
+the body: `res.json()` and `res.text()` now return promises
+(`await res.json()`).
+
 ## Guidelines
 
 - **Only sources you may use.** Publish plugins for catalogues whose
@@ -535,8 +707,8 @@ its source gets installed.
   has an account with, the user's own servers. Dalibre doesn't host,
   review or endorse plugins.
 - **Be polite.** One request per search where the API allows it; cache
-  what doesn't change (in module variables); honour `429` by throwing
-  `rateLimited` rather than retrying in a loop.
+  what doesn't change (in module variables, or the data folder); honour
+  `429` by throwing `rateLimited` rather than retrying in a loop.
 - **Fill in metadata.** Users see results before they download: authors,
   language, size and cover make the choice easy. Add your own id to
   `identifiers`.
