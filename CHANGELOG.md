@@ -9,6 +9,10 @@
   - Plugin secrets such as API keys need to be entered again.
   - Dalibre checks for updates every hour.
 - The reader plugin runs alongside the new plugin runtime.
+- Read MOBI books in the reader: PalmDOC compression, the contents
+  page, pictures, tables and notes. Encrypted books and books using
+  HUFF/CDIC compression say why they cannot be read instead of
+  failing silently.
 
 ## 0.3.1
 

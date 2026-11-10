@@ -577,6 +577,16 @@ func splitFragment(href string) (file, id string) {
 	return strings.TrimSpace(href), strings.TrimSpace(id)
 }
 
+// htmlSource reads a content document's resources: pictures, and the
+// notes file an EPUB keeps beside its text. It keeps what a book is made
+// of out of the text walker: the walker reads the same markup whether it
+// came from a zip or a Palm database.
+type htmlSource interface {
+	read(name string, max int64) ([]byte, error)
+}
+
+var _ htmlSource = (*epubFile)(nil)
+
 // htmlDoc is a parsed content document, kept once while its sections are
 // read. A table of contents may put several sections in one file.
 type htmlDoc struct {
@@ -627,7 +637,7 @@ func (h *htmlDoc) hasHeading() bool {
 
 // blocks reads one section of the document: from id from to id to, which
 // may be empty for the document's start or end.
-func (h *htmlDoc) blocks(base string, e *epubFile, images map[string][]byte, notes *noteIndex, from, to string) ([]Block, []Note) {
+func (h *htmlDoc) blocks(base string, src htmlSource, images map[string][]byte, notes *noteIndex, from, to string) ([]Block, []Note) {
 	if h == nil {
 		return nil, nil
 	}
@@ -644,7 +654,7 @@ func (h *htmlDoc) blocks(base string, e *epubFile, images map[string][]byte, not
 	for _, img := range images {
 		total += len(img)
 	}
-	b := &blockReader{base: base, epub: e, images: images, imageTotal: total,
+	b := &blockReader{base: base, source: src, images: images, imageTotal: total,
 		index: notes, ids: h.ids, noteSeen: map[string]bool{}}
 	b.start, b.stop = h.bounds(from, to)
 	if b.start == nil {
@@ -863,10 +873,10 @@ func (b *blockReader) noteDoc(doc string) (map[string]*html.Node, bool) {
 	if d := b.index.docs[doc]; d != nil {
 		return d.ids, true
 	}
-	if b.epub == nil {
+	if b.source == nil {
 		return nil, false
 	}
-	data, err := b.epub.read(doc, MaxText)
+	data, err := b.source.read(doc, MaxText)
 	if err != nil || len(data) == 0 {
 		return nil, false
 	}
@@ -1110,10 +1120,11 @@ type blockReader struct {
 	codeBuf               strings.Builder
 	quote                 int
 
-	// base is the content document's name in the zip, which the
-	// pictures' hrefs are relative to; epub reads them, into images.
+	// base is the content document's name, which the pictures' hrefs
+	// are relative to. source reads them, into images; it hides whether
+	// the book is a zip of XHTML files or a Palm database of text records.
 	base       string
-	epub       *epubFile
+	source     htmlSource
 	images     map[string][]byte
 	imageTotal int
 
@@ -1713,7 +1724,7 @@ func (b *blockReader) loadImage(src string) (string, bool) {
 		// fetch the web to read a book.
 		return "", false
 	}
-	if b.epub == nil {
+	if b.source == nil {
 		return "", false
 	}
 	name := resolve(b.base, src)
@@ -1726,7 +1737,7 @@ func (b *blockReader) loadImage(src string) (string, bool) {
 	if len(b.images) >= MaxImages || b.imageTotal >= MaxImageTotal {
 		return "", false
 	}
-	data, err := b.epub.read(name, MaxImageBytes)
+	data, err := b.source.read(name, MaxImageBytes)
 	if err != nil || len(data) == 0 || b.imageTotal+len(data) > MaxImageTotal {
 		return "", false
 	}

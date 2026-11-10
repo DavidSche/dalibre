@@ -251,13 +251,15 @@ running heads and strips the boilerplate; a different catalogue has
 different habits. Splitting this from the host keeps `internal/reader`
 about formats and leaves the judgement to plugins that can be fixed
 without a release. The built-in **Reader** (`dalibre.reader`,
-`plugins/reader`) does exactly that for EPUB, KEPUB and TXT. A reader the
+`plugins/reader`) does exactly that for EPUB, KEPUB, MOBI and TXT. A reader the
 user installs is used before the built-in for the formats both read, so a
 catalogue's own habits can replace Dalibre's.
 
 `formats` in the manifest declares what the plugin reads, from those the
-host can extract — `EPUB`, `KEPUB`, `TXT`. More formats arrive with the
-host; the capability then offers them to plugins without changing.
+host can extract — `EPUB`, `KEPUB`, `MOBI`, `TXT`. More formats arrive with the
+host; the capability then offers them to plugins without changing. MOBI
+books use the same HTML-to-blocks path as EPUB: PalmDOC compression is
+read, while DRM and HUFF/CDIC books are refused with a plain error.
 
 `typography.indent` asks for a first line indent (CJK books get one
 anyway). A `continued` chapter is part of the chapter before, from a
@@ -406,7 +408,7 @@ Each step ships on its own and keeps earlier plugins working.
 | `internal/app/fetchmeta.go`, `view_fetchmeta.go` | the Fetch metadata step: search, candidates, comparison, apply |
 | `plugins/neodb` | the NeoDB metadata plugin |
 | `plugins/googlebooks` | the Google Books metadata plugin |
-| `internal/reader` | extracts text, pictures, tables and notes from EPUB, KEPUB and TXT files: chapters, blocks, limits |
+| `internal/reader` | extracts text, pictures, tables and notes from EPUB, KEPUB, MOBI and TXT files: chapters, blocks, limits |
 | `internal/plugin/reader.go` | `open`: `ReaderBook`, `Document`, `Reading`, its checks |
 | `internal/app/reader.go`, `view_reader.go` | the reading page: state, progress, contents, themes |
 | `plugins/reader` | the built-in Reader layout plugin |

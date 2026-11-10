@@ -329,7 +329,7 @@ A reader declares the formats it lays out and `open`:
 "permissions": {}
 ```
 
-`formats` are the ones Dalibre can extract — `EPUB`, `KEPUB`, `TXT` — and
+`formats` are the ones Dalibre can extract — `EPUB`, `KEPUB`, `MOBI`, `TXT` — and
 a reader must export `open`. It needs no `permissions.hosts`: Dalibre
 reads the book's file, and the plugin gets only the text, the names of
 pictures, and the tables and notes.

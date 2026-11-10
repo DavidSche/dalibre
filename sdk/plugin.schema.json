@@ -69,8 +69,8 @@
               "properties": {
                 "formats": {
                   "description": "The formats the plugin lays out, from those Dalibre extracts. Upper case.",
-                  "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true,
-                  "items": { "enum": ["EPUB", "KEPUB", "TXT"] }
+                  "type": "array", "minItems": 1, "maxItems": 4, "uniqueItems": true,
+                  "items": { "enum": ["EPUB", "KEPUB", "MOBI", "TXT"] }
                 }
               }
             },

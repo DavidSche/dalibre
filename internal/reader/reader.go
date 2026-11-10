@@ -1,7 +1,7 @@
 // Package reader turns an e-book file into chapters of blocks, text,
 // pictures, tables and notes, which a reader plugin lays out for the
 // reader page. It reads the formats Dalibre can open by itself: EPUB
-// (and KEPUB) and plain text. A reader plugin can't add a format: it
+// (and KEPUB), MOBI and plain text. A reader plugin can't add a format: it
 // decides how what it gets is set.
 //
 // The text is the book's, not the library's: the host reads only the file
@@ -157,7 +157,7 @@ func (e *UnsupportedError) Error() string {
 }
 
 // Formats are the formats Extract reads.
-var Formats = []string{"EPUB", "KEPUB", "TXT"}
+var Formats = []string{"EPUB", "KEPUB", "MOBI", "TXT"}
 
 // Supports reports whether Extract reads format.
 func Supports(format string) bool {
@@ -170,17 +170,21 @@ func Supports(format string) bool {
 }
 
 // Extract reads the text, pictures, tables and notes of file, whose format is format
-// ("EPUB", "KEPUB" or "TXT"), as chapters.
+// ("EPUB", "KEPUB", "MOBI" or "TXT"), as chapters.
 func Extract(file, format string) (*Document, error) {
 	switch strings.ToUpper(format) {
 	case "EPUB", "KEPUB":
 		return readEPUB(file)
+	case "MOBI":
+		return readMOBI(file)
 	case "TXT":
 		return readTXT(file)
 	case "":
 		switch strings.ToLower(filepath.Ext(file)) {
 		case ".epub", ".kepub":
 			return readEPUB(file)
+		case ".mobi":
+			return readMOBI(file)
 		case ".txt":
 			return readTXT(file)
 		}

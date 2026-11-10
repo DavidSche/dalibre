@@ -133,7 +133,7 @@ Four plugins ship inside Dalibre, and are good worked examples:
 - **Google Books** (`dalibre.googlebooks`), a metadata source on the
   Books API, with an optional API key in its settings for when Google's
   shared quota runs out.
-- **Reader** (`dalibre.reader`), a reader for EPUB, KEPUB and TXT books:
+- **Reader** (`dalibre.reader`), a reader for EPUB, KEPUB, MOBI and TXT books:
   it drops converter boilerplate, names chapters, joins split paragraphs
   and says how the page should set the text.
 
@@ -927,7 +927,7 @@ page itself. Every reader gets the same contents, bookmarks, highlights
 and page colors.
 
 ```json
-"capabilities": { "reader": { "formats": ["EPUB", "KEPUB", "TXT"] } }
+"capabilities": { "reader": { "formats": ["EPUB", "KEPUB", "MOBI", "TXT"] } }
 ```
 
 ```js
@@ -942,7 +942,7 @@ export function open({ book, document }) {
 }
 ```
 
-`formats` must be ones Dalibre can extract — `EPUB`, `KEPUB`, `TXT` —
+`formats` must be ones Dalibre can extract — `EPUB`, `KEPUB`, `MOBI`, `TXT` —
 and `open` gets `book` and the extracted `document`, with its chapters,
 blocks, pictures, tables and notes. A reading is checked like any other
 result; return at least one chapter. The [plain Markdown

@@ -68,7 +68,7 @@ internal/
   ebookmeta/          title/authors/cover from EPUB, MOBI/AZW3 and file names
   catalog/            search, filters, sorting and sidebar counts (no UI)
   plugin/             plugins: manifest, sandboxed JS runtime, consent, packages
-  reader/             text, pictures, tables and notes of EPUB, KEPUB and TXT books
+  reader/             text, pictures, tables and notes of EPUB, KEPUB, MOBI and TXT books
   mcp/                the MCP server: tools, call log, stdio bridge
   settings/           user settings persisted as JSON
   thumbs/             on-disk cover thumbnails
