@@ -104,6 +104,19 @@ func (a *App) readerSetContentsSide(side string) {
 	_ = a.settings.Save()
 }
 
+// readerContentsPinned keeps the contents open when a chapter is chosen,
+// as a table of contents left beside the page.
+func (a *App) readerContentsPinned() bool { return a.settings.Reading.TOCPinned }
+
+// readerSetContentsPinned pins or unpins the contents, keeping the choice.
+func (a *App) readerSetContentsPinned(pinned bool) {
+	if a.settings.Reading.TOCPinned == pinned {
+		return
+	}
+	a.settings.Reading.TOCPinned = pinned
+	_ = a.settings.Save()
+}
+
 // readerKey is the settings key for a book's place: its UUID, which
 // survives edits, else its id.
 func readerKey(b *calibre.Book) string {
@@ -499,7 +512,8 @@ func (a *App) readerClose() {
 	a.rd = readerState{gen: gen}
 }
 
-// readerChapterTo turns to chapter i (0-based), closing the contents.
+// readerChapterTo turns to chapter i (0-based), closing the contents
+// unless the reader has pinned them open.
 func (a *App) readerChapterTo(i int) {
 	r := &a.rd
 	if !r.open || len(r.chapters) == 0 {
@@ -507,14 +521,18 @@ func (a *App) readerChapterTo(i int) {
 	}
 	i = min(max(i, 0), len(r.chapters)-1)
 	if i == r.chapter {
-		r.toc = false
+		if !a.readerContentsPinned() {
+			r.toc = false
+		}
 		return
 	}
 	a.saveReading()
 	r.chapter = i
 	r.pending = 0
 	r.scroll.Y = 0
-	r.toc = false
+	if !a.readerContentsPinned() {
+		r.toc = false
+	}
 	a.readerLoadImages()
 	a.readerUpdateProgress()
 }

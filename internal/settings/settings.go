@@ -64,6 +64,8 @@ type Reading struct {
 	// TOCSide is the edge the contents rest on: "left" or "right"; "" is
 	// the default, the right.
 	TOCSide string `json:"tocSide,omitempty"`
+	// TOCPinned keeps the contents open when a chapter is chosen.
+	TOCPinned bool `json:"tocPinned,omitempty"`
 	// Books are each book's place, by the library's UUID for it.
 	Books map[string]*Progress `json:"books,omitempty"`
 }

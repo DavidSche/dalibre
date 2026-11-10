@@ -327,6 +327,8 @@
   "readerContents": "Sommaire",
   "readerDockLeft": "Ancrer la table des matières à gauche",
   "readerDockRight": "Ancrer la table des matières à droite",
+  "readerPinContents": "Garder la table des matières ouverte",
+  "readerUnpinContents": "Laisser la table des matières se fermer",
   "readerBookmarks": "Signets",
   "readerNoBookmarks": "Pas encore de signets. Appuyez sur B pour marquer votre place.",
   "readerAddBookmark": "Marquer ce chapitre",

@@ -327,6 +327,8 @@
   "readerContents": "Índice",
   "readerDockLeft": "Anclar el índice a la izquierda",
   "readerDockRight": "Anclar el índice a la derecha",
+  "readerPinContents": "Mantener el índice abierto",
+  "readerUnpinContents": "Permitir cerrar el índice",
   "readerBookmarks": "Marcadores",
   "readerNoBookmarks": "Aún no hay marcadores. Pulsa B para marcar tu posición.",
   "readerAddBookmark": "Marcar este capítulo",

@@ -327,6 +327,8 @@
   "readerContents": "目次",
   "readerDockLeft": "目次を左に固定",
   "readerDockRight": "目次を右に固定",
+  "readerPinContents": "目次を開いたままにする",
+  "readerUnpinContents": "目次を閉じられるようにする",
   "readerBookmarks": "ブックマーク",
   "readerNoBookmarks": "ブックマークはまだありません。B キーで現在位置を保存できます。",
   "readerAddBookmark": "この章をブックマーク",

@@ -327,6 +327,8 @@
   "readerContents": "目錄",
   "readerDockLeft": "目錄停靠左側",
   "readerDockRight": "目錄停靠右側",
+  "readerPinContents": "固定目錄",
+  "readerUnpinContents": "取消固定目錄",
   "readerBookmarks": "書籤",
   "readerNoBookmarks": "還沒有書籤。按 B 標記目前位置。",
   "readerAddBookmark": "收藏本章",

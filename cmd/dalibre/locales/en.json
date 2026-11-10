@@ -426,6 +426,8 @@
   "readerContents": "Contents",
   "readerDockLeft": "Dock contents on the left",
   "readerDockRight": "Dock contents on the right",
+  "readerPinContents": "Keep contents open",
+  "readerUnpinContents": "Let contents close",
   "readerBookmarks": "Bookmarks",
   "readerNoBookmarks": "No bookmarks yet. Press B to mark your place.",
   "readerAddBookmark": "Bookmark this chapter",

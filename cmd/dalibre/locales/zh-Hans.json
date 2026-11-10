@@ -327,6 +327,8 @@
   "readerContents": "目录",
   "readerDockLeft": "目录停靠左侧",
   "readerDockRight": "目录停靠右侧",
+  "readerPinContents": "固定目录",
+  "readerUnpinContents": "取消固定目录",
   "readerBookmarks": "书签",
   "readerNoBookmarks": "还没有书签。按 B 标记当前位置。",
   "readerAddBookmark": "收藏本章",

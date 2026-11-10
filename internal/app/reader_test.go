@@ -304,6 +304,33 @@ func TestReaderContentsDocks(t *testing.T) {
 		t.Fatalf("side %q after the drag", a.readerContentsSide())
 	}
 	shot(t, tt, "reader-contents-right")
+	if !tt.HasText("Keep contents open") {
+		t.Fatalf("no pin button: %q", tt.Texts())
+	}
+	if err := tt.Click("Keep contents open"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if !a.readerContentsPinned() || !a.settings.Reading.TOCPinned {
+		t.Fatal("contents not pinned")
+	}
+	a.readerChapterTo(1)
+	tt.Frame()
+	if a.rd.chapter != 1 || !a.rd.toc {
+		t.Fatalf("chapter %d, contents open %v after a pinned choice", a.rd.chapter, a.rd.toc)
+	}
+	if err := tt.Click("Let contents close"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if a.readerContentsPinned() {
+		t.Fatal("contents still pinned")
+	}
+	a.readerChapterTo(0)
+	tt.Frame()
+	if a.rd.toc {
+		t.Fatal("contents did not close after an unpinned choice")
+	}
 }
 
 func (a *App) bookByTitle(title string) *calibre.Book {

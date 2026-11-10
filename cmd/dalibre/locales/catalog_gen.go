@@ -2997,6 +2997,26 @@ func (msgs Messages) ReaderDockRight() string {
 	return Catalog.Format(msgs.locale, "readerDockRight", nil)
 }
 
+// ReaderPinContents says "Keep contents open"
+// in the language the app shows.
+func ReaderPinContents() string { return In(i18n.Locale()).ReaderPinContents() }
+
+// ReaderPinContents says "Keep contents open"
+// in the language of msgs.
+func (msgs Messages) ReaderPinContents() string {
+	return Catalog.Format(msgs.locale, "readerPinContents", nil)
+}
+
+// ReaderUnpinContents says "Let contents close"
+// in the language the app shows.
+func ReaderUnpinContents() string { return In(i18n.Locale()).ReaderUnpinContents() }
+
+// ReaderUnpinContents says "Let contents close"
+// in the language of msgs.
+func (msgs Messages) ReaderUnpinContents() string {
+	return Catalog.Format(msgs.locale, "readerUnpinContents", nil)
+}
+
 // ReaderBookmarks says "Bookmarks"
 // in the language the app shows.
 func ReaderBookmarks() string { return In(i18n.Locale()).ReaderBookmarks() }

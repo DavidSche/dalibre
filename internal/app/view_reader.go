@@ -38,7 +38,7 @@ func (a *App) readerView(c *ui.Context) {
 			if a.rd.toc && side == "left" {
 				a.readerContents(c, page)
 			}
-			ui.Column(c).Grow(1).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
+			ui.Column(c).Grow(1).MinWidth(0).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
 				switch {
 				case a.rd.loading:
 					a.readerLoading(c, page)
@@ -548,6 +548,13 @@ func (a *App) readerContents(c *ui.Context, p theme.Reading) {
 				func() { a.readerSetContentsSide("left") })
 			a.readerIconButton(c, p, icons.PanelRight, locales.ReaderDockRight(), side == "right",
 				func() { a.readerSetContentsSide("right") })
+			pinned := a.readerContentsPinned()
+			pinLabel := locales.ReaderPinContents()
+			if pinned {
+				pinLabel = locales.ReaderUnpinContents()
+			}
+			a.readerIconButton(c, p, icons.Pin, pinLabel, pinned,
+				func() { a.readerSetContentsPinned(!pinned) })
 			a.readerIconButton(c, p, icons.X, locales.ReaderClose(), false, func() { a.rd.toc = false })
 		})
 		ui.Row(c).Padding(0, theme.Space12, theme.Space8, theme.Space12).Gap(theme.Space6).Children(func() {

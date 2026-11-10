@@ -327,6 +327,8 @@
   "readerContents": "Inhalt",
   "readerDockLeft": "Inhalt links andocken",
   "readerDockRight": "Inhalt rechts andocken",
+  "readerPinContents": "Inhalt geöffnet lassen",
+  "readerUnpinContents": "Inhalt schließen lassen",
   "readerBookmarks": "Lesezeichen",
   "readerNoBookmarks": "Noch keine Lesezeichen. Drücke B, um die Stelle zu markieren.",
   "readerAddBookmark": "Kapitel als Lesezeichen",
