@@ -316,26 +316,6 @@
       }
     }
   },
-
-  "readerPageN": "{n}ページ",
-  "@readerPageN": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
-  "readerPageOf": "{current}ページ / 全{total}ページ",
-  "@readerPageOf": {
-    "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "readerProgress": "{percent}%",
   "@readerProgress": {
     "placeholders": {

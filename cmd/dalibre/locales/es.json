@@ -316,26 +316,6 @@
       }
     }
   },
-
-  "readerPageN": "Página {n}",
-  "@readerPageN": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
-  "readerPageOf": "Página {current} de {total}",
-  "@readerPageOf": {
-    "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "readerProgress": "{percent}%",
   "@readerProgress": {
     "placeholders": {

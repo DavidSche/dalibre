@@ -2957,28 +2957,6 @@ func (msgs Messages) ReaderChapterOf(current int, total int) string {
 	return Catalog.Format(msgs.locale, "readerChapterOf", map[string]any{"current": current, "total": total})
 }
 
-// ReaderPageN says "Page {n}"
-// in the language the app shows.
-func ReaderPageN(n int) string { return In(i18n.Locale()).ReaderPageN(n) }
-
-// ReaderPageN says "Page {n}"
-// in the language of msgs.
-func (msgs Messages) ReaderPageN(n int) string {
-	return Catalog.Format(msgs.locale, "readerPageN", map[string]any{"n": n})
-}
-
-// ReaderPageOf says "Page {current} of {total}"
-// in the language the app shows.
-func ReaderPageOf(current int, total int) string {
-	return In(i18n.Locale()).ReaderPageOf(current, total)
-}
-
-// ReaderPageOf says "Page {current} of {total}"
-// in the language of msgs.
-func (msgs Messages) ReaderPageOf(current int, total int) string {
-	return Catalog.Format(msgs.locale, "readerPageOf", map[string]any{"current": current, "total": total})
-}
-
 // ReaderProgress says "{percent}%"
 // in the language the app shows.
 func ReaderProgress(percent int) string { return In(i18n.Locale()).ReaderProgress(percent) }

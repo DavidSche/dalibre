@@ -8,7 +8,6 @@ import (
 	"image/png"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -720,62 +719,5 @@ func TestReaderImageSizes(t *testing.T) {
 	}
 	if r, ok := tt.Find("large plate"); !ok || r.W < 715 || r.W > 725 {
 		t.Fatalf("large image box %+v, %v", r, ok)
-	}
-}
-
-// TestReaderOpensPDF checks that a PDF takes the reader's own path: each
-// page is a chapter, the page is drawn when the reader lands on it, and
-// the page's bitmap reaches the page like a picture would.
-func TestReaderOpensPDF(t *testing.T) {
-	if testing.Short() {
-		t.Skip("the PDF engine takes a second to start")
-	}
-	a := newTestApp(t)
-	data, err := os.ReadFile(filepath.Join("..", "pdf", "testdata", "one-page.pdf"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	f := filepath.Join(t.TempDir(), "one-page.pdf")
-	if err := os.WriteFile(f, data, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := a.lib.AddBook(calibre.NewBook{File: f, Metadata: calibre.Metadata{
-		Title: "Scanned Book", Authors: []string{"A. Printer"}, Languages: []string{"eng"},
-	}}); err != nil {
-		t.Fatal(err)
-	}
-	a.reload(nil)
-	book := a.bookByTitle("Scanned Book")
-	if book == nil {
-		t.Fatal("the PDF is not in the library")
-	}
-	if format, ok := a.readableFormat(book); !ok || format != "PDF" {
-		t.Fatalf("format = %q, %v", format, ok)
-	}
-	a.openReader(book, "PDF")
-	if a.rd.err != nil {
-		t.Fatal(a.rd.err)
-	}
-	if a.rd.pdf == nil {
-		t.Fatal("the PDF was not kept")
-	}
-	if len(a.rd.chapters) != 1 || a.rd.chapters[0].Title != "Page 1" {
-		t.Fatalf("chapters = %+v", a.rd.chapters)
-	}
-	if len(a.rd.images) != 1 {
-		t.Fatalf("images = %d, want 1", len(a.rd.images))
-	}
-	a.rd.chapters[0].Blocks[0].Alt = "Rendered page"
-	tt := ui.NewTester(a.View, 1440, 900)
-	tt.Frame()
-	if !tt.HasText("Scanned Book") {
-		t.Fatalf("the reader is not showing the book: %q", tt.Texts())
-	}
-	if r, ok := tt.Find("Rendered page"); !ok || r.W < 600 || r.H < 600 {
-		t.Fatalf("page box %+v, %v", r, ok)
-	}
-	a.readerClose()
-	if a.rd.pdf != nil {
-		t.Fatal("the PDF was left open")
 	}
 }

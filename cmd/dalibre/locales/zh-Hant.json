@@ -316,26 +316,6 @@
       }
     }
   },
-
-  "readerPageN": "第 {n} 頁",
-  "@readerPageN": {
-    "placeholders": {
-      "n": {
-        "type": "int"
-      }
-    }
-  },
-  "readerPageOf": "第 {current} 頁 / 共 {total} 頁",
-  "@readerPageOf": {
-    "placeholders": {
-      "current": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
   "readerProgress": "{percent}%",
   "@readerProgress": {
     "placeholders": {

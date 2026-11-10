@@ -11,7 +11,6 @@ import (
 	"dalibre/cmd/dalibre/locales"
 	"dalibre/internal/app/icons"
 	"dalibre/internal/app/theme"
-	"dalibre/internal/pdf"
 	"dalibre/internal/reader"
 	"dalibre/internal/settings"
 )
@@ -704,9 +703,6 @@ func (a *App) readerNotes(c *ui.Context, p theme.Reading, notes []reader.Note) {
 func (a *App) readerImage(c *ui.Context, p theme.Reading, b reader.Block) {
 	src := a.rd.images[b.Src]
 	if src == nil {
-		if pdf.IsPageSrc(b.Src) {
-			a.readerPageLoading(c, p)
-		}
 		return
 	}
 	ui.Column(c).AlignItems(ui.Center).Padding(theme.Space16, theme.Space16, theme.Space8, theme.Space16).Children(func() {
@@ -719,18 +715,6 @@ func (a *App) readerImage(c *ui.Context, p theme.Reading, b reader.Block) {
 				LineHeight(1.5).TextAlign(ui.Center).TextColor(p.Tertiary).
 				MaxWidth(theme.ReaderMeasure).Padding(0, theme.Space24, 0, theme.Space24)
 		}
-	})
-}
-
-// readerPageLoading holds the page's place while its PDF page is drawn:
-// a blank frame would look like the end of the book.
-func (a *App) readerPageLoading(c *ui.Context, p theme.Reading) {
-	ui.Column(c).AlignItems(ui.Center).Padding(theme.Space16, theme.Space16, theme.Space8, theme.Space16).Children(func() {
-		ui.Column(c).WidthPercent(100).MaxWidth(theme.ReaderMeasure).Height(520).Radius(theme.RadiusSM).
-			Background(p.Subtle).Border(1, p.Border).Center().Gap(theme.Space12).Children(func() {
-			ui.Spinner(c).Size(20, 20).Label(locales.ReaderLoading())
-			ui.Text(c, locales.ReaderLoading()).FontSize(11).TextColor(p.Tertiary)
-		})
 	})
 }
 
@@ -782,11 +766,7 @@ func (a *App) readerFooter(c *ui.Context, p theme.Reading) {
 		ui.Row(c).Height(readerFooterH).Padding(0, theme.Space20).Gap(theme.Space12).AlignItems(ui.Center).Children(func() {
 			ui.Text(c, locales.ReaderProgress(int(math.Round(a.rd.percent*100)))).Font(theme.FontMono).
 				FontSize(12).TextColor(p.Secondary)
-			place := locales.ReaderChapterOf(a.rd.chapter+1, len(a.rd.chapters))
-			if a.rd.format == pdfFormat {
-				place = locales.ReaderPageOf(a.rd.chapter+1, len(a.rd.chapters))
-			}
-			ui.Text(c, place).Grow(1).
+			ui.Text(c, locales.ReaderChapterOf(a.rd.chapter+1, len(a.rd.chapters))).Grow(1).
 				FontSize(12).TextAlign(ui.Center).TextColor(p.Tertiary)
 			var prev, next func()
 			if a.rd.chapter > 0 {
@@ -1009,17 +989,13 @@ func (a *App) readerTypeSheet(c *ui.Context, p theme.Reading) {
 					}
 				})
 			})
-			// A PDF page keeps the type, leading and paper color its
-			// typesetter gave it; the color here tints the page around it.
-			if a.rd.format != pdfFormat {
-				a.readerStepRow(c, p, locales.ReaderTextSize(), strconv.Itoa(a.rd.size), func() { a.readerSetSize(-1) }, func() { a.readerSetSize(1) })
-				a.readerStepRow(c, p, locales.ReaderLineSpacing(), strconv.FormatFloat(a.rd.lineHeight, 'f', -1, 64),
-					func() { a.readerSetLineHeight(-0.1) }, func() { a.readerSetLineHeight(0.1) })
-				ui.Row(c).AlignItems(ui.Center).Children(func() {
-					ui.Text(c, themeName(a.rd.theme)).FontSize(12).TextColor(p.Tertiary).Grow(1)
-					ui.Textf(c, "%d%%", int(math.Round(a.rd.lineHeight*100))).Font(theme.FontMono).FontSize(11).TextColor(p.Tertiary)
-				})
-			}
+			a.readerStepRow(c, p, locales.ReaderTextSize(), strconv.Itoa(a.rd.size), func() { a.readerSetSize(-1) }, func() { a.readerSetSize(1) })
+			a.readerStepRow(c, p, locales.ReaderLineSpacing(), strconv.FormatFloat(a.rd.lineHeight, 'f', -1, 64),
+				func() { a.readerSetLineHeight(-0.1) }, func() { a.readerSetLineHeight(0.1) })
+			ui.Row(c).AlignItems(ui.Center).Children(func() {
+				ui.Text(c, themeName(a.rd.theme)).FontSize(12).TextColor(p.Tertiary).Grow(1)
+				ui.Textf(c, "%d%%", int(math.Round(a.rd.lineHeight*100))).Font(theme.FontMono).FontSize(11).TextColor(p.Tertiary)
+			})
 		})
 	})
 }
