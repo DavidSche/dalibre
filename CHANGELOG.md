@@ -13,6 +13,10 @@
   page, pictures, tables and notes. Encrypted books and books using
   HUFF/CDIC compression say why they cannot be read instead of
   failing silently.
+- Pictures now keep the place and size the book gives them: a picture
+  beside words stays in the line, and the book's width or height, a length
+  or a share of the page, is honored. A large picture file no longer makes
+  a plate fill more of the page than the book asks for.
 
 ## 0.3.1
 

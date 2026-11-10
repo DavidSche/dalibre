@@ -3,6 +3,7 @@ package reader
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"image"
 	"image/color"
@@ -233,6 +234,35 @@ func TestExtractEPUB(t *testing.T) {
 	}
 	if got := d.Chapters[1].Blocks[2]; got.Kind != Image || got.Src != img.Src {
 		t.Fatalf("inline SVG image %+v", got)
+	}
+}
+
+func TestExtractInlinePicturesAndSizes(t *testing.T) {
+	data := "data:image/png;base64," + base64.StdEncoding.EncodeToString(testPNG(t))
+	doc := parseHTML([]byte(`<html><body>
+		<p>Before <img src="` + data + `" width="16%" style="width: 16%"> after.</p>
+		<p><img src="` + data + `" width="120" height="80"></p>
+		<p><img src="` + data + `" style="width: 50%"></p>
+	</body></html>`))
+	blocks, _ := doc.blocks("", nil, nil, nil, "", "")
+	if len(blocks) != 3 {
+		t.Fatalf("blocks %+v", blocks)
+	}
+	p := blocks[0]
+	want := "Before " + string(ObjectRune) + " after."
+	if p.Kind != Paragraph || p.Text != want {
+		t.Fatalf("paragraph %+v", p)
+	}
+	if len(p.Runs) != 3 || p.Runs[1].Src == "" || p.Runs[1].WidthPercent != 16 || p.Runs[1].Text != string(ObjectRune) {
+		t.Fatalf("inline runs %#v", p.Runs)
+	}
+	plate := blocks[1]
+	if plate.Kind != Image || plate.Width != 120 || plate.Height != 80 {
+		t.Fatalf("sized picture %+v", plate)
+	}
+	half := blocks[2]
+	if half.Kind != Image || half.WidthPercent != 50 {
+		t.Fatalf("half-width picture %+v", half)
 	}
 }
 
@@ -712,5 +742,34 @@ func TestExtractEPUBTablesAndNotes(t *testing.T) {
 	}
 	if n := ch.Notes[1]; n.Label != "2" || n.Text != "The second mark was a star." {
 		t.Fatalf("footnote %+v", n)
+	}
+}
+
+func TestPictureLength(t *testing.T) {
+	cases := []struct {
+		in     string
+		w, pct float32
+	}{
+		{"240", 240, 0},
+		{"240px", 240, 0},
+		{" 24.5px ", 24.5, 0},
+		{"16%", 0, 16},
+		{"16.5%", 0, 16.5},
+		{"12em", 0, 0},
+		{"12rem", 0, 0},
+		{"9pt", 0, 0},
+		{"auto", 0, 0},
+	}
+	for _, c := range cases {
+		w, pct := imageLength(c.in)
+		if w != c.w || pct != c.pct {
+			t.Errorf("imageLength(%q) = %v, %v; want %v, %v", c.in, w, pct, c.w, c.pct)
+		}
+	}
+	if w, pct := styleLength("height: 10px; width: 50% !important", "width"); w != 0 || pct != 50 {
+		t.Errorf("style width = %v, %v", w, pct)
+	}
+	if w, pct := styleLength("height: 10px; width: 320px", "width"); w != 320 || pct != 0 {
+		t.Errorf("style width = %v, %v", w, pct)
 	}
 }

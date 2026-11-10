@@ -316,10 +316,10 @@ func (a *App) readerBlock(c *ui.Context, p theme.Reading, b reader.Block, labels
 			fs = size + 4
 			pad = [2]float32{theme.Space32, theme.Space12}
 		}
-		if spans, ok := readerSpans(b.Text, b.Runs, nil, marks, 0, fs, p.Accent, p.Dark); ok {
+		if spans, objects, ok := a.readerSpans(b.Text, b.Runs, nil, marks, 0, fs, p.Accent, p.Dark); ok {
 			el := ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(fs).FontWeight(600).LineHeight(1.4).
 				Padding(pad[0], theme.Space16, pad[1], theme.Space16)
-			return el, 0
+			return a.readerDrawObjects(el, objects), 0
 		}
 		el := ui.Text(c, b.Text).Font(theme.FontSerif).FontSize(fs).FontWeight(600).LineHeight(1.4).
 			Padding(pad[0], theme.Space16, pad[1], theme.Space16)
@@ -328,9 +328,9 @@ func (a *App) readerBlock(c *ui.Context, p theme.Reading, b reader.Block, labels
 		var el ui.Element
 		ui.Row(c).Padding(theme.Space8, 0, theme.Space16, 0).BorderWidth(0, 0, 0, 2).BorderColor(p.Accent).
 			Children(func() {
-				if spans, ok := readerSpans(b.Text, b.Runs, labels, marks, 0, size, p.Accent, p.Dark); ok {
-					el = ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(size).Italic().
-						LineHeight(float32(a.rd.lineHeight)).TextColor(p.Secondary).Padding(0, theme.Space16)
+				if spans, objects, ok := a.readerSpans(b.Text, b.Runs, labels, marks, 0, size, p.Accent, p.Dark); ok {
+					el = a.readerDrawObjects(ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(size).Italic().
+						LineHeight(float32(a.rd.lineHeight)).TextColor(p.Secondary).Padding(0, theme.Space16), objects)
 					return
 				}
 				el = ui.Text(c, b.Text).Font(theme.FontSerif).FontSize(size).Italic().LineHeight(float32(a.rd.lineHeight)).
@@ -356,10 +356,10 @@ func (a *App) readerBlock(c *ui.Context, p theme.Reading, b reader.Block, labels
 				runs = append([]reader.Run{{Text: "　　"}}, runs...)
 			}
 		}
-		if spans, ok := readerSpans(text, runs, labels, marks, prefix, size, p.Accent, p.Dark); ok {
+		if spans, objects, ok := a.readerSpans(text, runs, labels, marks, prefix, size, p.Accent, p.Dark); ok {
 			el := ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(size).LineHeight(float32(a.rd.lineHeight)).
 				Padding(0, theme.Space16, theme.Space12, theme.Space16)
-			return el, prefix
+			return a.readerDrawObjects(el, objects), prefix
 		}
 		el := ui.Text(c, text).Font(theme.FontSerif).FontSize(size).LineHeight(float32(a.rd.lineHeight)).
 			Padding(0, theme.Space16, theme.Space12, theme.Space16)
@@ -401,35 +401,127 @@ func readerNoteLabels(notes []reader.Note) map[string]bool {
 	return labels
 }
 
+// readerInline is one picture inside a line of text: the rune it takes in
+// the block's text and the picture it names.
+type readerInline struct {
+	at  int
+	src string
+}
+
 // readerSpans splits a paragraph into the page's spans: its emphasis,
-// run by run, its [label] note markers, which read as an aside in the
-// accent, and the washes behind the passages the reader marked. Text with
-// none of them is left to a plain Text, which is faster.
-func readerSpans(text string, runs []reader.Run, labels map[string]bool, marks []settings.Highlight, prefix int, size float32, accent ui.Color, dark bool) ([]ui.Span, bool) {
+// run by run, its inline pictures, which are laid out in the line, its
+// [label] note markers, which read as an aside in the accent, and the
+// washes behind the passages the reader marked. Text with none of them is
+// left to a plain Text, which is faster. The returned objects are the
+// pictures' places in the text, for readerDrawObjects.
+func (a *App) readerSpans(text string, runs []reader.Run, labels map[string]bool, marks []settings.Highlight, prefix int, size float32, accent ui.Color, dark bool) ([]ui.Span, []readerInline, bool) {
 	styled := false
 	for _, r := range runs {
-		if r.Bold || r.Italic {
+		if r.Bold || r.Italic || r.Src != "" {
 			styled = true
 			break
 		}
 	}
 	var spans []ui.Span
+	var objects []readerInline
 	found := false
 	if styled && reader.RunsText(runs) == text {
+		at := 0
 		for _, r := range runs {
-			spans = append(spans, readerRunSpans(r.Text, r.Bold, r.Italic, labels, size, accent)...)
+			if r.Src != "" {
+				if span, ok := a.readerInlineSpan(r); ok {
+					spans = append(spans, span)
+					objects = append(objects, readerInline{at: at, src: r.Src})
+				} else {
+					spans = append(spans, ui.Span{Text: r.Text})
+				}
+			} else {
+				spans = append(spans, readerRunSpans(r.Text, r.Bold, r.Italic, labels, size, accent)...)
+			}
+			at += len([]rune(r.Text))
 		}
 		found = len(spans) > 0
 	} else {
 		spans, found = readerNoteSpans(text, labels, size, accent)
 	}
 	if len(marks) == 0 {
-		return spans, found
+		return spans, objects, found
 	}
 	if len(spans) == 0 {
 		spans = []ui.Span{{Text: text}}
 	}
-	return readerHighlightSpans(spans, marks, prefix, dark), true
+	return readerHighlightSpans(spans, marks, prefix, dark), objects, true
+}
+
+// readerInlineSpan lays out one inline picture at the size the book asks
+// for, within the measure. A picture whose bytes the page doesn't have is
+// left as the object character, which shows nothing rather than a box.
+func (a *App) readerInlineSpan(r reader.Run) (ui.Span, bool) {
+	src := a.rd.images[r.Src]
+	if src == nil {
+		return ui.Span{}, false
+	}
+	w, h := readerPictureSize(src, r.Width, r.Height, r.WidthPercent, r.HeightPercent, a.readerInlineWidth())
+	if w <= 0 || h <= 0 {
+		return ui.Span{}, false
+	}
+	return ui.Span{Text: r.Text, ObjectWidth: w, ObjectHeight: h}, true
+}
+
+func (a *App) readerInlineWidth() float32 {
+	w := float32(theme.ReaderMeasure - 2*theme.Space16)
+	if w < 240 {
+		return 240
+	}
+	return w
+}
+
+// readerDrawObjects paints the inline pictures in a text element at the
+// box the line made for each.
+func (a *App) readerDrawObjects(el ui.Element, objects []readerInline) ui.Element {
+	if len(objects) == 0 {
+		return el
+	}
+	return el.DrawObjects(func(p *ui.Painter, at int, r ui.Rect) {
+		for _, obj := range objects {
+			if obj.at != at {
+				continue
+			}
+			if src := a.rd.images[obj.src]; src != nil {
+				p.Image(src, r, ui.Contain)
+			}
+			return
+		}
+	})
+}
+
+// readerPictureSize is the box a picture takes. A length in the book is
+// its size; a percentage is its share of the measure. When the book gives
+// one side, the picture's own shape gives the other. A picture wider than
+// the measure scales down whole, so a plate keeps its shape.
+func readerPictureSize(src ui.ImageSource, w, h, wPercent, hPercent, measure float32) (float32, float32) {
+	if wPercent > 0 {
+		w = measure * wPercent / 100
+	}
+	if hPercent > 0 {
+		h = measure * hPercent / 100
+	}
+	iw, ih := ui.ImageSize(src)
+	if w <= 0 && h <= 0 {
+		w, h = iw, ih
+	} else if w <= 0 && ih > 0 {
+		w = h * iw / ih
+	} else if h <= 0 && iw > 0 {
+		h = w * ih / iw
+	}
+	if w <= 0 || h <= 0 {
+		return 0, 0
+	}
+	if measure > 0 && w > measure {
+		h *= measure / w
+		w = measure
+	}
+	return w, h
 }
 
 // readerRunSpans is one run's text as spans, with its emphasis and any
@@ -705,8 +797,12 @@ func (a *App) readerImage(c *ui.Context, p theme.Reading, b reader.Block) {
 	if src == nil {
 		return
 	}
+	w, h := readerPictureSize(src, b.Width, b.Height, b.WidthPercent, b.HeightPercent, theme.ReaderMeasure)
+	if w <= 0 || h <= 0 {
+		return
+	}
 	ui.Column(c).AlignItems(ui.Center).Padding(theme.Space16, theme.Space16, theme.Space8, theme.Space16).Children(func() {
-		img := ui.Image(c, src).MaxWidthPercent(100).MaxWidth(theme.ReaderMeasure).Fit(ui.Contain).Radius(2)
+		img := ui.Image(c, src).Size(w, h).MaxWidthPercent(100).MaxWidth(theme.ReaderMeasure).Fit(ui.Contain).Radius(2)
 		if b.Alt != "" {
 			img.Label(b.Alt)
 		}

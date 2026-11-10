@@ -98,9 +98,17 @@ func TestMOBIReadsChaptersAndPictures(t *testing.T) {
 		if b.Kind == Image {
 			src = b.Src
 		}
+		for _, r := range b.Runs {
+			if r.Src != "" {
+				src = r.Src
+			}
+		}
 	}
 	if src != "images/1" {
 		t.Fatalf("picture src = %q", src)
+	}
+	if got := doc.Chapters[1].Blocks[1].Text; got != "Hello \uFFFC world." {
+		t.Fatalf("text = %q", got)
 	}
 	if !bytes.HasPrefix(doc.Images[src], []byte{0xff, 0xd8, 0xff}) {
 		t.Errorf("picture bytes = % x", doc.Images[src])

@@ -68,18 +68,31 @@ type Block struct {
 	Level int    `json:"level,omitempty"` // Heading's, 1–6
 	// Runs is Text as the book sets it, when some of it is bold or italic.
 	// It is nil when the text has one style; when it is set, the runs'
-	// texts join to Text exactly.
+	// texts join to Text exactly. An inline picture is a run whose Text is
+	// ObjectRune and whose Src names its bytes.
 	Runs []Run `json:"runs,omitempty"`
 	// Src names an Image's bytes in Document.Images. Alt is what the
 	// picture says for a reader who can't see it, and Caption is the
-	// book's line under it, when the book has one.
-	Src     string `json:"src,omitempty"`
-	Alt     string `json:"alt,omitempty"`
-	Caption string `json:"caption,omitempty"`
+	// book's line under it, when the book has one. Width and Height are
+	// the size in DIPs the book asks for; WidthPercent and HeightPercent
+	// are its share of the page's measure. Zero leaves the picture's own
+	// size.
+	Src           string  `json:"src,omitempty"`
+	Alt           string  `json:"alt,omitempty"`
+	Caption       string  `json:"caption,omitempty"`
+	Width         float32 `json:"width,omitempty"`
+	Height        float32 `json:"height,omitempty"`
+	WidthPercent  float32 `json:"widthPercent,omitempty"`
+	HeightPercent float32 `json:"heightPercent,omitempty"`
 	// Table is a Table block's rows. Its cells hold text only, so a table
 	// stays lightweight in the plugin sandbox and on the page.
 	Table *Table `json:"table,omitempty"`
 }
+
+// ObjectRune is the one character an inline picture takes in a block's
+// text. The page draws the picture in its box and lays out the line
+// around it; the character itself is never shown.
+const ObjectRune = '\uFFFC'
 
 // Run is a stretch of a block's text in one style. Bold and Italic are
 // the book's emphasis, not its font: the page sets them in its own face.
@@ -87,6 +100,15 @@ type Run struct {
 	Text   string `json:"text"`
 	Bold   bool   `json:"bold,omitempty"`
 	Italic bool   `json:"italic,omitempty"`
+	// Src names a picture that sits in the line, when the run is an
+	// inline picture: Text is then ObjectRune. Alt is what it shows. Its
+	// size is as for an Image block.
+	Src           string  `json:"src,omitempty"`
+	Alt           string  `json:"alt,omitempty"`
+	Width         float32 `json:"width,omitempty"`
+	Height        float32 `json:"height,omitempty"`
+	WidthPercent  float32 `json:"widthPercent,omitempty"`
+	HeightPercent float32 `json:"heightPercent,omitempty"`
 }
 
 // Table is a table in the text: a caption, if the book gives one, and
@@ -256,6 +278,7 @@ func cleanBlocks(in []Block) []Block {
 			b.Src = strings.TrimSpace(b.Src)
 			b.Alt = strings.TrimSpace(b.Alt)
 			b.Caption = strings.TrimSpace(b.Caption)
+			cleanPictureSize(&b.Width, &b.Height, &b.WidthPercent, &b.HeightPercent)
 			if b.Src == "" {
 				continue
 			}
@@ -297,17 +320,30 @@ func RunsText(runs []Run) string {
 // CleanRuns makes runs fit text: it drops the empty ones, joins those
 // with one style, and returns nil when the text has one style or the runs
 // don't spell it. A plugin may change a block's text; the text is what
-// the page shows, so runs that no longer match it are let go.
+// the page shows, so runs that no longer match it are let go. A run with
+// Src is an inline picture and is never joined to the text around it.
 func CleanRuns(runs []Run, text string) []Run {
 	if len(runs) == 0 || text == "" {
 		return nil
 	}
 	out := make([]Run, 0, len(runs))
 	for _, r := range runs {
+		if r.Src != "" {
+			// An inline picture is one object replacement character. A
+			// plugin that says otherwise is spelling text, not a picture.
+			if r.Text != string(ObjectRune) {
+				r.Src, r.Alt = "", ""
+			} else {
+				r.Alt = strings.TrimSpace(r.Alt)
+				cleanPictureSize(&r.Width, &r.Height, &r.WidthPercent, &r.HeightPercent)
+				out = append(out, r)
+				continue
+			}
+		}
 		if r.Text == "" {
 			continue
 		}
-		if n := len(out); n > 0 && out[n-1].Bold == r.Bold && out[n-1].Italic == r.Italic {
+		if n := len(out); n > 0 && out[n-1].Src == "" && out[n-1].Bold == r.Bold && out[n-1].Italic == r.Italic {
 			out[n-1].Text += r.Text
 			continue
 		}
@@ -318,7 +354,7 @@ func CleanRuns(runs []Run, text string) []Run {
 	}
 	styled := false
 	for _, r := range out {
-		if r.Bold || r.Italic {
+		if r.Bold || r.Italic || r.Src != "" {
 			styled = true
 			break
 		}
@@ -327,6 +363,25 @@ func CleanRuns(runs []Run, text string) []Run {
 		return nil
 	}
 	return out
+}
+
+// cleanPictureSize keeps a picture's size within what a page can set:
+// a negative or absurd length is no size at all, and the picture keeps
+// its own.
+func cleanPictureSize(w, h, wPercent, hPercent *float32) {
+	const maxSide = 12_000
+	if !(*w > 0) || *w > maxSide {
+		*w = 0
+	}
+	if !(*h > 0) || *h > maxSide {
+		*h = 0
+	}
+	if !(*wPercent > 0) || *wPercent > 1000 {
+		*wPercent = 0
+	}
+	if !(*hPercent > 0) || *hPercent > 1000 {
+		*hPercent = 0
+	}
 }
 
 // cleanCode trims a code block's blank ends and the spaces that trail

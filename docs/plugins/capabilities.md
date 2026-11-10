@@ -187,13 +187,18 @@ permissions at all. It sees the books the user opens, and nothing else in
 the library. `document` is what came out. A picture is an `image` block whose
 `src` names bytes the host keeps; the plugin can pass the block through,
 drop it or move it, but the bytes never enter the sandbox. The page sets
-the picture at the size the book gives it, no wider than the measure, and
-its `caption` under it. EPUBs' `<img>`, `<figure>` and inline SVG images
-are read (up to 8 MB each, 5,000 pictures and 64 MB a book; a picture over
-24 megapixels is left out, so a small file can't unfold into a huge one);
-a TXT book has none. The page decodes a chapter's pictures when it turns
-to the chapter and lets the earlier ones go, so a book of thousands of
-formula pictures stays light.
+the picture at the size the book gives it — `width` and `height` in DIPs,
+or `widthPercent` and `heightPercent` as a share of the measure — no wider
+than the measure, and its `caption` under it. A picture that sits in a
+line of text, such as a formula's symbol or a small icon, is a run instead
+of a block: its `text` is the object replacement character (U+FFFC) and
+its `src` names the picture, so the page draws it where it belongs in the
+sentence. EPUBs' `<img>`, `<figure>` and inline SVG images are read (up to
+8 MB each, 5,000 pictures and 64 MB a book; a picture over 24 megapixels
+is left out, so a small file can't unfold into a huge one); a TXT book has
+none. The page decodes a chapter's pictures when it turns to the chapter
+and lets the earlier ones go, so a book of thousands of formula pictures
+stays light.
 
 A `<table>` is a `table` block of text cells: `caption`, `rows`, and each
 cell's `text`, `header`, `colspan` and `rowspan` (1–32). Pictures inside
@@ -209,11 +214,12 @@ spaces that indent it, and the page sets it in a monospaced block that
 scrolls sideways; pass it through rather than treating it as prose.
 
 A book's `<strong>`/`<b>` and `<em>`/`<i>` become the block's `runs`: the
-text cut into stretches that are bold or italic. The runs' texts join to
-the block's `text` exactly. A plugin may rewrite the text, but then it
-must rewrite the runs to match; the page keeps the text and drops
-emphasis that no longer matches. Runs belong to headings, paragraphs
-and quotes; code and tables carry none.
+text cut into stretches that are bold or italic, or into a picture that
+sits in the line. The runs' texts join to the block's `text` exactly. A
+plugin may rewrite the text, but then it must rewrite the runs to match,
+pictures included; the page keeps the text and drops emphasis that no
+longer matches. Runs belong to headings, paragraphs and quotes; code and
+tables carry none.
 
 ```ts
 Document: { title?: string, language?: string, chapters: Chapter[], truncated?: boolean }
@@ -221,9 +227,12 @@ Chapter:  { title?: string, depth?: number, blocks: Block[], continued?: boolean
 Block:    { kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table" | "code",
             text?: string, level?: number, runs?: Run[],
             src?: string, alt?: string, caption?: string,
+            width?: number, height?: number, widthPercent?: number, heightPercent?: number,
             table?: { caption?: string, rows: { cells: { text: string, header?: boolean,
                      colspan?: number, rowspan?: number }[] }[] } }
-Run:      { text: string, bold?: boolean, italic?: boolean }
+Run:      { text: string, bold?: boolean, italic?: boolean,
+            src?: string, alt?: string,
+            width?: number, height?: number, widthPercent?: number, heightPercent?: number }
 Note:     { id?: string, label?: string, text: string }
 ```
 

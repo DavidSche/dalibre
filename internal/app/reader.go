@@ -324,15 +324,27 @@ func usedReaderImages(r *plugin.Reading, raw map[string][]byte) map[string][]byt
 	}
 	for _, ch := range r.Chapters {
 		for _, b := range ch.Blocks {
-			if b.Kind != reader.Image || b.Src == "" {
-				continue
-			}
-			if data, ok := raw[b.Src]; ok && len(data) > 0 {
-				out[b.Src] = data
-			}
+			readerPictures(b, func(src string) {
+				if data, ok := raw[src]; ok && len(data) > 0 {
+					out[src] = data
+				}
+			})
 		}
 	}
 	return out
+}
+
+// readerPictures calls add for each picture a block places, whether it is
+// a plate or sits in a line of text.
+func readerPictures(b reader.Block, add func(string)) {
+	if b.Kind == reader.Image && b.Src != "" {
+		add(b.Src)
+	}
+	for _, r := range b.Runs {
+		if r.Src != "" {
+			add(r.Src)
+		}
+	}
 }
 
 // decodeReaderChapter decodes the pictures chapter at holds, and only
@@ -347,28 +359,30 @@ func decodeReaderChapter(chapters []reader.Chapter, at int, raw map[string][]byt
 	seen := map[string]bool{}
 	var pixels int64
 	for _, b := range chapters[at].Blocks {
-		if b.Kind != reader.Image || b.Src == "" || seen[b.Src] {
-			continue
-		}
-		seen[b.Src] = true
-		data := raw[b.Src]
-		if len(data) == 0 || !readerImageFits(data) {
-			continue
-		}
-		img, err := ui.DecodeImage(data)
-		if err != nil {
-			continue
-		}
-		w, h := ui.ImageSize(img)
-		area := int64(w) * int64(h)
-		if w > maxReaderImageSide || h > maxReaderImageSide || area > maxReaderImagePixels {
-			continue
-		}
-		if pixels+area > maxReaderChapterPixels {
-			continue
-		}
-		pixels += area
-		out[b.Src] = img
+		readerPictures(b, func(src string) {
+			if seen[src] {
+				return
+			}
+			seen[src] = true
+			data := raw[src]
+			if len(data) == 0 || !readerImageFits(data) {
+				return
+			}
+			img, err := ui.DecodeImage(data)
+			if err != nil {
+				return
+			}
+			w, h := ui.ImageSize(img)
+			area := int64(w) * int64(h)
+			if w > maxReaderImageSide || h > maxReaderImageSide || area > maxReaderImagePixels {
+				return
+			}
+			if pixels+area > maxReaderChapterPixels {
+				return
+			}
+			pixels += area
+			out[src] = img
+		})
 	}
 	return out
 }

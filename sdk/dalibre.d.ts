@@ -163,6 +163,20 @@ declare namespace Dalibre {
     text: string;
     bold?: boolean;
     italic?: boolean;
+    /**
+     * Names a picture that sits in the line, when the run is an inline
+     * picture: text is then the one object replacement character (U+FFFC).
+     * The page draws it in the line; the bytes never enter the sandbox.
+     */
+    src?: string;
+    /** An inline picture's description, for a reader who can't see it. */
+    alt?: string;
+    /** An inline picture's size in DIPs, when the book asks for one. */
+    width?: number;
+    height?: number;
+    /** An inline picture's size as a share of the page's measure. */
+    widthPercent?: number;
+    heightPercent?: number;
   }
 
   /** A piece of a chapter as Dalibre extracted it. */
@@ -171,9 +185,9 @@ declare namespace Dalibre {
     /** The block's text. Code keeps its line breaks and indentation. */
     text?: string;
     /**
-     * The text as the book sets it, when some is bold or italic. The runs'
-     * texts join to text exactly; otherwise the page keeps the text and
-     * drops the emphasis. Code and tables hold no runs.
+     * The text as the book sets it, when some is bold, italic or an inline
+     * picture. The runs' texts join to text exactly; otherwise the page
+     * keeps the text and drops the emphasis. Code and tables hold no runs.
      */
     runs?: Run[];
     /** heading only, 1–6. */
@@ -188,6 +202,16 @@ declare namespace Dalibre {
     alt?: string;
     /** image only: the book's line under the picture, when it has one. */
     caption?: string;
+    /**
+     * image only: the size in DIPs the book asks for. Zero or absent leaves
+     * the picture's own size; the page still scales a wide one down to the
+     * measure.
+     */
+    width?: number;
+    height?: number;
+    /** image only: the picture's size as a share of the page's measure. */
+    widthPercent?: number;
+    heightPercent?: number;
     /** table only: its caption, rows and cells of text. */
     table?: Table;
   }

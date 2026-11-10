@@ -1395,6 +1395,10 @@ func (b *blockReader) walk(n *html.Node) {
 			b.blocks = append(b.blocks, Block{Kind: Divider})
 			return
 		case "img":
+			if imageInline(n) {
+				b.addInlineImage(n)
+				return
+			}
 			b.addImage(n, "")
 			return
 		}
@@ -1439,12 +1443,14 @@ func inlineRuns(root *html.Node, style textStyle) []Run {
 	return out
 }
 
-// appendRun adds a run, joining it to the last when both have one style.
+// appendRun adds a run, joining it to the last when both are text and
+// have one style. An inline picture stays its own run.
 func appendRun(out []Run, r Run) []Run {
 	if r.Text == "" {
 		return out
 	}
-	if n := len(out); n > 0 && out[n-1].Bold == r.Bold && out[n-1].Italic == r.Italic {
+	if n := len(out); n > 0 && out[n-1].Src == "" && r.Src == "" &&
+		out[n-1].Bold == r.Bold && out[n-1].Italic == r.Italic {
 		out[n-1].Text += r.Text
 		return out
 	}
@@ -1702,7 +1708,163 @@ func (b *blockReader) addImage(n *html.Node, caption string) {
 	if alt == "" {
 		alt = collapse(attr(n, "title"), false)
 	}
-	b.blocks = append(b.blocks, Block{Kind: Image, Src: key, Alt: alt, Caption: collapse(caption, false)})
+	w, h, wPercent, hPercent := imageSize(n)
+	b.blocks = append(b.blocks, Block{
+		Kind: Image, Src: key, Alt: alt, Caption: collapse(caption, false),
+		Width: w, Height: h, WidthPercent: wPercent, HeightPercent: hPercent,
+	})
+}
+
+// addInlineImage puts a picture in the line it came in, so a formula's
+// letter or a small icon keeps its place in the sentence. The picture is a
+// run whose text is the object replacement character; the page draws it
+// there.
+func (b *blockReader) addInlineImage(n *html.Node) {
+	src := attr(n, "src")
+	if src == "" {
+		src = attr(n, "xlink:href")
+	}
+	if src == "" {
+		src = attr(n, "href")
+	}
+	if src == "" {
+		return
+	}
+	key, ok := b.loadImage(src)
+	if !ok {
+		return
+	}
+	alt := collapse(attr(n, "alt"), false)
+	if alt == "" {
+		alt = collapse(attr(n, "title"), false)
+	}
+	w, h, wPercent, hPercent := imageSize(n)
+	obj := string(ObjectRune)
+	b.buf.WriteString(obj)
+	b.runs = append(b.runs, Run{
+		Text: obj, Bold: b.style.bold, Italic: b.style.italic,
+		Src: key, Alt: alt,
+		Width: w, Height: h, WidthPercent: wPercent, HeightPercent: hPercent,
+	})
+}
+
+// imageInline reports whether a picture sits in a line of text rather
+// than between lines. A picture alone in a paragraph is a plate, even if
+// the paragraph has no text besides it; a picture beside text is part of
+// that text.
+func imageInline(n *html.Node) bool {
+	p := n.Parent
+	for p != nil {
+		if p.Type == html.ElementNode {
+			switch p.Data {
+			case "figure", "svg", "body", "html", "table", "tr", "td", "th", "pre":
+				return false
+			}
+			if blockElement(p.Data) {
+				break
+			}
+		}
+		p = p.Parent
+	}
+	if p == nil {
+		return false
+	}
+	return blockHasText(p, n)
+}
+
+// blockHasText reports whether a block holds reading text besides the
+// picture. A text line that is only a picture is a plate; a picture next
+// to words is part of them.
+func blockHasText(root, picture *html.Node) bool {
+	var walk func(*html.Node) bool
+	walk = func(n *html.Node) bool {
+		if n == picture {
+			return false
+		}
+		switch n.Type {
+		case html.TextNode:
+			return strings.TrimSpace(textMarks.Replace(n.Data)) != ""
+		case html.ElementNode:
+			if n != root && blockElement(n.Data) {
+				return false
+			}
+			switch n.Data {
+			case "script", "style", "head", "nav", "img", "image", "br":
+				return false
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			if walk(c) {
+				return true
+			}
+		}
+		return false
+	}
+	return walk(root)
+}
+
+// imageSize reads the size a book asks for: its inline style first, as a
+// browser does, then the width and height attributes a converted book
+// often uses instead. A length is in DIPs; a percentage is a share of the
+// page's measure.
+func imageSize(n *html.Node) (w, h, wPercent, hPercent float32) {
+	style := attr(n, "style")
+	w, wPercent = styleLength(style, "width")
+	if w == 0 && wPercent == 0 {
+		w, wPercent = imageLength(attr(n, "width"))
+	}
+	h, hPercent = styleLength(style, "height")
+	if h == 0 && hPercent == 0 {
+		h, hPercent = imageLength(attr(n, "height"))
+	}
+	return w, h, wPercent, hPercent
+}
+
+func styleLength(style, name string) (float32, float32) {
+	for _, decl := range strings.Split(style, ";") {
+		key, value, ok := strings.Cut(decl, ":")
+		if !ok || !strings.EqualFold(strings.TrimSpace(key), name) {
+			continue
+		}
+		value, _, _ = strings.Cut(value, "!") // drop !important
+		return imageLength(value)
+	}
+	return 0, 0
+}
+
+func imageLength(value string) (float32, float32) {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if value == "" {
+		return 0, 0
+	}
+	percent := float32(0)
+	if strings.HasSuffix(value, "%") {
+		percent = 1
+		value = strings.TrimSpace(strings.TrimSuffix(value, "%"))
+	} else if strings.HasSuffix(value, "px") {
+		value = strings.TrimSpace(strings.TrimSuffix(value, "px"))
+	} else if strings.HasSuffix(value, "em") || strings.HasSuffix(value, "rem") ||
+		strings.HasSuffix(value, "pt") || strings.HasSuffix(value, "pc") ||
+		strings.HasSuffix(value, "cm") || strings.HasSuffix(value, "mm") ||
+		strings.HasSuffix(value, "vw") || strings.HasSuffix(value, "vh") {
+		// The page's own type size and viewport aren't the book's; a
+		// length in one of these units is no size the page can honor.
+		return 0, 0
+	}
+	n, err := strconv.ParseFloat(value, 32)
+	if err != nil || !(n > 0) {
+		return 0, 0
+	}
+	if percent > 0 {
+		if n > 1000 {
+			return 0, 0
+		}
+		return 0, float32(n)
+	}
+	if n > 12_000 {
+		return 0, 0
+	}
+	return float32(n), 0
 }
 
 // loadImage reads the picture src names, relative to the content document,
@@ -1805,11 +1967,24 @@ func nodeText(n *html.Node) string {
 var textMarks = strings.NewReplacer("\u00a0", " ", "\u200b", "", "\ufeff", "", "\u2028", "\n", "\u2029", "\n")
 
 // collapseRuns collapses whitespace and drops the marks in each run, as
-// collapse does for plain text, keeping each run's emphasis.
+// collapse does for plain text, keeping each run's emphasis. An inline
+// picture is one object, not whitespace, and keeps its own run.
 func collapseRuns(runs []Run, lines bool) []Run {
 	var out []Run
 	space := false
 	for _, r := range runs {
+		if r.Src != "" {
+			if space {
+				if n := len(out); n > 0 && out[n-1].Src == "" {
+					out[n-1].Text += " "
+				} else {
+					out = append(out, Run{Text: " ", Bold: r.Bold, Italic: r.Italic})
+				}
+				space = false
+			}
+			out = appendRun(out, r)
+			continue
+		}
 		var b strings.Builder
 		for _, ch := range textMarks.Replace(r.Text) {
 			if ch == '\n' && lines {
@@ -1827,8 +2002,13 @@ func collapseRuns(runs []Run, lines bool) []Run {
 				} else if len(out) > 0 {
 					// The space is between runs, so it keeps the style of
 					// the run it follows: emphasis should cover words, not
-					// the gap after them.
-					out[len(out)-1].Text += " "
+					// the gap after them. An inline picture has no text to
+					// put a space in, so the space becomes its own run.
+					if out[len(out)-1].Src == "" {
+						out[len(out)-1].Text += " "
+					} else {
+						out = append(out, Run{Text: " ", Bold: r.Bold, Italic: r.Italic})
+					}
 				}
 			}
 			space = false

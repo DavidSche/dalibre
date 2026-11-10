@@ -944,9 +944,11 @@ export function open({ book, document }) {
 
 `formats` must be ones Dalibre can extract — `EPUB`, `KEPUB`, `MOBI`, `TXT` —
 and `open` gets `book` and the extracted `document`, with its chapters,
-blocks, pictures, tables and notes. A reading is checked like any other
-result; return at least one chapter. The [plain Markdown
-docs](/docs/plugins) describe every block kind and limit.
+blocks, pictures, tables and notes. A picture beside words stays in the
+line as a run whose text is U+FFFC, and an image block keeps the size the
+book gives it. A reading is checked like any other result; return at least
+one chapter. The [plain Markdown docs](/docs/plugins) describe every block
+kind and limit.
 
 ## File type plugins
 

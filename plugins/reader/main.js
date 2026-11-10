@@ -64,6 +64,7 @@ export function open({ book, document }) {
 
 /** @param {Dalibre.Block} b @returns {Dalibre.Block} */
 function copy(b) {
+  /** @type {Dalibre.Block} */
   const out = { kind: b.kind, text: b.text || "", level: b.level || 0 };
   const runs = copyRuns(b.runs);
   if (runs) out.runs = runs;
@@ -71,9 +72,18 @@ function copy(b) {
     out.src = b.src || "";
     out.alt = b.alt || "";
     out.caption = b.caption || "";
+    copySize(out, b);
   }
   if (b.kind === "table" && b.table) out.table = copyTable(b.table);
   return out;
+}
+
+/** @param {Dalibre.Block|Dalibre.Run} out @param {Dalibre.Block|Dalibre.Run} b */
+function copySize(out, b) {
+  if (b.width) out.width = b.width;
+  if (b.height) out.height = b.height;
+  if (b.widthPercent) out.widthPercent = b.widthPercent;
+  if (b.heightPercent) out.heightPercent = b.heightPercent;
 }
 
 /** @param {Dalibre.Note} n @returns {Dalibre.Note} */
@@ -106,7 +116,16 @@ function copyRuns(runs) {
   if (!Array.isArray(runs) || runs.length === 0) return undefined;
   /** @type {Dalibre.Run[]} */
   const out = [];
-  for (const r of runs) pushRun(out, { text: r.text || "", bold: r.bold === true, italic: r.italic === true });
+  for (const r of runs) {
+    /** @type {Dalibre.Run} */
+    const copy = { text: r.text || "", bold: r.bold === true, italic: r.italic === true };
+    if (r.src) {
+      copy.src = r.src;
+      copy.alt = r.alt || "";
+      copySize(copy, r);
+    }
+    pushRun(out, copy);
+  }
   return out.length > 0 ? out : undefined;
 }
 
@@ -114,7 +133,7 @@ function copyRuns(runs) {
 function pushRun(out, r) {
   if (!r.text) return;
   const prev = out[out.length - 1];
-  if (prev && prev.bold === r.bold && prev.italic === r.italic) {
+  if (prev && !prev.src && !r.src && prev.bold === r.bold && prev.italic === r.italic) {
     prev.text += r.text;
     return;
   }
@@ -132,6 +151,16 @@ function cleanRuns(runs) {
   const out = [];
   let space = false;
   for (const r of runs || []) {
+    if (r.src) {
+      if (space) {
+        if (out.length > 0 && !out[out.length - 1].src) out[out.length - 1].text += " ";
+        else pushRun(out, { text: " ", bold: r.bold === true, italic: r.italic === true });
+        space = false;
+      }
+      const copy = { ...r };
+      pushRun(out, copy);
+      continue;
+    }
     let text = "";
     for (const ch of r.text || "") {
       if (/\s/.test(ch)) {
@@ -140,7 +169,10 @@ function cleanRuns(runs) {
       }
       if (space) {
         if (text) text += " ";
-        else if (out.length > 0) out[out.length - 1].text += " ";
+        else if (out.length > 0) {
+          if (!out[out.length - 1].src) out[out.length - 1].text += " ";
+          else pushRun(out, { text: " ", bold: r.bold === true, italic: r.italic === true });
+        }
       }
       space = false;
       text += ch;
@@ -154,7 +186,7 @@ function cleanRuns(runs) {
 function fitRuns(b, text) {
   const runs = cleanRuns(b.runs);
   if (runs.length === 0 || runsText(runs) !== text) return undefined;
-  if (!runs.some((r) => r.bold || r.italic)) return undefined;
+  if (!runs.some((r) => r.bold || r.italic || r.src)) return undefined;
   return runs;
 }
 
@@ -272,7 +304,10 @@ function normalizeBlocks(blocks, headers) {
   for (const b of blocks) {
     if (b.kind === "image") {
       if (!b.src) continue;
-      out.push({ kind: "image", src: b.src, alt: clean(b.alt), caption: clean(b.caption) });
+      /** @type {Dalibre.Block} */
+      const image = { kind: "image", src: b.src, alt: clean(b.alt), caption: clean(b.caption) };
+      copySize(image, b);
+      out.push(image);
       continue;
     }
     if (b.kind === "divider") {

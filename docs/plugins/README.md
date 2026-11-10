@@ -342,15 +342,17 @@ in Dalibre's reader. `book` is `{ id, title, authors, language, format }`.
 Document: { title, language, chapters: Chapter[], truncated }
 Chapter:  { title, depth?, blocks: Block[], continued?, notes? }
 Block:    { kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table" | "code",
-            text?, level?, runs?, src?, alt?, caption?, table? }
-Run:      { text, bold?, italic? }
+            text?, level?, runs?, src?, alt?, caption?,
+            width?, height?, widthPercent?, heightPercent?, table? }
+Run:      { text, bold?, italic?, src?, alt?, width?, height?, widthPercent?, heightPercent? }
 Note:     { id?, label?, text }
 ```
 
 A block's `runs` are its text cut into bold and italic stretches, from
-the book's `<strong>`, `<b>`, `<em>` and `<i>`. The runs' texts join to
-the block's `text` exactly; if you change the text, change the runs too,
-or the page drops the emphasis. A `code` block is preformatted text:
+the book's `<strong>`, `<b>`, `<em>` and `<i>`, or into a picture that
+sits in the line. The runs' texts join to the block's `text` exactly; if
+you change the text, change the runs too, or the page drops the emphasis
+and the pictures. A `code` block is preformatted text:
 keep its line breaks and leading spaces, and the page sets it in a
 monospaced block that scrolls sideways.
 A `table` block holds text cells only: `{ caption?, rows: [{ cells: [{
@@ -364,9 +366,12 @@ chapters through. When a contents entry names an id inside a file, the
 host reads that file in sections, one chapter per entry.
 
 An `image` block names a picture the host keeps in `src`; pass it through,
-drop it or move it, and the page shows it with its `caption` under it. The
-bytes never enter the sandbox. Dalibre reads EPUB `<img>`, `<figure>` and
-inline SVG pictures; a TXT book has none.
+drop it or move it, and the page shows it with its `caption` under it, at
+the size the book gives it (`width`/`height` in DIPs, or
+`widthPercent`/`heightPercent` of the measure). A picture beside words is
+a run instead: its `text` is U+FFFC and its `src` names the picture, so it
+stays in the line. The bytes never enter the sandbox. Dalibre reads EPUB
+`<img>`, `<figure>` and inline SVG pictures; a TXT book has none.
 
 Return how the page should set it. `title` and `author` replace the
 library's; leave them out to keep them. `chapters` are shown in order. A

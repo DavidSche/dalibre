@@ -80,6 +80,7 @@ func testEPUB(t *testing.T) []byte {
   <aside id="n1" epub:type="footnote"><p>Measured by the tide.</p>
     <a href="#ref1" epub:type="backlink">↩</a></aside>
   <figure><img src="img/plate.png" alt="A painted hall"/><figcaption>The western wall</figcaption></figure>
+  <p>A mark <img src="img/plate.png" alt="A small mark" width="30" height="20"/> in the line.</p>
 </body></html>`)
 	add("OEBPS/ch2.xhtml", `<?xml version="1.0"?>
 <html xmlns="http://www.w3.org/1999/xhtml"><body><p>Second chapter text.</p>
@@ -94,6 +95,7 @@ func testEPUB(t *testing.T) []byte {
 }
 
 func TestReaderSpansEmphasis(t *testing.T) {
+	a := &App{}
 	accent := ui.Hex("#b4552d")
 	runs := []reader.Run{
 		{Text: "A "},
@@ -101,7 +103,7 @@ func TestReaderSpansEmphasis(t *testing.T) {
 		{Text: " and "},
 		{Text: "italic", Italic: true},
 	}
-	spans, ok := readerSpans("A bold and italic", runs, nil, nil, 0, 18, accent, false)
+	spans, _, ok := a.readerSpans("A bold and italic", runs, nil, nil, 0, 18, accent, false)
 	if !ok || len(spans) != 4 {
 		t.Fatalf("spans %+v, ok %v", spans, ok)
 	}
@@ -114,7 +116,7 @@ func TestReaderSpansEmphasis(t *testing.T) {
 
 	labels := map[string]bool{"1": true}
 	runs = []reader.Run{{Text: "A "}, {Text: "bold", Bold: true}, {Text: " note[1]"}}
-	spans, ok = readerSpans("A bold note[1]", runs, labels, nil, 0, 18, accent, false)
+	spans, _, ok = a.readerSpans("A bold note[1]", runs, labels, nil, 0, 18, accent, false)
 	if !ok || len(spans) != 4 {
 		t.Fatalf("spans %+v, ok %v", spans, ok)
 	}
@@ -123,10 +125,55 @@ func TestReaderSpansEmphasis(t *testing.T) {
 	}
 }
 
+func TestReaderInlinePicture(t *testing.T) {
+	img, err := ui.DecodeImage(testPNGSize(t, 100, 50))
+	if err != nil {
+		t.Fatal(err)
+	}
+	a := &App{}
+	a.rd.images = map[string]ui.ImageSource{"inline": img}
+	text := "A " + string(reader.ObjectRune) + " B"
+	runs := []reader.Run{
+		{Text: "A "},
+		{Text: string(reader.ObjectRune), Src: "inline", Width: 10, Height: 8},
+		{Text: " B"},
+	}
+	spans, objects, ok := a.readerSpans(text, runs, nil, nil, 0, 18, ui.Hex("#b4552d"), false)
+	if !ok || len(spans) != 3 || len(objects) != 1 {
+		t.Fatalf("spans %+v, objects %+v, ok %v", spans, objects, ok)
+	}
+	if got := spans[1]; got.Text != string(reader.ObjectRune) || got.ObjectWidth != 10 || got.ObjectHeight != 8 {
+		t.Fatalf("inline span %+v", got)
+	}
+	if objects[0].at != 2 || objects[0].src != "inline" {
+		t.Fatalf("inline object %+v", objects[0])
+	}
+}
+
+func TestReaderPictureSize(t *testing.T) {
+	img, err := ui.DecodeImage(testPNGSize(t, 100, 50))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if w, h := readerPictureSize(img, 0, 0, 0, 0, 720); w != 100 || h != 50 {
+		t.Fatalf("own size %v×%v", w, h)
+	}
+	if w, h := readerPictureSize(img, 0, 0, 50, 0, 720); w != 360 || h != 180 {
+		t.Fatalf("half measure %v×%v", w, h)
+	}
+	if w, h := readerPictureSize(img, 2000, 0, 0, 0, 720); w != 720 || h != 360 {
+		t.Fatalf("scaled down %v×%v", w, h)
+	}
+	if w, h := readerPictureSize(img, 0, 20, 0, 0, 720); w != 40 || h != 20 {
+		t.Fatalf("one side %v×%v", w, h)
+	}
+}
+
 func TestReaderHighlightSpans(t *testing.T) {
+	a := &App{}
 	accent := ui.Hex("#b4552d")
 	marks := []settings.Highlight{{Start: 2, End: 7, Color: "yellow"}}
-	spans, ok := readerSpans("hello world", nil, nil, marks, 0, 18, accent, false)
+	spans, _, ok := a.readerSpans("hello world", nil, nil, marks, 0, 18, accent, false)
 	if !ok || len(spans) != 3 {
 		t.Fatalf("spans %+v, ok %v", spans, ok)
 	}
@@ -139,7 +186,7 @@ func TestReaderHighlightSpans(t *testing.T) {
 
 	// The page's indentation is not part of the marked runes.
 	marks = []settings.Highlight{{Start: 0, End: 5, Color: "blue"}}
-	spans, ok = readerSpans("　　hello", nil, nil, marks, 2, 18, accent, false)
+	spans, _, ok = a.readerSpans("　　hello", nil, nil, marks, 2, 18, accent, false)
 	if !ok || len(spans) != 2 || spans[0].Text != "　　" || spans[1].Text != "hello" {
 		t.Fatalf("indented spans %+v, ok %v", spans, ok)
 	}
@@ -150,7 +197,7 @@ func TestReaderHighlightSpans(t *testing.T) {
 	// A mark keeps the emphasis of the run it falls in.
 	runs := []reader.Run{{Text: "A "}, {Text: "bold", Bold: true}}
 	marks = []settings.Highlight{{Start: 2, End: 5, Color: "pink"}}
-	spans, ok = readerSpans("A bold", runs, nil, marks, 0, 18, accent, false)
+	spans, _, ok = a.readerSpans("A bold", runs, nil, marks, 0, 18, accent, false)
 	if !ok || len(spans) != 3 || spans[1].Text != "bol" || spans[2].Text != "d" {
 		t.Fatalf("bold spans %+v, ok %v", spans, ok)
 	}
@@ -428,6 +475,15 @@ func TestReaderOpensEPUB(t *testing.T) {
 	}
 	if len(a.rd.imageData) != 2 || len(a.rd.images) != 1 {
 		t.Fatalf("images %d of %d bytes", len(a.rd.images), len(a.rd.imageData))
+	}
+	var inline bool
+	for _, b := range a.rd.chapters[0].Blocks {
+		if strings.Contains(b.Text, string(reader.ObjectRune)) && len(b.Runs) == 3 {
+			inline = b.Runs[1].Src == "OEBPS/img/plate.png" && b.Runs[1].Width == 30 && b.Runs[1].Height == 20
+		}
+	}
+	if !inline {
+		t.Fatal("inline picture was not kept in its line")
 	}
 	// The plate is 240×150: it keeps that size instead of growing to the
 	// measure, as a small picture must not be blown up.
