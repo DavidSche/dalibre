@@ -1,4 +1,4 @@
-## Unreleased
+## 0.3.2
 
 - Merged upstream djyde/dalibre 0.3.0:
   - File type plugins work on books' files, as calibre's do: when books are
