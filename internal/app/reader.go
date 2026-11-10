@@ -60,9 +60,48 @@ type readerState struct {
 	lineHeight float64
 	indent     bool
 	bookmarks  []int
+	highlights []settings.Highlight
+
+	// blockRefs map the text elements a book's blocks built to their
+	// block, so a selection can become a passage of the text rather than
+	// of the page. They are rebuilt every frame.
+	blockRefs  map[uint64]readerBlockRef
+	blockElems map[int]ui.Element
+	sel        readerSelection
+	selHidden  bool
+	menuX      float32
+	menuY      float32
+	menuOn     bool
 
 	tocList   ui.ListState
 	marksList ui.ListState
+}
+
+// readerBlockRef is where a built text belongs: the block of the chapter
+// on the page, and how many runes the page put before the block's text,
+// as the two full-width spaces of an indented paragraph.
+type readerBlockRef struct {
+	index  int
+	prefix int
+}
+
+// readerSelection is what the reader selected: the text Copy puts on the
+// clipboard and the passages a mark covers, with where the menu opens.
+type readerSelection struct {
+	sig   string
+	text  string
+	parts []readerSelectionPart
+	x, y  float32
+	since time.Time
+	ready bool
+}
+
+// readerSelectionPart is one block's part of the selection, in the block
+// text's own offsets so a mark survives the page's indentation.
+type readerSelectionPart struct {
+	block      int
+	start, end int
+	text       string
 }
 
 // readerStyles are the chosen typography, with the defaults filled in.
@@ -208,9 +247,11 @@ func (a *App) openReader(b *calibre.Book, format string) {
 	name, size, lineHeight := a.readerStyles()
 	prev := a.settings.Reading.Books[readerKey(b)]
 	marks := []int{}
+	highlights := []settings.Highlight{}
 	chapter, fraction := 0, 0.0
 	if prev != nil {
 		marks = slices.Clone(prev.Bookmarks)
+		highlights = slices.Clone(prev.Highlights)
 		chapter, fraction = prev.Chapter, prev.Percent
 	}
 	gen := a.rd.gen + 1
@@ -218,6 +259,7 @@ func (a *App) openReader(b *calibre.Book, format string) {
 		open: true, loading: true, gen: gen, book: b, format: format,
 		tocTab: "contents", pending: fraction, chapter: chapter,
 		theme: name, size: size, lineHeight: lineHeight, bookmarks: marks,
+		highlights: highlights,
 	}
 	lib := a.lib
 	info := plugin.ReaderBook{
@@ -266,6 +308,10 @@ const (
 	// maxReaderChapterPixels bounds the bitmaps one chapter decodes, so a
 	// chapter of plates can't fill memory when the reader turns to it.
 	maxReaderChapterPixels = 32 << 20
+
+	// maxReaderHighlights bounds a book's marks, so the settings file
+	// stays small however long a reader marks passages.
+	maxReaderHighlights = 2000
 )
 
 // usedReaderImages keeps the bytes of the pictures the reading actually
@@ -408,6 +454,7 @@ func (a *App) adoptReading(r *plugin.Reading) {
 	a.rd.chapter = min(max(a.rd.chapter, 0), len(a.rd.chapters)-1)
 	a.rd.bookmarks = slices.DeleteFunc(a.rd.bookmarks, func(i int) bool { return i < 0 || i >= len(a.rd.chapters) })
 	sort.Ints(a.rd.bookmarks)
+	a.rd.highlights = validReaderHighlights(a.rd.highlights, a.rd.chapters)
 }
 
 type errEmptyReading struct{}
@@ -486,6 +533,7 @@ func (a *App) saveReading() {
 		p.Chapters = len(r.chapters)
 		p.Percent = a.readerFraction()
 		p.Bookmarks = slices.Clone(r.bookmarks)
+		p.Highlights = slices.Clone(r.highlights)
 		p.Updated = time.Now()
 	}
 	a.saveReadingStyles()
@@ -556,6 +604,230 @@ func (a *App) readerToggleBookmark() {
 }
 
 func (a *App) readerBookmarked(i int) bool { return slices.Contains(a.rd.bookmarks, i) }
+
+// readerSelectionDelay is how long a selection rests before the menu
+// opens over it: a drag passes through many selections on its way.
+const readerSelectionDelay = 140 * time.Millisecond
+
+// readerTrackSelection turns the page's last selection into the text Copy
+// reads and the passages a mark covers, and puts the menu where the
+// pointer let go. It runs once the chapter's blocks are built, so their
+// elements are known.
+func (a *App) readerTrackSelection(c *ui.Context, col ui.Element) {
+	r := &a.rd
+	x, y, over := col.PointerPosition()
+	parts := col.SelectedTexts()
+	if len(parts) == 0 {
+		// Pressing the menu takes the selection away before the button's
+		// click arrives; keep the card until the press outside it says
+		// the reader is done with the passage.
+		if r.sel.text == "" || r.selHidden {
+			r.sel = readerSelection{}
+			r.selHidden = false
+		}
+		return
+	}
+	var sel readerSelection
+	var sig, copied strings.Builder
+	for _, p := range parts {
+		runes := []rune(p.Text)
+		from := min(max(p.Start, 0), len(runes))
+		to := min(max(p.End, 0), len(runes))
+		if to <= from {
+			continue
+		}
+		text := string(runes[from:to])
+		blockIndex, start, end := -1, from, to
+		if ref, ok := r.blockRefs[p.ID]; ok && ref.index >= 0 && ref.index < len(r.chapters[r.chapter].Blocks) {
+			block := []rune(r.chapters[r.chapter].Blocks[ref.index].Text)
+			start = min(max(from-ref.prefix, 0), len(block))
+			end = min(max(to-ref.prefix, 0), len(block))
+			if end > start {
+				text = string(block[start:end])
+				blockIndex = ref.index
+				sel.parts = append(sel.parts, readerSelectionPart{
+					block: ref.index, start: start, end: end, text: text,
+				})
+			}
+		}
+		// The menu is built while its own press takes the selection's
+		// element IDs away, so the signature names the block, not the
+		// element, and the card doesn't move under the pointer.
+		if sig.Len() > 0 {
+			sig.WriteByte(0x1f)
+		}
+		sig.WriteString(strconv.Itoa(blockIndex))
+		sig.WriteByte(':')
+		sig.WriteString(strconv.Itoa(start))
+		sig.WriteByte(':')
+		sig.WriteString(strconv.Itoa(end))
+		sig.WriteByte(':')
+		sig.WriteString(text)
+		if text != "" {
+			if copied.Len() > 0 {
+				copied.WriteByte(10)
+			}
+			copied.WriteString(text)
+		}
+	}
+	sel.sig, sel.text = sig.String(), copied.String()
+	if sel.sig == "" {
+		r.sel = readerSelection{}
+		r.selHidden = false
+		return
+	}
+	same := sel.sig == r.sel.sig
+	placed := false
+	onMenu := false
+	if over {
+		bounds := col.Bounds()
+		px, py := bounds.X+x, bounds.Y+y
+		onMenu = r.menuOn && px >= r.menuX && px <= r.menuX+readerMenuW &&
+			py >= r.menuY && py <= r.menuY+readerMenuH
+		if !onMenu && col.Pressed() {
+			// A drag names its place as it goes; a selection made with
+			// the keyboard falls back to the block it starts in.
+			sel.x, sel.y = px, py
+			placed = bounds.W > 0
+		}
+	}
+	if !placed && r.sel.text == sel.text && (r.sel.x != 0 || r.sel.y != 0) {
+		// The pointer went to the menu; the card stays where the
+		// selection put it instead of jumping to the paragraph.
+		sel.x, sel.y = r.sel.x, r.sel.y
+		placed = true
+	}
+	if !placed {
+		for _, part := range sel.parts {
+			el, ok := r.blockElems[part.block]
+			if !ok {
+				continue
+			}
+			bounds := el.Bounds()
+			if bounds.W <= 0 {
+				continue
+			}
+			sel.x, sel.y = bounds.X+bounds.W/2, bounds.Y
+			placed = true
+			break
+		}
+	}
+	if !placed {
+		bounds := col.Bounds()
+		sel.x, sel.y = bounds.X+bounds.W/2, bounds.Y+120
+	}
+	if !same {
+		sel.since = time.Now()
+		r.sel = sel
+		r.selHidden = false
+		c.After(readerSelectionDelay)
+		return
+	}
+	sel.since, sel.ready = r.sel.since, r.sel.ready
+	if !sel.ready && time.Since(sel.since) >= readerSelectionDelay {
+		sel.ready = true
+	}
+	r.sel = sel
+}
+
+// readerSelectionShown reports whether the menu should open over the
+// page, not in the contents or the type sheet.
+func (a *App) readerSelectionShown() bool {
+	r := &a.rd
+	return r.open && !r.loading && r.err == nil && !r.toc && !r.typeSheet &&
+		r.sel.ready && !r.selHidden && r.sel.text != ""
+}
+
+// readerCopySelection puts the page's selection on the clipboard.
+func (a *App) readerCopySelection(c *ui.Context) {
+	if a.rd.sel.text == "" {
+		return
+	}
+	c.WriteClipboard(a.rd.sel.text)
+	a.rd.selHidden = true
+	a.toast("%s", locales.ReaderCopied())
+}
+
+// readerMarkSelection paints the page's selection in color, replacing the
+// marks it overlaps. A selection across paragraphs becomes one mark per
+// block.
+func (a *App) readerMarkSelection(color string) {
+	r := &a.rd
+	if !theme.IsReadingHighlight(color) || len(r.sel.parts) == 0 {
+		return
+	}
+	for _, part := range r.sel.parts {
+		r.highlights = slices.DeleteFunc(r.highlights, func(h settings.Highlight) bool {
+			return h.Chapter == r.chapter && h.Block == part.block && h.Start < part.end && part.start < h.End
+		})
+		r.highlights = append(r.highlights, settings.Highlight{
+			Chapter: r.chapter, Block: part.block, Start: part.start, End: part.end,
+			Color: color, Text: part.text,
+		})
+	}
+	if len(r.highlights) > maxReaderHighlights {
+		r.highlights = slices.Delete(r.highlights, 0, len(r.highlights)-maxReaderHighlights)
+	}
+	r.selHidden = true
+	a.saveReading()
+}
+
+// readerSelectionMarked reports whether the page's selection already
+// carries a mark, which the menu then offers to remove.
+func (a *App) readerSelectionMarked() bool {
+	r := &a.rd
+	for _, part := range r.sel.parts {
+		for _, h := range r.highlights {
+			if h.Chapter == r.chapter && h.Block == part.block && h.Start < part.end && part.start < h.End {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// readerRemoveSelectionMarks takes away the marks the selection touches.
+func (a *App) readerRemoveSelectionMarks() {
+	r := &a.rd
+	if len(r.sel.parts) == 0 {
+		return
+	}
+	for _, part := range r.sel.parts {
+		r.highlights = slices.DeleteFunc(r.highlights, func(h settings.Highlight) bool {
+			return h.Chapter == r.chapter && h.Block == part.block && h.Start < part.end && part.start < h.End
+		})
+	}
+	r.selHidden = true
+	a.saveReading()
+}
+
+// validReaderHighlights drops marks a new layout can't place: another
+// chapter, a block that is gone, runes past its text, a color that isn't
+// one of the page's, or words other than those that were marked.
+func validReaderHighlights(highlights []settings.Highlight, chapters []reader.Chapter) []settings.Highlight {
+	out := highlights[:0]
+	for _, h := range highlights {
+		if h.Chapter < 0 || h.Chapter >= len(chapters) {
+			continue
+		}
+		blocks := chapters[h.Chapter].Blocks
+		if h.Block < 0 || h.Block >= len(blocks) {
+			continue
+		}
+		text := []rune(blocks[h.Block].Text)
+		if h.Start < 0 || h.End > len(text) || h.Start >= h.End || !theme.IsReadingHighlight(h.Color) {
+			continue
+		}
+		if h.Text != "" && string(text[h.Start:h.End]) != h.Text {
+			continue
+		}
+		out = append(out, h)
+	}
+	if len(out) > maxReaderHighlights {
+		out = out[len(out)-maxReaderHighlights:]
+	}
+	return out
+}
 
 // readerSetTheme changes the page's color, keeping it.
 func (a *App) readerSetTheme(name string) {

@@ -10,12 +10,14 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/egoist/mygo/ui"
 
 	"dalibre/internal/app/theme"
 	"dalibre/internal/calibre"
 	"dalibre/internal/reader"
+	"dalibre/internal/settings"
 )
 
 // testEPUB builds a small book with two chapters and a navigation document.
@@ -99,7 +101,7 @@ func TestReaderSpansEmphasis(t *testing.T) {
 		{Text: " and "},
 		{Text: "italic", Italic: true},
 	}
-	spans, ok := readerSpans("A bold and italic", runs, nil, 18, accent)
+	spans, ok := readerSpans("A bold and italic", runs, nil, nil, 0, 18, accent, false)
 	if !ok || len(spans) != 4 {
 		t.Fatalf("spans %+v, ok %v", spans, ok)
 	}
@@ -112,12 +114,176 @@ func TestReaderSpansEmphasis(t *testing.T) {
 
 	labels := map[string]bool{"1": true}
 	runs = []reader.Run{{Text: "A "}, {Text: "bold", Bold: true}, {Text: " note[1]"}}
-	spans, ok = readerSpans("A bold note[1]", runs, labels, 18, accent)
+	spans, ok = readerSpans("A bold note[1]", runs, labels, nil, 0, 18, accent, false)
 	if !ok || len(spans) != 4 {
 		t.Fatalf("spans %+v, ok %v", spans, ok)
 	}
 	if got := spans[3]; got.Text != "[1]" || got.Weight != 500 || got.Size != 15 || got.Color != accent {
 		t.Fatalf("note span %+v", got)
+	}
+}
+
+func TestReaderHighlightSpans(t *testing.T) {
+	accent := ui.Hex("#b4552d")
+	marks := []settings.Highlight{{Start: 2, End: 7, Color: "yellow"}}
+	spans, ok := readerSpans("hello world", nil, nil, marks, 0, 18, accent, false)
+	if !ok || len(spans) != 3 {
+		t.Fatalf("spans %+v, ok %v", spans, ok)
+	}
+	if spans[0].Text != "he" || spans[2].Text != "orld" {
+		t.Fatalf("cut %+v", spans)
+	}
+	if got := spans[1]; got.Text != "llo w" || got.Background != theme.ReadingHighlight("yellow", false) || got.Radius != 3 {
+		t.Fatalf("mark %+v", got)
+	}
+
+	// The page's indentation is not part of the marked runes.
+	marks = []settings.Highlight{{Start: 0, End: 5, Color: "blue"}}
+	spans, ok = readerSpans("　　hello", nil, nil, marks, 2, 18, accent, false)
+	if !ok || len(spans) != 2 || spans[0].Text != "　　" || spans[1].Text != "hello" {
+		t.Fatalf("indented spans %+v, ok %v", spans, ok)
+	}
+	if spans[1].Background != theme.ReadingHighlight("blue", false) {
+		t.Fatalf("indented mark %+v", spans[1])
+	}
+
+	// A mark keeps the emphasis of the run it falls in.
+	runs := []reader.Run{{Text: "A "}, {Text: "bold", Bold: true}}
+	marks = []settings.Highlight{{Start: 2, End: 5, Color: "pink"}}
+	spans, ok = readerSpans("A bold", runs, nil, marks, 0, 18, accent, false)
+	if !ok || len(spans) != 3 || spans[1].Text != "bol" || spans[2].Text != "d" {
+		t.Fatalf("bold spans %+v, ok %v", spans, ok)
+	}
+	if spans[1].Weight != theme.ReaderStrongWeight || spans[1].Background != theme.ReadingHighlight("pink", false) {
+		t.Fatalf("bold mark %+v", spans[1])
+	}
+}
+
+func TestReaderHighlightsFollowTheBook(t *testing.T) {
+	chapters := []reader.Chapter{{Blocks: []reader.Block{
+		{Kind: reader.Paragraph, Text: "A hall of statues."},
+	}}}
+	in := []settings.Highlight{
+		{Chapter: 0, Block: 0, Start: 2, End: 6, Color: "yellow", Text: "hall"},
+		{Chapter: 0, Block: 0, Start: 2, End: 6, Color: "yellow", Text: "door"}, // words moved
+		{Chapter: 1, Block: 0, Start: 0, End: 1, Color: "green"},                // chapter gone
+		{Chapter: 0, Block: 3, Start: 0, End: 1, Color: "green"},                // block gone
+		{Chapter: 0, Block: 0, Start: 2, End: 6, Color: "grey", Text: "hall"},   // no such color
+	}
+	out := validReaderHighlights(in, chapters)
+	if len(out) != 1 || out[0].Text != "hall" {
+		t.Fatalf("kept %+v", out)
+	}
+}
+
+func TestReaderMarksSelection(t *testing.T) {
+	a := newTestApp(t)
+	a.rd.open = true
+	a.rd.chapters = []reader.Chapter{{Blocks: []reader.Block{
+		{Kind: reader.Paragraph, Text: "A hall of statues."},
+	}}}
+	a.rd.sel.parts = []readerSelectionPart{{block: 0, start: 2, end: 6, text: "hall"}}
+	a.readerMarkSelection("yellow")
+	if len(a.rd.highlights) != 1 || !a.readerSelectionMarked() {
+		t.Fatalf("marks %+v", a.rd.highlights)
+	}
+	// Marking the same words again replaces the mark instead of stacking.
+	a.readerMarkSelection("green")
+	if len(a.rd.highlights) != 1 || a.rd.highlights[0].Color != "green" {
+		t.Fatalf("marks %+v", a.rd.highlights)
+	}
+	a.readerRemoveSelectionMarks()
+	if len(a.rd.highlights) != 0 || a.readerSelectionMarked() {
+		t.Fatalf("marks %+v", a.rd.highlights)
+	}
+}
+
+func TestReaderKeepsMarks(t *testing.T) {
+	a := newTestApp(t)
+	a.builtins = true
+	a.pluginTransport = fakeWeb{http.NotFoundHandler()}
+	a.loadPlugins()
+	book := a.bookByTitle("Dune")
+	d, _ := a.lib.Details(book)
+	if err := os.WriteFile(d.Files[0].Path, testEPUB(t), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	a.openReader(book, "EPUB")
+	if a.rd.err != nil {
+		t.Fatal(a.rd.err)
+	}
+	block := -1
+	for i, b := range a.rd.chapters[0].Blocks {
+		if strings.HasPrefix(b.Text, "A hall of statues") {
+			block = i
+			break
+		}
+	}
+	if block < 0 {
+		t.Fatal("no passage to mark")
+	}
+	a.rd.sel.parts = []readerSelectionPart{{block: block, start: 2, end: 6, text: "hall"}}
+	a.readerMarkSelection("yellow")
+	a.readerClose()
+	if a.settings.Reading.Book(readerKey(book)).Highlights == nil {
+		t.Fatal("mark not saved")
+	}
+
+	a.openReader(book, "EPUB")
+	if a.rd.err != nil {
+		t.Fatal(a.rd.err)
+	}
+	if len(a.rd.highlights) != 1 || a.rd.highlights[0].Color != "yellow" || a.rd.highlights[0].Text != "hall" {
+		t.Fatalf("marks %+v", a.rd.highlights)
+	}
+}
+
+func TestReaderSelectsAndCopies(t *testing.T) {
+	a := newTestApp(t)
+	a.builtins = true
+	a.pluginTransport = fakeWeb{http.NotFoundHandler()}
+	a.loadPlugins()
+	book := a.bookByTitle("Dune")
+	d, _ := a.lib.Details(book)
+	if err := os.WriteFile(d.Files[0].Path, testEPUB(t), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	a.openReader(book, "EPUB")
+	if a.rd.err != nil {
+		t.Fatal(a.rd.err)
+	}
+	tt := ui.NewTester(a.View, 1440, 900)
+	tt.Frame()
+	line := "The tide came in through the lower doors."
+	r, ok := tt.Find(line)
+	if !ok {
+		t.Fatalf("no line to select: %q", tt.Texts())
+	}
+	tt.Press(r.X+8, r.Y+r.H/2)
+	tt.Frame()
+	tt.Move(r.X+160, r.Y+r.H/2)
+	tt.Frame()
+	tt.Release(r.X+160, r.Y+r.H/2)
+	tt.Frame()
+	if a.rd.sel.text == "" {
+		t.Fatalf("nothing selected; line %+v", r)
+	}
+	// The menu waits for the selection to rest; the test's clock stands
+	// still, so age the selection by hand.
+	a.rd.sel.since = time.Now().Add(-time.Second)
+	tt.Frame()
+	if !a.readerSelectionShown() || !tt.HasText("Copy") {
+		t.Fatalf("no menu over %q: %q", a.rd.sel.text, tt.Texts())
+	}
+	if err := tt.Click("Copy"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if got := tt.Clipboard(); got == "" || !strings.Contains(line, got) {
+		t.Fatalf("copied %q from %q", got, line)
+	}
+	if a.readerSelectionShown() {
+		t.Fatal("menu stayed after copying")
 	}
 }
 

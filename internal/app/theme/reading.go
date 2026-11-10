@@ -61,6 +61,44 @@ var readingThemes = map[string]Reading{
 // text: 600, the usual semibold, not the 700 of a heading.
 const ReaderStrongWeight = 600
 
+// ReadingHighlights are the colors a marked passage may take, in the
+// order the selection menu shows them.
+var ReadingHighlights = []string{"yellow", "green", "blue", "pink"}
+
+var readingHighlightColors = map[string]ui.Color{
+	"yellow": ui.RGBA(245, 205, 74, 0.42),
+	"green":  ui.RGBA(116, 188, 118, 0.38),
+	"blue":   ui.RGBA(110, 166, 230, 0.38),
+	"pink":   ui.RGBA(234, 139, 169, 0.38),
+}
+
+var readingHighlightColorsDark = map[string]ui.Color{
+	"yellow": ui.RGBA(214, 178, 60, 0.38),
+	"green":  ui.RGBA(94, 158, 96, 0.36),
+	"blue":   ui.RGBA(82, 132, 192, 0.36),
+	"pink":   ui.RGBA(198, 106, 136, 0.36),
+}
+
+// IsReadingHighlight reports whether name is a color a passage may take.
+func IsReadingHighlight(name string) bool {
+	_, ok := readingHighlightColors[name]
+	return ok
+}
+
+// ReadingHighlight returns the wash behind a marked passage, lighter on
+// the night page so the ink stays legible.
+func ReadingHighlight(name string, dark bool) ui.Color {
+	if dark {
+		if c, ok := readingHighlightColorsDark[name]; ok {
+			return c
+		}
+	}
+	if c, ok := readingHighlightColors[name]; ok {
+		return c
+	}
+	return ui.Color{}
+}
+
 // ReaderMeasure is the width of the reader's text column: about 35 Han
 // characters at the default size, as a printed page sets them, and narrow
 // enough that the eye finds the next line without losing its place.

@@ -3237,6 +3237,76 @@ func (msgs Messages) ReaderNotes() string {
 	return Catalog.Format(msgs.locale, "readerNotes", nil)
 }
 
+// ReaderCopy says "Copy"
+// in the language the app shows.
+func ReaderCopy() string { return In(i18n.Locale()).ReaderCopy() }
+
+// ReaderCopy says "Copy"
+// in the language of msgs.
+func (msgs Messages) ReaderCopy() string {
+	return Catalog.Format(msgs.locale, "readerCopy", nil)
+}
+
+// ReaderCopied says "Copied"
+// in the language the app shows.
+func ReaderCopied() string { return In(i18n.Locale()).ReaderCopied() }
+
+// ReaderCopied says "Copied"
+// in the language of msgs.
+func (msgs Messages) ReaderCopied() string {
+	return Catalog.Format(msgs.locale, "readerCopied", nil)
+}
+
+// ReaderMarkYellow says "Highlight in yellow"
+// in the language the app shows.
+func ReaderMarkYellow() string { return In(i18n.Locale()).ReaderMarkYellow() }
+
+// ReaderMarkYellow says "Highlight in yellow"
+// in the language of msgs.
+func (msgs Messages) ReaderMarkYellow() string {
+	return Catalog.Format(msgs.locale, "readerMarkYellow", nil)
+}
+
+// ReaderMarkGreen says "Highlight in green"
+// in the language the app shows.
+func ReaderMarkGreen() string { return In(i18n.Locale()).ReaderMarkGreen() }
+
+// ReaderMarkGreen says "Highlight in green"
+// in the language of msgs.
+func (msgs Messages) ReaderMarkGreen() string {
+	return Catalog.Format(msgs.locale, "readerMarkGreen", nil)
+}
+
+// ReaderMarkBlue says "Highlight in blue"
+// in the language the app shows.
+func ReaderMarkBlue() string { return In(i18n.Locale()).ReaderMarkBlue() }
+
+// ReaderMarkBlue says "Highlight in blue"
+// in the language of msgs.
+func (msgs Messages) ReaderMarkBlue() string {
+	return Catalog.Format(msgs.locale, "readerMarkBlue", nil)
+}
+
+// ReaderMarkPink says "Highlight in pink"
+// in the language the app shows.
+func ReaderMarkPink() string { return In(i18n.Locale()).ReaderMarkPink() }
+
+// ReaderMarkPink says "Highlight in pink"
+// in the language of msgs.
+func (msgs Messages) ReaderMarkPink() string {
+	return Catalog.Format(msgs.locale, "readerMarkPink", nil)
+}
+
+// ReaderRemoveHighlight says "Remove highlight"
+// in the language the app shows.
+func ReaderRemoveHighlight() string { return In(i18n.Locale()).ReaderRemoveHighlight() }
+
+// ReaderRemoveHighlight says "Remove highlight"
+// in the language of msgs.
+func (msgs Messages) ReaderRemoveHighlight() string {
+	return Catalog.Format(msgs.locale, "readerRemoveHighlight", nil)
+}
+
 // WidgetsRemoveTag says "Remove {label}"
 // in the language the app shows.
 func WidgetsRemoveTag(label string) string { return In(i18n.Locale()).WidgetsRemoveTag(label) }

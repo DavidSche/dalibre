@@ -73,13 +73,28 @@ type Reading struct {
 // Progress is how far the user read a book: chapter is 0-based, Percent
 // how far into that chapter. Chapters is how many chapters the book had
 // when it was recorded, so a new layout keeps the place.
-// Bookmarks are chapter indexes the user marked.
+// Highlights are the passages the reader marked, by chapter and block,
+// so the page can paint them as it lays the book out again.
 type Progress struct {
-	Chapter   int       `json:"chapter"`
-	Percent   float64   `json:"percent,omitempty"`
-	Chapters  int       `json:"chapters,omitempty"`
-	Bookmarks []int     `json:"bookmarks,omitempty"`
-	Updated   time.Time `json:"updated,omitzero"`
+	Chapter    int         `json:"chapter"`
+	Percent    float64     `json:"percent,omitempty"`
+	Chapters   int         `json:"chapters,omitempty"`
+	Bookmarks  []int       `json:"bookmarks,omitempty"`
+	Highlights []Highlight `json:"highlights,omitempty"`
+	Updated    time.Time   `json:"updated,omitzero"`
+}
+
+// Highlight is a marked passage: the runes Start to End of a chapter's
+// block, in the color the reader chose. Text is what those runes said when
+// the passage was marked, so a book laid out anew doesn't paint the mark
+// over other words.
+type Highlight struct {
+	Chapter int    `json:"chapter"`
+	Block   int    `json:"block"`
+	Start   int    `json:"start"`
+	End     int    `json:"end"`
+	Color   string `json:"color"`
+	Text    string `json:"text,omitempty"`
 }
 
 // Defaults for the reader's typography, when the user hasn't chosen.

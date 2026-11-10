@@ -2,6 +2,7 @@ package app
 
 import (
 	"math"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"dalibre/internal/app/icons"
 	"dalibre/internal/app/theme"
 	"dalibre/internal/reader"
+	"dalibre/internal/settings"
 )
 
 // The reader page draws a book over the whole window: a warm page, a wide
@@ -23,6 +25,9 @@ const (
 	readerFooterH = 48
 	readerDrawerW = 340
 	readerSheetW  = 440
+
+	readerMenuW = 236
+	readerMenuH = 44
 )
 
 func (a *App) readerView(c *ui.Context) {
@@ -55,6 +60,7 @@ func (a *App) readerView(c *ui.Context) {
 				a.readerContents(c, page)
 			}
 		})
+		a.readerSelectionMenu(c, page)
 	})
 	if a.rd.typeSheet {
 		a.readerTypeSheet(c, page)
@@ -165,23 +171,128 @@ func (a *App) readerBody(c *ui.Context, p theme.Reading) {
 			AlignSelf(ui.Center).AlignItems(ui.Stretch).Selectable().
 			Padding(theme.Space48, 0, theme.Space64, 0)
 		col.Children(func() {
-			ch := a.rd.chapters[a.rd.chapter]
-			title := a.readerTitle(a.rd.chapter)
+			r := &a.rd
+			r.blockRefs = make(map[uint64]readerBlockRef)
+			r.blockElems = make(map[int]ui.Element)
+			ch := r.chapters[r.chapter]
+			title := a.readerTitle(r.chapter)
 			if title != "" && !ch.Continued {
-				ui.Text(c, title).Font(theme.FontSerif).FontSize(float32(a.rd.size+6)).FontWeight(600).
+				ui.Text(c, title).Font(theme.FontSerif).FontSize(float32(r.size+6)).FontWeight(600).
 					LineHeight(1.4).TextAlign(ui.Center).Padding(0, theme.Space24, theme.Space8, theme.Space24)
 			}
 			labels := readerNoteLabels(ch.Notes)
-			for _, b := range ch.Blocks {
-				a.readerBlock(c, p, b, labels)
+			marks := readerHighlightsByBlock(r.highlights, r.chapter)
+			for i, b := range ch.Blocks {
+				el, prefix := a.readerBlock(c, p, b, labels, marks[i])
+				if id := el.ID(); id != 0 {
+					r.blockRefs[id] = readerBlockRef{index: i, prefix: prefix}
+					r.blockElems[i] = el
+				}
 			}
 			a.readerNotes(c, p, ch.Notes)
 			a.readerEnd(c, p)
 		})
+		a.readerTrackSelection(c, col)
 	})
 }
 
-func (a *App) readerBlock(c *ui.Context, p theme.Reading, b reader.Block, labels map[string]bool) {
+// readerHighlightsByBlock groups a chapter's marks by block, in the order
+// the page paints them.
+func readerHighlightsByBlock(highlights []settings.Highlight, chapter int) map[int][]settings.Highlight {
+	var out map[int][]settings.Highlight
+	for _, h := range highlights {
+		if h.Chapter != chapter {
+			continue
+		}
+		if out == nil {
+			out = make(map[int][]settings.Highlight)
+		}
+		out[h.Block] = append(out[h.Block], h)
+	}
+	return out
+}
+
+// readerSelectionMenu is the card that opens over a selection: Copy, the
+// four colors a passage may take, and the way to take a mark away. It
+// floats above the page's own column, so the text doesn't move for it.
+func (a *App) readerSelectionMenu(c *ui.Context, p theme.Reading) {
+	if !a.readerSelectionShown() {
+		a.rd.menuOn = false
+		return
+	}
+	sw, sh := c.Size()
+	x := a.rd.sel.x - readerMenuW/2
+	if sw > readerMenuW+24 {
+		x = min(max(x, 12), sw-readerMenuW-12)
+	} else {
+		x = 12
+	}
+	y := a.rd.sel.y - readerMenuH - 12
+	if y < readerHeaderH+8 {
+		y = a.rd.sel.y + 18
+	}
+	if sh > readerHeaderH+readerFooterH+readerMenuH+16 {
+		y = min(max(y, readerHeaderH+8), sh-readerFooterH-readerMenuH-8)
+	} else {
+		y = readerHeaderH + 8
+	}
+	a.rd.menuX, a.rd.menuY, a.rd.menuOn = x, y, true
+	menu := ui.Row(c).Absolute().Left(x).Top(y).Width(readerMenuW).Height(readerMenuH).
+		Justify(ui.Center).AlignItems(ui.Center).Padding(5).Gap(2).Background(p.Chrome).
+		Border(1, p.Border).Radius(theme.RadiusFull).Shadow(0, 5, 22, 0, p.Shadow)
+	menu.Children(func() {
+		a.readerMenuButton(c, p, icons.Copy, locales.ReaderCopy(), func() { a.readerCopySelection(c) })
+		ui.Box(c).Width(1).Height(18).Background(p.Border).Margin(0, 3)
+		for _, color := range theme.ReadingHighlights {
+			color := color
+			b := ui.ButtonBase(c).Size(28, 28).Radius(theme.RadiusFull).Center().
+				Label(readerMarkLabel(color)).Tooltip(readerMarkLabel(color))
+			if b.Hovered() {
+				b.Background(p.Subtle)
+			}
+			b.OnClick(func() { a.readerMarkSelection(color) })
+			b.Children(func() {
+				ui.Box(c).Size(14, 14).Radius(theme.RadiusFull).
+					Background(theme.ReadingHighlight(color, p.Dark))
+			})
+		}
+		if a.readerSelectionMarked() {
+			a.readerMenuButton(c, p, icons.Eraser, locales.ReaderRemoveHighlight(), a.readerRemoveSelectionMarks)
+		}
+	})
+	if menu.PressedOutside() {
+		a.rd.selHidden = true
+	}
+}
+
+// readerMenuButton is one quiet control in the selection card.
+func (a *App) readerMenuButton(c *ui.Context, p theme.Reading, icon *ui.SVG, label string, onClick func()) {
+	b := ui.ButtonBase(c).Size(30, 30).Radius(theme.RadiusFull).Center().Label(label).Tooltip(label)
+	if b.Hovered() {
+		b.Background(p.Subtle)
+	}
+	b.OnClick(onClick).TextColor(p.Text).Children(func() { ui.Icon(c, icon).FontSize(16) })
+}
+
+// readerMarkLabel names a mark's color for the menu and screen readers.
+func readerMarkLabel(color string) string {
+	switch color {
+	case "yellow":
+		return locales.ReaderMarkYellow()
+	case "green":
+		return locales.ReaderMarkGreen()
+	case "blue":
+		return locales.ReaderMarkBlue()
+	case "pink":
+		return locales.ReaderMarkPink()
+	}
+	return locales.ReaderRemoveHighlight()
+}
+
+// readerBlock sets one block of the chapter. It returns the element that
+// holds the block's text, which a selection names, and the runes the page
+// put before that text for indentation.
+func (a *App) readerBlock(c *ui.Context, p theme.Reading, b reader.Block, labels map[string]bool, marks []settings.Highlight) (ui.Element, int) {
 	size := float32(a.rd.size)
 	switch b.Kind {
 	case reader.Heading:
@@ -195,24 +306,27 @@ func (a *App) readerBlock(c *ui.Context, p theme.Reading, b reader.Block, labels
 			fs = size + 4
 			pad = [2]float32{theme.Space32, theme.Space12}
 		}
-		if spans, ok := readerSpans(b.Text, b.Runs, nil, fs, p.Accent); ok {
-			ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(fs).FontWeight(600).LineHeight(1.4).
+		if spans, ok := readerSpans(b.Text, b.Runs, nil, marks, 0, fs, p.Accent, p.Dark); ok {
+			el := ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(fs).FontWeight(600).LineHeight(1.4).
 				Padding(pad[0], theme.Space16, pad[1], theme.Space16)
-		} else {
-			ui.Text(c, b.Text).Font(theme.FontSerif).FontSize(fs).FontWeight(600).LineHeight(1.4).
-				Padding(pad[0], theme.Space16, pad[1], theme.Space16)
+			return el, 0
 		}
+		el := ui.Text(c, b.Text).Font(theme.FontSerif).FontSize(fs).FontWeight(600).LineHeight(1.4).
+			Padding(pad[0], theme.Space16, pad[1], theme.Space16)
+		return el, 0
 	case reader.Quote:
+		var el ui.Element
 		ui.Row(c).Padding(theme.Space8, 0, theme.Space16, 0).BorderWidth(0, 0, 0, 2).BorderColor(p.Accent).
 			Children(func() {
-				if spans, ok := readerSpans(b.Text, b.Runs, labels, size, p.Accent); ok {
-					ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(size).Italic().
+				if spans, ok := readerSpans(b.Text, b.Runs, labels, marks, 0, size, p.Accent, p.Dark); ok {
+					el = ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(size).Italic().
 						LineHeight(float32(a.rd.lineHeight)).TextColor(p.Secondary).Padding(0, theme.Space16)
 					return
 				}
-				ui.Text(c, b.Text).Font(theme.FontSerif).FontSize(size).Italic().LineHeight(float32(a.rd.lineHeight)).
+				el = ui.Text(c, b.Text).Font(theme.FontSerif).FontSize(size).Italic().LineHeight(float32(a.rd.lineHeight)).
 					TextColor(p.Secondary).Padding(0, theme.Space16)
 			})
+		return el, 0
 	case reader.Divider:
 		ui.Row(c).Justify(ui.Center).Padding(theme.Space24, 0).Children(func() {
 			ui.Box(c).Width(64).Height(1).Background(p.Border)
@@ -224,21 +338,24 @@ func (a *App) readerBlock(c *ui.Context, p theme.Reading, b reader.Block, labels
 	case reader.TableBlock:
 		a.readerTable(c, p, b.Table)
 	default:
-		text, runs := b.Text, b.Runs
+		text, runs, prefix := b.Text, b.Runs, 0
 		if a.rd.indent {
 			text = "　　" + text
+			prefix = 2
 			if len(runs) > 0 {
 				runs = append([]reader.Run{{Text: "　　"}}, runs...)
 			}
 		}
-		if spans, ok := readerSpans(text, runs, labels, size, p.Accent); ok {
-			ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(size).LineHeight(float32(a.rd.lineHeight)).
+		if spans, ok := readerSpans(text, runs, labels, marks, prefix, size, p.Accent, p.Dark); ok {
+			el := ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(size).LineHeight(float32(a.rd.lineHeight)).
 				Padding(0, theme.Space16, theme.Space12, theme.Space16)
-			return
+			return el, prefix
 		}
-		ui.Text(c, text).Font(theme.FontSerif).FontSize(size).LineHeight(float32(a.rd.lineHeight)).
+		el := ui.Text(c, text).Font(theme.FontSerif).FontSize(size).LineHeight(float32(a.rd.lineHeight)).
 			Padding(0, theme.Space16, theme.Space12, theme.Space16)
+		return el, prefix
 	}
+	return ui.Element{}, 0
 }
 
 // readerCode sets source code in a monospaced block: the lines and the
@@ -275,9 +392,10 @@ func readerNoteLabels(notes []reader.Note) map[string]bool {
 }
 
 // readerSpans splits a paragraph into the page's spans: its emphasis,
-// run by run, and its [label] note markers, which read as an aside in the
-// accent. Text with neither is left to a plain Text, which is faster.
-func readerSpans(text string, runs []reader.Run, labels map[string]bool, size float32, accent ui.Color) ([]ui.Span, bool) {
+// run by run, its [label] note markers, which read as an aside in the
+// accent, and the washes behind the passages the reader marked. Text with
+// none of them is left to a plain Text, which is faster.
+func readerSpans(text string, runs []reader.Run, labels map[string]bool, marks []settings.Highlight, prefix int, size float32, accent ui.Color, dark bool) ([]ui.Span, bool) {
 	styled := false
 	for _, r := range runs {
 		if r.Bold || r.Italic {
@@ -285,14 +403,23 @@ func readerSpans(text string, runs []reader.Run, labels map[string]bool, size fl
 			break
 		}
 	}
-	if !styled || reader.RunsText(runs) != text {
-		return readerNoteSpans(text, labels, size, accent)
-	}
 	var spans []ui.Span
-	for _, r := range runs {
-		spans = append(spans, readerRunSpans(r.Text, r.Bold, r.Italic, labels, size, accent)...)
+	found := false
+	if styled && reader.RunsText(runs) == text {
+		for _, r := range runs {
+			spans = append(spans, readerRunSpans(r.Text, r.Bold, r.Italic, labels, size, accent)...)
+		}
+		found = len(spans) > 0
+	} else {
+		spans, found = readerNoteSpans(text, labels, size, accent)
 	}
-	return spans, len(spans) > 0
+	if len(marks) == 0 {
+		return spans, found
+	}
+	if len(spans) == 0 {
+		spans = []ui.Span{{Text: text}}
+	}
+	return readerHighlightSpans(spans, marks, prefix, dark), true
 }
 
 // readerRunSpans is one run's text as spans, with its emphasis and any
@@ -382,6 +509,71 @@ func readerNoteSpans(text string, labels map[string]bool, size float32, accent u
 		spans = append(spans, ui.Span{Text: rest})
 	}
 	return spans, true
+}
+
+// readerHighlightSpans cuts spans at the edges of the chapter's marks and
+// gives each marked piece the wash of its color. Marks are in the block
+// text's runes; prefix moves them over the page's indentation.
+func readerHighlightSpans(spans []ui.Span, marks []settings.Highlight, prefix int, dark bool) []ui.Span {
+	type spanRange struct {
+		start, end int
+		color      string
+	}
+	ranges := make([]spanRange, 0, len(marks))
+	for _, h := range marks {
+		start, end := h.Start+prefix, h.End+prefix
+		if start < 0 {
+			start = 0
+		}
+		if end <= start || !theme.IsReadingHighlight(h.Color) {
+			continue
+		}
+		ranges = append(ranges, spanRange{start: start, end: end, color: h.Color})
+	}
+	if len(ranges) == 0 {
+		return spans
+	}
+	slices.SortFunc(ranges, func(a, b spanRange) int { return a.start - b.start })
+	at := func(pos int) (string, int) {
+		for _, r := range ranges {
+			if r.end <= pos {
+				continue
+			}
+			if r.start > pos {
+				return "", r.start
+			}
+			return r.color, r.end
+		}
+		return "", -1
+	}
+	out := make([]ui.Span, 0, len(spans)+len(ranges))
+	pos := 0
+	for _, sp := range spans {
+		runes := []rune(sp.Text)
+		for i := 0; i < len(runes); {
+			color, next := at(pos + i)
+			if next < 0 {
+				next = pos + len(runes)
+			}
+			next -= pos
+			if next > len(runes) {
+				next = len(runes)
+			}
+			if next <= i {
+				next = i + 1
+			}
+			piece := sp
+			piece.Text = string(runes[i:next])
+			if color != "" {
+				piece.Background = theme.ReadingHighlight(color, dark)
+				piece.Radius = 3
+			}
+			out = append(out, piece)
+			i = next
+		}
+		pos += len(runes)
+	}
+	return out
 }
 
 // readerTable sets a table at the measure: a caption over it, a quiet
