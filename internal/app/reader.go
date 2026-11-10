@@ -69,6 +69,7 @@ type readerState struct {
 	blockElems map[int]ui.Element
 	sel        readerSelection
 	selHidden  bool
+	selDrop    bool
 	menuX      float32
 	menuY      float32
 	menuOn     bool
@@ -615,13 +616,19 @@ const readerSelectionDelay = 140 * time.Millisecond
 // elements are known.
 func (a *App) readerTrackSelection(c *ui.Context, col ui.Element) {
 	r := &a.rd
+	if r.selDrop {
+		r.sel = readerSelection{}
+		r.selHidden = false
+		r.selDrop = false
+		return
+	}
 	x, y, over := col.PointerPosition()
 	parts := col.SelectedTexts()
 	if len(parts) == 0 {
 		// Pressing the menu takes the selection away before the button's
 		// click arrives; keep the card until the press outside it says
 		// the reader is done with the passage.
-		if r.sel.text == "" || r.selHidden {
+		if r.sel.text == "" || r.selHidden || r.toc || r.typeSheet {
 			r.sel = readerSelection{}
 			r.selHidden = false
 		}
@@ -728,6 +735,18 @@ func (a *App) readerTrackSelection(c *ui.Context, col ui.Element) {
 		sel.ready = true
 	}
 	r.sel = sel
+}
+
+// readerDropSelection puts the page's selection away for good: opening
+// the contents or the type sheet, or pressing Escape, is the reader
+// leaving the passage, not stepping away from it. The next frame rebuilds
+// the text without a selection scope, which also clears the toolkit's
+// selection; selDrop keeps the card from taking the stale one back.
+func (a *App) readerDropSelection() {
+	a.rd.sel = readerSelection{}
+	a.rd.selHidden = false
+	a.rd.menuOn = false
+	a.rd.selDrop = true
 }
 
 // readerSelectionShown reports whether the menu should open over the

@@ -118,10 +118,14 @@ func (a *App) readerHeader(c *ui.Context, p theme.Reading) {
 		marked := a.readerBookmarked(a.rd.chapter)
 		a.readerIconButton(c, p, icons.Bookmark, bookmarkLabel(marked), marked, a.readerToggleBookmark)
 		a.readerIconButton(c, p, icons.List, locales.ReaderContents(), a.rd.toc, func() {
+			a.readerDropSelection()
 			a.rd.toc = true
 			a.rd.tocTab = "contents"
 		})
 		a.readerIconButton(c, p, icons.Type, locales.ReaderTextSize(), a.rd.typeSheet, func() {
+			if !a.rd.typeSheet {
+				a.readerDropSelection()
+			}
 			a.rd.typeSheet = !a.rd.typeSheet
 		})
 	})
@@ -168,8 +172,14 @@ func (a *App) readerRestorePlace() {
 func (a *App) readerBody(c *ui.Context, p theme.Reading) {
 	ui.Scroll(c).Grow(1).MinHeight(0).TrackScroll(&a.rd.scroll).Scrollbars(false).Children(func() {
 		col := ui.Column(c).WidthPercent(86).MaxWidth(theme.ReaderMeasure).MinWidth(0).
-			AlignSelf(ui.Center).AlignItems(ui.Stretch).Selectable().
-			Padding(theme.Space48, 0, theme.Space64, 0)
+			AlignSelf(ui.Center).AlignItems(ui.Stretch)
+		// A drawer or the type sheet takes the reader elsewhere; letting
+		// the page keep its selection would bring the card back when the
+		// drawer closes, over a passage the reader has left behind.
+		if !a.rd.toc && !a.rd.typeSheet && !a.rd.selDrop {
+			col.Selectable()
+		}
+		col.Padding(theme.Space48, 0, theme.Space64, 0)
 		col.Children(func() {
 			r := &a.rd
 			r.blockRefs = make(map[uint64]readerBlockRef)
@@ -1048,6 +1058,8 @@ func (a *App) readerShortcuts(c *ui.Context) {
 			a.rd.typeSheet = false
 		case a.rd.toc:
 			a.rd.toc = false
+		case a.readerSelectionShown():
+			a.readerDropSelection()
 		default:
 			a.readerClose()
 		}
@@ -1064,6 +1076,7 @@ func (a *App) readerShortcuts(c *ui.Context) {
 			a.rd.toc = false
 			return
 		}
+		a.readerDropSelection()
 		a.rd.toc = true
 		a.rd.tocTab = "contents"
 	})

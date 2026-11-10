@@ -238,6 +238,73 @@ func TestReaderKeepsMarks(t *testing.T) {
 	}
 }
 
+func TestReaderDropsSelectionWhenContentsOpens(t *testing.T) {
+	a := newTestApp(t)
+	a.builtins = true
+	a.pluginTransport = fakeWeb{http.NotFoundHandler()}
+	a.loadPlugins()
+	book := a.bookByTitle("Dune")
+	d, _ := a.lib.Details(book)
+	if err := os.WriteFile(d.Files[0].Path, testEPUB(t), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	a.openReader(book, "EPUB")
+	if a.rd.err != nil {
+		t.Fatal(a.rd.err)
+	}
+	tt := ui.NewTester(a.View, 1440, 900)
+	tt.Frame()
+	line := "The tide came in through the lower doors."
+	r, ok := tt.Find(line)
+	if !ok {
+		t.Fatalf("no line to select: %q", tt.Texts())
+	}
+	tt.Press(r.X+8, r.Y+r.H/2)
+	tt.Frame()
+	tt.Move(r.X+160, r.Y+r.H/2)
+	tt.Frame()
+	tt.Release(r.X+160, r.Y+r.H/2)
+	tt.Frame()
+	a.rd.sel.since = time.Now().Add(-time.Second)
+	tt.Frame()
+	if !a.readerSelectionShown() {
+		t.Fatal("no menu before the contents opened")
+	}
+
+	if err := tt.Click("Contents"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if !a.rd.toc {
+		t.Fatal("contents did not open")
+	}
+	a.rd.toc = false
+	tt.Frame()
+	if a.rd.sel.text != "" || a.rd.sel.ready {
+		t.Fatalf("selection survived the contents: %+v", a.rd.sel)
+	}
+	if a.readerSelectionShown() {
+		t.Fatal("menu came back after the contents closed")
+	}
+
+	// A fresh selection still opens the menu.
+	if !tt.HasText(line) {
+		t.Fatalf("line gone after the contents: %q", tt.Texts())
+	}
+	r, _ = tt.Find(line)
+	tt.Press(r.X+8, r.Y+r.H/2)
+	tt.Frame()
+	tt.Move(r.X+160, r.Y+r.H/2)
+	tt.Frame()
+	tt.Release(r.X+160, r.Y+r.H/2)
+	tt.Frame()
+	a.rd.sel.since = time.Now().Add(-time.Second)
+	tt.Frame()
+	if !a.readerSelectionShown() {
+		t.Fatal("menu did not open for a fresh selection")
+	}
+}
+
 func TestReaderSelectsAndCopies(t *testing.T) {
 	a := newTestApp(t)
 	a.builtins = true
