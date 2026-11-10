@@ -207,14 +207,22 @@ A `<pre>` is a `code` block. Its text keeps its line breaks and the
 spaces that indent it, and the page sets it in a monospaced block that
 scrolls sideways; pass it through rather than treating it as prose.
 
+A book's `<strong>`/`<b>` and `<em>`/`<i>` become the block's `runs`: the
+text cut into stretches that are bold or italic. The runs' texts join to
+the block's `text` exactly. A plugin may rewrite the text, but then it
+must rewrite the runs to match; the page keeps the text and drops
+emphasis that no longer matches. Runs belong to headings, paragraphs
+and quotes; code and tables carry none.
+
 ```ts
 Document: { title?: string, language?: string, chapters: Chapter[], truncated?: boolean }
 Chapter:  { title?: string, depth?: number, blocks: Block[], continued?: boolean, notes?: Note[] }
 Block:    { kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table" | "code",
-            text?: string, level?: number,
+            text?: string, level?: number, runs?: Run[],
             src?: string, alt?: string, caption?: string,
             table?: { caption?: string, rows: { cells: { text: string, header?: boolean,
                      colspan?: number, rowspan?: number }[] }[] } }
+Run:      { text: string, bold?: boolean, italic?: boolean }
 Note:     { id?: string, label?: string, text: string }
 ```
 
@@ -257,11 +265,12 @@ contents. The host sets `truncated` when it had to cut the text, so the
 page says so even if the plugin doesn't.
 
 What the plugin returns is checked: at most 2,000 chapters, 60,000 blocks
-and 20,000 characters a block, and 500 notes a chapter. Unknown block
-kinds, empty paragraphs, images without a `src`, tables without text, and
-empty chapters are dropped with a warning (logged for the plugin's
-author); a book with no chapters is an error, since there is nothing to
-show.
+and 20,000 characters a block, 10,000 runs a block, and 500 notes a
+chapter. Unknown block kinds, empty paragraphs, images without a `src`,
+tables without text, and empty chapters are dropped with a warning
+(logged for the plugin's author); a book with no chapters is an error,
+since there is nothing to show. Runs that no longer spell the text are
+dropped the same way.
 
 ### The reading page
 

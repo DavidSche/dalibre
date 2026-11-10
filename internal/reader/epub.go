@@ -791,7 +791,7 @@ func (b *blockReader) noteRef(n *html.Node) bool {
 	if !b.addNote(key, note) {
 		return false
 	}
-	b.buf.WriteString("[" + note.Label + "]")
+	b.write("[" + note.Label + "]")
 	return true
 }
 
@@ -1101,8 +1101,9 @@ func normalizeBreaks(s string, max int) string {
 type blockReader struct {
 	blocks []Block
 	buf    strings.Builder
+	runs   []Run
+	style  textStyle
 	quote  int
-	pre    int
 
 	// base is the content document's name in the zip, which the
 	// pictures' hrefs are relative to; epub reads them, into images.
@@ -1127,17 +1128,48 @@ type blockReader struct {
 }
 
 func (b *blockReader) flush() {
-	text := strings.TrimSpace(b.buf.String())
+	raw, runs := b.buf.String(), b.runs
 	b.buf.Reset()
+	b.runs = nil
+	if strings.TrimSpace(raw) == "" {
+		return
+	}
+	runs = collapseRuns(runs, false)
+	text := RunsText(runs)
 	if text == "" {
 		return
 	}
-	text = collapse(text, b.pre > 0)
+	runs = CleanRuns(runs, text)
 	if b.quote > 0 {
-		b.blocks = append(b.blocks, Block{Kind: Quote, Text: text})
+		b.blocks = append(b.blocks, Block{Kind: Quote, Text: text, Runs: runs})
 		return
 	}
-	b.blocks = append(b.blocks, Block{Kind: Paragraph, Text: text})
+	b.blocks = append(b.blocks, Block{Kind: Paragraph, Text: text, Runs: runs})
+}
+
+// textStyle is the emphasis over the text being read: a strong or em
+// element inside a paragraph turns it on for what it holds.
+type textStyle struct {
+	bold, italic bool
+}
+
+// write adds text to the block being read, in the emphasis over it.
+func (b *blockReader) write(s string) {
+	if s == "" {
+		return
+	}
+	b.buf.WriteString(s)
+	b.runs = appendRun(b.runs, Run{Text: s, Bold: b.style.bold, Italic: b.style.italic})
+}
+
+// walkStyled reads n's children with bold and italic over them.
+func (b *blockReader) walkStyled(n *html.Node, bold, italic bool) {
+	prev := b.style
+	b.style = textStyle{bold: bold, italic: italic}
+	for c := n.FirstChild; c != nil; c = c.NextSibling {
+		b.walk(c)
+	}
+	b.style = prev
 }
 
 func (b *blockReader) walk(n *html.Node) {
@@ -1163,11 +1195,18 @@ func (b *blockReader) walk(n *html.Node) {
 			return
 		case "title", "meta", "link":
 			return
+		case "strong", "b":
+			b.walkStyled(n, true, b.style.italic)
+			return
+		case "em", "i":
+			b.walkStyled(n, b.style.bold, true)
+			return
 		}
 		if lvl := headingLevel(n.Data); lvl > 0 {
 			b.flush()
-			if text := collapse(nodeText(n), false); text != "" {
-				b.blocks = append(b.blocks, Block{Kind: Heading, Text: text, Level: lvl})
+			runs := collapseRuns(inlineRuns(n, b.style), false)
+			if text := RunsText(runs); text != "" {
+				b.blocks = append(b.blocks, Block{Kind: Heading, Text: text, Level: lvl, Runs: CleanRuns(runs, text)})
 			}
 			return
 		}
@@ -1205,7 +1244,7 @@ func (b *blockReader) walk(n *html.Node) {
 			b.code(n)
 			return
 		case "br":
-			b.buf.WriteByte('\n')
+			b.write("\n")
 			return
 		case "hr":
 			b.flush()
@@ -1217,12 +1256,55 @@ func (b *blockReader) walk(n *html.Node) {
 		}
 	}
 	if n.Type == html.TextNode {
-		b.buf.WriteString(n.Data)
+		b.write(n.Data)
 		return
 	}
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
 		b.walk(c)
 	}
+}
+
+// inlineRuns reads n's text as runs, with the emphasis of the elements
+// around it, for a heading: its own text and no block structure.
+func inlineRuns(root *html.Node, style textStyle) []Run {
+	var out []Run
+	var walk func(*html.Node, textStyle)
+	walk = func(n *html.Node, st textStyle) {
+		switch n.Type {
+		case html.TextNode:
+			out = appendRun(out, Run{Text: n.Data, Bold: st.bold, Italic: st.italic})
+			return
+		case html.ElementNode:
+			switch n.Data {
+			case "script", "style", "head", "nav", "noscript", "template":
+				return
+			case "br":
+				out = appendRun(out, Run{Text: "\n", Bold: st.bold, Italic: st.italic})
+				return
+			case "strong", "b":
+				st.bold = true
+			case "em", "i":
+				st.italic = true
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c, st)
+		}
+	}
+	walk(root, style)
+	return out
+}
+
+// appendRun adds a run, joining it to the last when both have one style.
+func appendRun(out []Run, r Run) []Run {
+	if r.Text == "" {
+		return out
+	}
+	if n := len(out); n > 0 && out[n-1].Bold == r.Bold && out[n-1].Italic == r.Italic {
+		out[n-1].Text += r.Text
+		return out
+	}
+	return append(out, r)
 }
 
 // code reads a preformatted block as one block. A converter often sets
@@ -1571,11 +1653,50 @@ func nodeText(n *html.Node) string {
 	return b.String()
 }
 
+// textMarks are the spaces and marks converters leave: a no-break space
+// reads as a space, and the zero-width marks go.
+var textMarks = strings.NewReplacer("\u00a0", " ", "\u200b", "", "\ufeff", "", "\u2028", "\n", "\u2029", "\n")
+
+// collapseRuns collapses whitespace and drops the marks in each run, as
+// collapse does for plain text, keeping each run's emphasis.
+func collapseRuns(runs []Run, lines bool) []Run {
+	var out []Run
+	space := false
+	for _, r := range runs {
+		var b strings.Builder
+		for _, ch := range textMarks.Replace(r.Text) {
+			if ch == '\n' && lines {
+				b.WriteByte('\n')
+				space = false
+				continue
+			}
+			if unicode.IsSpace(ch) {
+				space = true
+				continue
+			}
+			if space {
+				if b.Len() > 0 {
+					b.WriteByte(' ')
+				} else if len(out) > 0 {
+					// The space is between runs, so it keeps the style of
+					// the run it follows: emphasis should cover words, not
+					// the gap after them.
+					out[len(out)-1].Text += " "
+				}
+			}
+			space = false
+			b.WriteRune(ch)
+		}
+		out = appendRun(out, Run{Text: b.String(), Bold: r.Bold, Italic: r.Italic})
+	}
+	return out
+}
+
 // collapse makes text read as one paragraph: whitespace runs become one
 // space, and the zero-width marks some converters leave go. With lines,
 // line breaks stay.
 func collapse(s string, lines bool) string {
-	s = strings.NewReplacer("\u00a0", " ", "\u200b", "", "\ufeff", "", "\u2028", "\n", "\u2029", "\n").Replace(s)
+	s = textMarks.Replace(s)
 	var b strings.Builder
 	b.Grow(len(s))
 	space := false

@@ -19,6 +19,9 @@ const (
 	MaxReadingBlocks = 60_000
 	// MaxReadingBlockRunes bounds one paragraph; longer ones are cut.
 	MaxReadingBlockRunes = 20_000
+	// MaxReadingRuns bounds the styled stretches in one block; a block
+	// longer than this has lost its emphasis, not its text.
+	MaxReadingRuns = 10_000
 	// MaxReadingTitleRunes bounds a chapter's or the book's title.
 	MaxReadingTitleRunes = 300
 	// MaxReadingNotes bounds a chapter's notes, and MaxReadingNoteRunes
@@ -138,6 +141,29 @@ func cleanCodeText(s string) string {
 	return strings.Join(lines, "\n")
 }
 
+// fitReadingRuns checks that runs spell text and keeps their emphasis.
+// A plugin that changed the text without changing the runs has left
+// emphasis pointing at the wrong words, so the text wins and the runs go.
+func fitReadingRuns(runs []reader.Run, text string) ([]reader.Run, string) {
+	if len(runs) == 0 {
+		return nil, ""
+	}
+	if len(runs) > MaxReadingRuns {
+		return nil, fmt.Sprintf("more than %d runs; emphasis dropped", MaxReadingRuns)
+	}
+	total := 0
+	for _, r := range runs {
+		total += len(r.Text)
+		if total > 4*MaxReadingBlockRunes {
+			return nil, "runs are longer than the text; emphasis dropped"
+		}
+	}
+	if reader.RunsText(runs) != text {
+		return nil, "runs don’t spell the text; emphasis dropped"
+	}
+	return reader.CleanRuns(runs, text), ""
+}
+
 // parseReading reads what open returned. Unknown fields are ignored: a
 // reading may carry more than this Dalibre shows.
 func parseReading(raw json.RawMessage) (*Reading, error) {
@@ -168,7 +194,7 @@ func parseReading(raw json.RawMessage) (*Reading, error) {
 			switch b.Kind {
 			case reader.Code:
 				b.Text = cleanCodeText(b.Text)
-				b.Level, b.Src, b.Alt, b.Caption = 0, "", "", ""
+				b.Level, b.Src, b.Alt, b.Caption, b.Runs = 0, "", "", "", nil
 				b.Table = nil
 				if b.Text == "" {
 					warnings = append(warnings, fmt.Sprintf("%s.blocks[%d]: empty code; dropped", at, j))
@@ -187,6 +213,12 @@ func parseReading(raw json.RawMessage) (*Reading, error) {
 					warnings = append(warnings, fmt.Sprintf("%s.blocks[%d]: %d characters; cut to %d", at, j, n, MaxReadingBlockRunes))
 					b.Text = truncateRunes(b.Text, MaxReadingBlockRunes)
 				}
+				if runs, problem := fitReadingRuns(b.Runs, b.Text); problem != "" {
+					warnings = append(warnings, fmt.Sprintf("%s.blocks[%d]: %s", at, j, problem))
+					b.Runs = nil
+				} else {
+					b.Runs = runs
+				}
 			case reader.Heading:
 				if b.Text == "" {
 					warnings = append(warnings, fmt.Sprintf("%s.blocks[%d]: empty heading; dropped", at, j))
@@ -196,10 +228,16 @@ func parseReading(raw json.RawMessage) (*Reading, error) {
 					b.Level = 2
 				}
 				b.Text = truncateRunes(b.Text, MaxReadingTitleRunes)
+				if runs, problem := fitReadingRuns(b.Runs, b.Text); problem != "" {
+					warnings = append(warnings, fmt.Sprintf("%s.blocks[%d]: %s", at, j, problem))
+					b.Runs = nil
+				} else {
+					b.Runs = runs
+				}
 			case reader.Divider:
-				b.Text = ""
+				b.Text, b.Runs = "", nil
 			case reader.Image:
-				b.Text, b.Level = "", 0
+				b.Text, b.Level, b.Runs = "", 0, nil
 				b.Src = strings.TrimSpace(b.Src)
 				b.Alt = truncateRunes(strings.TrimSpace(b.Alt), MaxReadingTitleRunes)
 				b.Caption = truncateRunes(strings.TrimSpace(b.Caption), 600)
@@ -212,7 +250,7 @@ func parseReading(raw json.RawMessage) (*Reading, error) {
 					continue
 				}
 			case reader.TableBlock:
-				b.Text, b.Level, b.Src, b.Alt, b.Caption = "", 0, "", "", ""
+				b.Text, b.Level, b.Src, b.Alt, b.Caption, b.Runs = "", 0, "", "", "", nil
 				b.Table = parseTable(b.Table)
 				if b.Table == nil {
 					warnings = append(warnings, fmt.Sprintf("%s.blocks[%d]: table with no text; dropped", at, j))

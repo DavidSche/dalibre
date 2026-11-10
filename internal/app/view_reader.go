@@ -195,12 +195,17 @@ func (a *App) readerBlock(c *ui.Context, p theme.Reading, b reader.Block, labels
 			fs = size + 4
 			pad = [2]float32{theme.Space32, theme.Space12}
 		}
-		ui.Text(c, b.Text).Font(theme.FontSerif).FontSize(fs).FontWeight(600).LineHeight(1.4).
-			Padding(pad[0], theme.Space16, pad[1], theme.Space16)
+		if spans, ok := readerSpans(b.Text, b.Runs, nil, fs, p.Accent); ok {
+			ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(fs).FontWeight(600).LineHeight(1.4).
+				Padding(pad[0], theme.Space16, pad[1], theme.Space16)
+		} else {
+			ui.Text(c, b.Text).Font(theme.FontSerif).FontSize(fs).FontWeight(600).LineHeight(1.4).
+				Padding(pad[0], theme.Space16, pad[1], theme.Space16)
+		}
 	case reader.Quote:
 		ui.Row(c).Padding(theme.Space8, 0, theme.Space16, 0).BorderWidth(0, 0, 0, 2).BorderColor(p.Accent).
 			Children(func() {
-				if spans, ok := readerSpans(b.Text, labels, size, p.Accent); ok {
+				if spans, ok := readerSpans(b.Text, b.Runs, labels, size, p.Accent); ok {
 					ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(size).Italic().
 						LineHeight(float32(a.rd.lineHeight)).TextColor(p.Secondary).Padding(0, theme.Space16)
 					return
@@ -219,11 +224,14 @@ func (a *App) readerBlock(c *ui.Context, p theme.Reading, b reader.Block, labels
 	case reader.TableBlock:
 		a.readerTable(c, p, b.Table)
 	default:
-		text := b.Text
+		text, runs := b.Text, b.Runs
 		if a.rd.indent {
 			text = "　　" + text
+			if len(runs) > 0 {
+				runs = append([]reader.Run{{Text: "　　"}}, runs...)
+			}
 		}
-		if spans, ok := readerSpans(text, labels, size, p.Accent); ok {
+		if spans, ok := readerSpans(text, runs, labels, size, p.Accent); ok {
 			ui.RichText(c, spans...).Font(theme.FontSerif).FontSize(size).LineHeight(float32(a.rd.lineHeight)).
 				Padding(0, theme.Space16, theme.Space12, theme.Space16)
 			return
@@ -266,10 +274,77 @@ func readerNoteLabels(notes []reader.Note) map[string]bool {
 	return labels
 }
 
-// readerSpans splits a paragraph at [label] markers, so a note's marker
-// reads as an aside in the accent, not as punctuation. Text without one
-// is left to a plain Text, which is faster to lay out.
-func readerSpans(text string, labels map[string]bool, size float32, accent ui.Color) ([]ui.Span, bool) {
+// readerSpans splits a paragraph into the page's spans: its emphasis,
+// run by run, and its [label] note markers, which read as an aside in the
+// accent. Text with neither is left to a plain Text, which is faster.
+func readerSpans(text string, runs []reader.Run, labels map[string]bool, size float32, accent ui.Color) ([]ui.Span, bool) {
+	styled := false
+	for _, r := range runs {
+		if r.Bold || r.Italic {
+			styled = true
+			break
+		}
+	}
+	if !styled || reader.RunsText(runs) != text {
+		return readerNoteSpans(text, labels, size, accent)
+	}
+	var spans []ui.Span
+	for _, r := range runs {
+		spans = append(spans, readerRunSpans(r.Text, r.Bold, r.Italic, labels, size, accent)...)
+	}
+	return spans, len(spans) > 0
+}
+
+// readerRunSpans is one run's text as spans, with its emphasis and any
+// note markers in it.
+func readerRunSpans(text string, bold, italic bool, labels map[string]bool, size float32, accent ui.Color) []ui.Span {
+	var spans []ui.Span
+	plain := func(s string) {
+		if s == "" {
+			return
+		}
+		span := ui.Span{Text: s}
+		if bold {
+			span.Weight = theme.ReaderStrongWeight
+		}
+		if italic {
+			span.Italic = true
+		}
+		spans = append(spans, span)
+	}
+	if len(labels) == 0 || !strings.ContainsRune(text, '[') {
+		plain(text)
+		return spans
+	}
+	rest := text
+	for {
+		i := strings.IndexByte(rest, '[')
+		if i < 0 {
+			break
+		}
+		j := strings.IndexByte(rest[i+1:], ']')
+		if j < 0 {
+			break
+		}
+		j += i + 1
+		label := rest[i+1 : j]
+		if !labels[label] {
+			// A bracket that isn't a note stays text; look on after it.
+			plain(rest[:j+1])
+			rest = rest[j+1:]
+			continue
+		}
+		plain(rest[:i])
+		spans = append(spans, ui.Span{Text: "[" + label + "]", Size: size - 3, Weight: 500, Color: accent})
+		rest = rest[j+1:]
+	}
+	plain(rest)
+	return spans
+}
+
+// readerNoteSpans is readerSpans for text without emphasis: it splits at
+// [label] markers, so a note's marker reads as an aside in the accent.
+func readerNoteSpans(text string, labels map[string]bool, size float32, accent ui.Color) ([]ui.Span, bool) {
 	if len(labels) == 0 || !strings.ContainsRune(text, '[') {
 		return nil, false
 	}

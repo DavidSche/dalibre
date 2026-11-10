@@ -57,6 +57,10 @@ var readingThemes = map[string]Reading{
 	},
 }
 
+// ReaderStrongWeight is how much heavier the page sets a book's strong
+// text: 600, the usual semibold, not the 700 of a heading.
+const ReaderStrongWeight = 600
+
 // ReaderMeasure is the width of the reader's text column: about 35 Han
 // characters at the default size, as a printed page sets them, and narrow
 // enough that the eye finds the next line without losing its place.

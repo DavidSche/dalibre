@@ -172,11 +172,24 @@ declare namespace Dalibre {
     identify(book: Book): Candidate[] | Promise<Candidate[]>;
   }
 
+  /** A stretch of a block's text in one style: the book's emphasis, not its font. */
+  interface Run {
+    text: string;
+    bold?: boolean;
+    italic?: boolean;
+  }
+
   /** A piece of a chapter as Dalibre extracted it. */
   interface Block {
     kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table" | "code";
     /** The block's text. Code keeps its line breaks and indentation. */
     text?: string;
+    /**
+     * The text as the book sets it, when some is bold or italic. The runs'
+     * texts join to text exactly; otherwise the page keeps the text and
+     * drops the emphasis. Code and tables hold no runs.
+     */
+    runs?: Run[];
     /** heading only, 1–6. */
     level?: number;
     /**

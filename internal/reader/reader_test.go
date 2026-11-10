@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -96,6 +97,58 @@ func TestPreformattedLines(t *testing.T) {
 	}
 	if blocks[1].Kind != Paragraph || blocks[1].Text != "After." {
 		t.Fatalf("after %+v", blocks[1])
+	}
+}
+
+func TestInlineEmphasis(t *testing.T) {
+	doc := parseHTML([]byte(`<html><body>
+		<p>A <strong>bold</strong> word, <em>italic</em> and <strong><em>both</em></strong>, plus <b>b</b> and <i>i</i>.</p>
+		<h2>Title <em>here</em></h2>
+	</body></html>`))
+	blocks, _ := doc.blocks("", nil, nil, nil, "", "")
+	if len(blocks) != 2 {
+		t.Fatalf("blocks %+v", blocks)
+	}
+	p := blocks[0]
+	wantText := "A bold word, italic and both, plus b and i."
+	if p.Kind != Paragraph || p.Text != wantText {
+		t.Fatalf("paragraph %+v", p)
+	}
+	wantRuns := []Run{
+		{Text: "A "},
+		{Text: "bold ", Bold: true},
+		{Text: "word, "},
+		{Text: "italic ", Italic: true},
+		{Text: "and "},
+		{Text: "both", Bold: true, Italic: true},
+		{Text: ", plus "},
+		{Text: "b ", Bold: true},
+		{Text: "and "},
+		{Text: "i", Italic: true},
+		{Text: "."},
+	}
+	if !reflect.DeepEqual(p.Runs, wantRuns) {
+		t.Fatalf("runs %#v, want %#v", p.Runs, wantRuns)
+	}
+	h := blocks[1]
+	if h.Kind != Heading || h.Level != 2 || h.Text != "Title here" {
+		t.Fatalf("heading %+v", h)
+	}
+	if want := []Run{{Text: "Title "}, {Text: "here", Italic: true}}; !reflect.DeepEqual(h.Runs, want) {
+		t.Fatalf("heading runs %#v, want %#v", h.Runs, want)
+	}
+}
+
+func TestCleanRunsDropsMismatch(t *testing.T) {
+	runs := []Run{{Text: "bold", Bold: true}}
+	if got := CleanRuns(runs, "other"); got != nil {
+		t.Fatalf("mismatched runs %#v", got)
+	}
+	if got := CleanRuns([]Run{{Text: "plain"}}, "plain"); got != nil {
+		t.Fatalf("plain runs %#v", got)
+	}
+	if got := CleanRuns([]Run{{Text: "bo", Bold: true}, {Text: "ld", Bold: true}}, "bold"); len(got) != 1 || got[0].Text != "bold" {
+		t.Fatalf("joined runs %#v", got)
 	}
 }
 

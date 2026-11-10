@@ -64,7 +64,7 @@ func testEPUB(t *testing.T) []byte {
 	add("OEBPS/ch1.xhtml", `<?xml version="1.0"?>
 <html xmlns="http://www.w3.org/1999/xhtml"><body>
   <h1>The Halls</h1>
-  <p>A hall of statues, and one of them was me.</p>
+  <p>A hall of statues, and one of them was <strong>me</strong>.</p>
   <p>The tide came in through the lower doors.</p>
   <blockquote><p>Where are the others?</p></blockquote>
   <h2>The first hall</h2>
@@ -89,6 +89,36 @@ func testEPUB(t *testing.T) []byte {
 		t.Fatal(err)
 	}
 	return buf.Bytes()
+}
+
+func TestReaderSpansEmphasis(t *testing.T) {
+	accent := ui.Hex("#b4552d")
+	runs := []reader.Run{
+		{Text: "A "},
+		{Text: "bold", Bold: true},
+		{Text: " and "},
+		{Text: "italic", Italic: true},
+	}
+	spans, ok := readerSpans("A bold and italic", runs, nil, 18, accent)
+	if !ok || len(spans) != 4 {
+		t.Fatalf("spans %+v, ok %v", spans, ok)
+	}
+	if spans[1].Text != "bold" || spans[1].Weight != theme.ReaderStrongWeight {
+		t.Fatalf("bold span %+v", spans[1])
+	}
+	if spans[3].Text != "italic" || !spans[3].Italic {
+		t.Fatalf("italic span %+v", spans[3])
+	}
+
+	labels := map[string]bool{"1": true}
+	runs = []reader.Run{{Text: "A "}, {Text: "bold", Bold: true}, {Text: " note[1]"}}
+	spans, ok = readerSpans("A bold note[1]", runs, labels, 18, accent)
+	if !ok || len(spans) != 4 {
+		t.Fatalf("spans %+v, ok %v", spans, ok)
+	}
+	if got := spans[3]; got.Text != "[1]" || got.Weight != 500 || got.Size != 15 || got.Color != accent {
+		t.Fatalf("note span %+v", got)
+	}
 }
 
 func TestReaderOpensEPUB(t *testing.T) {
@@ -129,6 +159,15 @@ func TestReaderOpensEPUB(t *testing.T) {
 	}
 	if !tt.HasText("A hall of statues, and one of them was me.") {
 		t.Fatalf("text: %q", tt.Texts())
+	}
+	var emphasized bool
+	for _, b := range a.rd.chapters[0].Blocks {
+		if b.Text == "A hall of statues, and one of them was me." && len(b.Runs) > 0 {
+			emphasized = true
+		}
+	}
+	if !emphasized {
+		t.Fatal("the paragraph's emphasis was lost")
 	}
 	if !tt.HasText("The Halls") {
 		t.Fatalf("chapter title missing: %q", tt.Texts())

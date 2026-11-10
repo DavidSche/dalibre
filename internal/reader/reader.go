@@ -66,6 +66,10 @@ type Block struct {
 	Kind  string `json:"kind"`
 	Text  string `json:"text,omitempty"`
 	Level int    `json:"level,omitempty"` // Heading's, 1–6
+	// Runs is Text as the book sets it, when some of it is bold or italic.
+	// It is nil when the text has one style; when it is set, the runs'
+	// texts join to Text exactly.
+	Runs []Run `json:"runs,omitempty"`
 	// Src names an Image's bytes in Document.Images. Alt is what the
 	// picture says for a reader who can't see it, and Caption is the
 	// book's line under it, when the book has one.
@@ -75,6 +79,14 @@ type Block struct {
 	// Table is a Table block's rows. Its cells hold text only, so a table
 	// stays lightweight in the plugin sandbox and on the page.
 	Table *Table `json:"table,omitempty"`
+}
+
+// Run is a stretch of a block's text in one style. Bold and Italic are
+// the book's emphasis, not its font: the page sets them in its own face.
+type Run struct {
+	Text   string `json:"text"`
+	Bold   bool   `json:"bold,omitempty"`
+	Italic bool   `json:"italic,omitempty"`
 }
 
 // Table is a table in the text: a caption, if the book gives one, and
@@ -236,7 +248,7 @@ func cleanBlocks(in []Block) []Block {
 	for _, b := range in {
 		switch b.Kind {
 		case Image:
-			b.Text, b.Level = "", 0
+			b.Text, b.Level, b.Runs = "", 0, nil
 			b.Src = strings.TrimSpace(b.Src)
 			b.Alt = strings.TrimSpace(b.Alt)
 			b.Caption = strings.TrimSpace(b.Caption)
@@ -244,15 +256,15 @@ func cleanBlocks(in []Block) []Block {
 				continue
 			}
 		case Divider:
-			b.Text, b.Level = "", 0
+			b.Text, b.Level, b.Runs = "", 0, nil
 		case TableBlock:
-			b.Text, b.Level, b.Src, b.Alt, b.Caption = "", 0, "", "", ""
+			b.Text, b.Level, b.Src, b.Alt, b.Caption, b.Runs = "", 0, "", "", "", nil
 			b.Table = cleanTable(b.Table)
 			if b.Table == nil {
 				continue
 			}
 		case Code:
-			b.Text, b.Level, b.Src, b.Alt, b.Caption = cleanCode(b.Text), 0, "", "", ""
+			b.Text, b.Level, b.Src, b.Alt, b.Caption, b.Runs = cleanCode(b.Text), 0, "", "", "", nil
 			if b.Text == "" {
 				continue
 			}
@@ -261,8 +273,54 @@ func cleanBlocks(in []Block) []Block {
 			if b.Text == "" {
 				continue
 			}
+			b.Runs = CleanRuns(b.Runs, b.Text)
 		}
 		out = append(out, b)
+	}
+	return out
+}
+
+// RunsText is the text the runs spell, which is a block's Text when the
+// runs are its own.
+func RunsText(runs []Run) string {
+	var b strings.Builder
+	for _, r := range runs {
+		b.WriteString(r.Text)
+	}
+	return b.String()
+}
+
+// CleanRuns makes runs fit text: it drops the empty ones, joins those
+// with one style, and returns nil when the text has one style or the runs
+// don't spell it. A plugin may change a block's text; the text is what
+// the page shows, so runs that no longer match it are let go.
+func CleanRuns(runs []Run, text string) []Run {
+	if len(runs) == 0 || text == "" {
+		return nil
+	}
+	out := make([]Run, 0, len(runs))
+	for _, r := range runs {
+		if r.Text == "" {
+			continue
+		}
+		if n := len(out); n > 0 && out[n-1].Bold == r.Bold && out[n-1].Italic == r.Italic {
+			out[n-1].Text += r.Text
+			continue
+		}
+		out = append(out, r)
+	}
+	if len(out) == 0 || RunsText(out) != text {
+		return nil
+	}
+	styled := false
+	for _, r := range out {
+		if r.Bold || r.Italic {
+			styled = true
+			break
+		}
+	}
+	if !styled {
+		return nil
 	}
 	return out
 }

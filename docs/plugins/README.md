@@ -330,12 +330,17 @@ in Dalibre's reader. `book` is `{ id, title, authors, language, format }`.
 Document: { title, language, chapters: Chapter[], truncated }
 Chapter:  { title, depth?, blocks: Block[], continued?, notes? }
 Block:    { kind: "heading" | "paragraph" | "quote" | "divider" | "image" | "table" | "code",
-            text?, level?, src?, alt?, caption?, table? }
+            text?, level?, runs?, src?, alt?, caption?, table? }
+Run:      { text, bold?, italic? }
 Note:     { id?, label?, text }
 ```
 
-A `code` block is preformatted text: keep its line breaks and leading
-spaces, and the page sets it in a monospaced block that scrolls sideways.
+A block's `runs` are its text cut into bold and italic stretches, from
+the book's `<strong>`, `<b>`, `<em>` and `<i>`. The runs' texts join to
+the block's `text` exactly; if you change the text, change the runs too,
+or the page drops the emphasis. A `code` block is preformatted text:
+keep its line breaks and leading spaces, and the page sets it in a
+monospaced block that scrolls sideways.
 A `table` block holds text cells only: `{ caption?, rows: [{ cells: [{
 text, header?, colspan?, rowspan? }] }] }`. A `note` is a footnote or
 endnote shown after the chapter, and the text carries `[label]` where the
@@ -379,7 +384,7 @@ plugin](../../plugins/reader) does this for Project Gutenberg and is a
 worked example.
 
 A reading is checked like a result: at most 2,000 chapters, 60,000 blocks,
-20,000 characters a block and 500 notes a chapter; unknown block kinds,
+20,000 characters and 10,000 runs a block, and 500 notes a chapter; unknown block kinds,
 empty paragraphs, tables without text and empty chapters are dropped with
 a warning. A book with no chapters cannot
 be shown, so return at least one. Throwing an error shows its message on

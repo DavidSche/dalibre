@@ -65,6 +65,8 @@ export function open({ book, document }) {
 /** @param {Dalibre.Block} b @returns {Dalibre.Block} */
 function copy(b) {
   const out = { kind: b.kind, text: b.text || "", level: b.level || 0 };
+  const runs = copyRuns(b.runs);
+  if (runs) out.runs = runs;
   if (b.kind === "image") {
     out.src = b.src || "";
     out.alt = b.alt || "";
@@ -97,6 +99,63 @@ function copyTable(t) {
 /** @param {string} s */
 function clean(s) {
   return (s || "").replace(/\s+/g, " ").trim();
+}
+
+/** @param {Dalibre.Run[]|undefined} runs @returns {Dalibre.Run[]|undefined} */
+function copyRuns(runs) {
+  if (!Array.isArray(runs) || runs.length === 0) return undefined;
+  /** @type {Dalibre.Run[]} */
+  const out = [];
+  for (const r of runs) pushRun(out, { text: r.text || "", bold: r.bold === true, italic: r.italic === true });
+  return out.length > 0 ? out : undefined;
+}
+
+/** @param {Dalibre.Run[]} out @param {Dalibre.Run} r */
+function pushRun(out, r) {
+  if (!r.text) return;
+  const prev = out[out.length - 1];
+  if (prev && prev.bold === r.bold && prev.italic === r.italic) {
+    prev.text += r.text;
+    return;
+  }
+  out.push(r);
+}
+
+/** @param {Dalibre.Run[]} runs */
+function runsText(runs) {
+  return runs.map((r) => r.text).join("");
+}
+
+/** Collapse whitespace in runs as clean does for the block's text. */
+function cleanRuns(runs) {
+  /** @type {Dalibre.Run[]} */
+  const out = [];
+  let space = false;
+  for (const r of runs || []) {
+    let text = "";
+    for (const ch of r.text || "") {
+      if (/\s/.test(ch)) {
+        space = true;
+        continue;
+      }
+      if (space) {
+        if (text) text += " ";
+        else if (out.length > 0) out[out.length - 1].text += " ";
+      }
+      space = false;
+      text += ch;
+    }
+    pushRun(out, { text, bold: r.bold === true, italic: r.italic === true });
+  }
+  return out;
+}
+
+/** Runs that spell text and carry some emphasis; otherwise undefined. */
+function fitRuns(b, text) {
+  const runs = cleanRuns(b.runs);
+  if (runs.length === 0 || runsText(runs) !== text) return undefined;
+  if (!runs.some((r) => r.bold || r.italic)) return undefined;
+  return runs;
 }
 
 /** Code keeps its lines and the spaces that indent them. */
@@ -138,11 +197,13 @@ function stripBoilerplate(chapters) {
         continue;
       }
       let text = b.text || "";
+      let runs = b.runs;
       if (!started) {
         const m = START.exec(text);
         if (!m) continue; // still in the front matter
         started = true;
         text = text.slice(m.index + m[0].length);
+        runs = undefined; // the text no longer starts where the runs do
         const rest = END.exec(text);
         if (rest) text = text.slice(0, rest.index);
         if (b.kind !== "divider" && b.kind !== "image") {
@@ -153,15 +214,16 @@ function stripBoilerplate(chapters) {
         const m = END.exec(text);
         if (m) {
           text = clean(text.slice(0, m.index));
+          runs = undefined;
           if (b.kind === "image") blocks.push(b);
-          else if (text && b.kind !== "divider") blocks.push({ ...b, text });
+          else if (text && b.kind !== "divider") blocks.push({ ...b, text, runs });
           return finish(out, blocks, ch);
         }
         if (b.kind !== "divider" && b.kind !== "image" && END_LINE.test(text)) {
           return finish(out, blocks, ch);
         }
       }
-      blocks.push({ ...b, text: b.kind === "divider" || b.kind === "image" ? "" : text });
+      blocks.push({ ...b, text: b.kind === "divider" || b.kind === "image" ? "" : text, runs });
     }
     ch.blocks = blocks;
     if (blocks.length > 0) out.push(ch);
@@ -233,17 +295,19 @@ function normalizeBlocks(blocks, headers) {
     if (!text) continue;
     if (headers.has(text.toLowerCase())) continue;
     if (/^\d{1,4}$/.test(text)) continue; // a page number left in the text
+    const runs = fitRuns(b, text);
     if (b.kind === "heading") {
       if (text.length > 200) continue; // a "heading" that is a paragraph
-      out.push({ kind: "heading", text, level: Math.min(Math.max(b.level || 2, 1), 6) });
+      out.push({ kind: "heading", text, level: Math.min(Math.max(b.level || 2, 1), 6), ...(runs ? { runs } : {}) });
       continue;
     }
     const prev = out[out.length - 1];
     if (prev && prev.kind === b.kind && prev.kind !== "heading" && joinable(prev.text, text)) {
+      prev.runs = joinRuns(prev, runs, text);
       prev.text = join(prev.text, text);
       continue;
     }
-    out.push({ kind: b.kind, text });
+    out.push({ kind: b.kind, text, ...(runs ? { runs } : {}) });
   }
   while (out.length > 0 && out[out.length - 1].kind === "divider") out.pop();
   return out;
@@ -258,10 +322,26 @@ function joinable(prev, next) {
   return prev.length < 60 && !/[.!?…。！？：:；;”"’')]$/.test(prev);
 }
 
+/** The space between two joined texts, or none between CJK. */
+function between(a, b) {
+  if (/[\u2e80-\u9fff\u3040-\u30ff]$/.test(a) || /^[\u2e80-\u9fff\u3040-\u30ff]/.test(b)) return "";
+  return " ";
+}
+
 /** @param {string} a @param {string} b */
 function join(a, b) {
-  if (/[\u2e80-\u9fff\u3040-\u30ff]$/.test(a) || /^[\u2e80-\u9fff\u3040-\u30ff]/.test(b)) return a + b;
-  return a + " " + b;
+  return a + between(a, b) + b;
+}
+
+/** Joins the runs of two paragraphs the converter split. */
+function joinRuns(prev, next, nextText) {
+  if (!prev.runs && !next) return undefined;
+  /** @type {Dalibre.Run[]} */
+  const out = (prev.runs || [{ text: prev.text }]).map((r) => ({ ...r }));
+  const sep = between(prev.text, nextText);
+  if (sep) pushRun(out, { text: sep });
+  for (const r of next || [{ text: nextText }]) pushRun(out, { ...r });
+  return out;
 }
 
 /** The chapter's name is its first heading or short line, which then isn't text. */

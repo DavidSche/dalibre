@@ -747,7 +747,7 @@ func TestReaderOpen(t *testing.T) {
 			chapters: [
 				{title: "One", depth: 3, notes: [{id: "n1", label: "1", text: "A note"}], blocks: [
 					{kind: "heading", text: "One", level: 1},
-					{kind: "paragraph", text: "Hi[1]"},
+					{kind: "paragraph", text: "Hi[1]", runs: [{text: "Hi", bold: true}, {text: "[1]"}]},
 					{kind: "code", text: "  def f():\n      return 1"},
 					{kind: "image", src: "img/plate.png", alt: "A plate", caption: "The plate"},
 					{kind: "table", table: {caption: "Sizes", rows: [
@@ -786,6 +786,9 @@ func TestReaderOpen(t *testing.T) {
 	}
 	if len(got.Chapters[0].Blocks) != 5 {
 		t.Fatalf("blocks %+v", got.Chapters[0].Blocks)
+	}
+	if b := got.Chapters[0].Blocks[1]; b.Text != "Hi[1]" || len(b.Runs) != 2 || !b.Runs[0].Bold || b.Runs[1].Bold {
+		t.Fatalf("runs %+v", b)
 	}
 	if b := got.Chapters[0].Blocks[2]; b.Kind != reader.Code || b.Text != "  def f():\n      return 1" {
 		t.Fatalf("code %+v", b)
