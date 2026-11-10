@@ -150,6 +150,18 @@ func readEPUB(file string) (*Document, error) {
 			ncxPath = resolve(opfPath, it.href)
 		}
 	}
+	if ncxPath == "" {
+		// EPUB 3 books may keep an NCX without naming it in the spine,
+		// as a fallback for readers that read EPUB 2. Use it when the
+		// navigation document is missing or broken.
+		for _, it := range pkg.Manifest.Items {
+			if strings.EqualFold(it.MediaType, "application/x-dtbncx+xml") ||
+				strings.EqualFold(path.Ext(it.Href), ".ncx") {
+				ncxPath = resolve(opfPath, it.Href)
+				break
+			}
+		}
+	}
 	if navPath != "" {
 		if data, err := e.read(navPath, 4<<20); err == nil {
 			sections = rebaseSections(navEntries(data), navPath, opfPath, e)
@@ -194,6 +206,27 @@ func readEPUB(file string) (*Document, error) {
 		}
 		h := parseHTML(body)
 		if h == nil {
+			continue
+		}
+		if len(byFile[name]) == 0 && len(doc.Chapters) > 0 && !h.hasHeading() {
+			// A file the table doesn't name, after a chapter: usually the
+			// rest of that chapter when a book splits one across files,
+			// or a plate set beside it. Join it to the chapter rather
+			// than give the contents another unnamed entry.
+			blocks, chNotes := h.blocks(name, e, doc.Images, notes, "", "")
+			if len(blocks) == 0 {
+				continue
+			}
+			prev := &doc.Chapters[len(doc.Chapters)-1]
+			prev.Blocks = append(prev.Blocks, cleanBlocks(blocks)...)
+			prev.Notes = append(prev.Notes, cleanNotes(chNotes)...)
+			for _, b := range blocks {
+				text += blockRunes(b)
+			}
+			if text >= MaxText {
+				doc.Truncated = true
+				break
+			}
 			continue
 		}
 		parts := sectionsFor(h, byFile[name])
@@ -313,6 +346,54 @@ func cleanHref(href string) string {
 	return path.Clean(href)
 }
 
+// withoutScripts drops script and style elements before HTML parsing. An
+// XHTML document may write one as <script src="..."/>, which HTML takes
+// as an opening tag whose content runs to the end of the document,
+// leaving no navigation lists or text after it.
+func withoutScripts(data []byte) []byte {
+	lower := bytes.ToLower(data)
+	out := make([]byte, 0, len(data))
+	for i := 0; i < len(data); {
+		j, closeTag := -1, []byte("</script")
+		for _, tag := range []string{"<script", "<style"} {
+			if k := bytes.Index(lower[i:], []byte(tag)); k >= 0 && (j < 0 || k < j) {
+				j = k
+				if tag == "<style" {
+					closeTag = []byte("</style")
+				}
+			}
+		}
+		if j < 0 {
+			out = append(out, data[i:]...)
+			break
+		}
+		j += i
+		out = append(out, data[i:j]...)
+		gt := bytes.IndexByte(data[j:], '>')
+		if gt < 0 {
+			break // malformed: drop the rest rather than parse it as text
+		}
+		gt += j
+		if bytes.HasSuffix(bytes.TrimSpace(data[j:gt]), []byte("/")) {
+			i = gt + 1 // empty, as XHTML writes it
+			continue
+		}
+		end := bytes.Index(lower[gt+1:], closeTag)
+		if end < 0 {
+			i = len(data)
+			break
+		}
+		end += gt + 1
+		endGT := bytes.IndexByte(data[end:], '>')
+		if endGT < 0 {
+			i = len(data)
+			break
+		}
+		i = end + endGT + 1
+	}
+	return out
+}
+
 // navEntry is one link in a book's table of contents. Depth is the
 // nesting the book gives it: a part is 1, a chapter under it 2.
 type navEntry struct {
@@ -332,7 +413,7 @@ type navSection struct {
 // navEntries reads an EPUB 3 navigation document: the toc nav's nested
 // lists, flattened in reading order with their depth.
 func navEntries(data []byte) []navEntry {
-	doc, err := html.Parse(bytes.NewReader(data))
+	doc, err := html.Parse(bytes.NewReader(withoutScripts(data)))
 	if err != nil {
 		return nil
 	}
@@ -505,7 +586,7 @@ type htmlDoc struct {
 }
 
 func parseHTML(data []byte) *htmlDoc {
-	root, err := html.Parse(bytes.NewReader(data))
+	root, err := html.Parse(bytes.NewReader(withoutScripts(data)))
 	if err != nil {
 		return nil
 	}
@@ -521,6 +602,27 @@ func parseHTML(data []byte) *htmlDoc {
 	}
 	walk(root)
 	return &htmlDoc{root: root, ids: idsOf(root), order: order}
+}
+
+// hasHeading reports whether the document has a heading with text, which
+// starts a section of its own even when the table doesn't name the file.
+func (h *htmlDoc) hasHeading() bool {
+	found := false
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		if found {
+			return
+		}
+		if n.Type == html.ElementNode && headingLevel(n.Data) > 0 && strings.TrimSpace(nodeText(n)) != "" {
+			found = true
+			return
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	walk(h.root)
+	return found
 }
 
 // blocks reads one section of the document: from id from to id to, which

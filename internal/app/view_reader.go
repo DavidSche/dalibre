@@ -33,21 +33,29 @@ func (a *App) readerView(c *ui.Context) {
 	root := ui.Column(c).Key("reader").Fill().Background(page.Bg).TextColor(page.Text).Clip()
 	root.Children(func() {
 		a.readerHeader(c, page)
-		switch {
-		case a.rd.loading:
-			a.readerLoading(c, page)
-		case a.rd.err != nil:
-			a.readerMessage(c, page)
-		default:
-			a.readerRestorePlace()
-			a.readerBody(c, page)
-			a.readerUpdateProgress()
-			a.readerFooter(c, page)
-		}
+		ui.Row(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(func() {
+			side := a.readerContentsSide()
+			if a.rd.toc && side == "left" {
+				a.readerContents(c, page)
+			}
+			ui.Column(c).Grow(1).MinWidth(0).AlignItems(ui.Stretch).Children(func() {
+				switch {
+				case a.rd.loading:
+					a.readerLoading(c, page)
+				case a.rd.err != nil:
+					a.readerMessage(c, page)
+				default:
+					a.readerRestorePlace()
+					a.readerBody(c, page)
+					a.readerUpdateProgress()
+					a.readerFooter(c, page)
+				}
+			})
+			if a.rd.toc && side == "right" {
+				a.readerContents(c, page)
+			}
+		})
 	})
-	if a.rd.toc {
-		a.readerContents(c, page)
-	}
 	if a.rd.typeSheet {
 		a.readerTypeSheet(c, page)
 	}
@@ -518,29 +526,76 @@ func (a *App) readerPlainButton(c *ui.Context, p theme.Reading, label string, pr
 	return b.Children(func() { ui.Text(c, label).FontSize(12).FontWeight(500).TextColor(fg) })
 }
 
-// readerContents is the drawer: the chapters, or the places marked.
+// readerContents is the panel of chapters, or of the places marked. It
+// takes its own column beside the page rather than covering the text: the
+// reading measure narrows, so the contents stay a part of the book. The
+// reader can dock it left or right, with the header's buttons or by
+// dragging its inner edge to the other side.
 func (a *App) readerContents(c *ui.Context, p theme.Reading) {
-	ui.Row(c).Absolute().Top(0).Left(0).Right(0).Bottom(0).AlignItems(ui.Stretch).Children(func() {
-		scrim := ui.ButtonBase(c).Grow(1).HeightPercent(100).MinWidth(0).Background(ui.RGBA(20, 16, 10, 0.32)).Label(locales.ReaderClose())
-		scrim.OnClick(func() { a.rd.toc = false })
-		ui.Column(c).Width(readerDrawerW).HeightPercent(100).Background(p.Chrome).
-			BorderWidth(0, 1, 0, 0).BorderColor(p.Border).AlignItems(ui.Stretch).Children(func() {
-			ui.Row(c).Height(readerHeaderH).Padding(0, theme.Space8, 0, theme.Space20).Gap(theme.Space8).
-				AlignItems(ui.Center).Children(func() {
-				ui.Text(c, locales.ReaderContents()).FontSize(14).FontWeight(600).Grow(1)
-				a.readerIconButton(c, p, icons.X, locales.ReaderClose(), false, func() { a.rd.toc = false })
-			})
-			ui.Row(c).Padding(0, theme.Space12, theme.Space8, theme.Space12).Gap(theme.Space6).Children(func() {
-				a.readerTab(c, p, locales.ReaderContents(), a.rd.tocTab == "contents", func() { a.rd.tocTab = "contents" })
-				a.readerTab(c, p, locales.ReaderBookmarks(), a.rd.tocTab == "bookmarks", func() { a.rd.tocTab = "bookmarks" })
-			})
-			ui.Box(c).Height(1).Background(p.Border)
-			if a.rd.tocTab == "bookmarks" {
-				a.readerBookmarkList(c, p)
-			} else {
-				a.readerChapterList(c, p)
-			}
+	side := a.readerContentsSide()
+	panel := ui.Column(c).Width(readerDrawerW).MinWidth(0).HeightPercent(100).
+		Background(p.Chrome).AlignItems(ui.Stretch)
+	if side == "left" {
+		panel.BorderWidth(0, 1, 0, 0)
+	} else {
+		panel.BorderWidth(0, 0, 0, 1)
+	}
+	panel.BorderColor(p.Border).Children(func() {
+		ui.Row(c).Height(48).Padding(0, theme.Space8, 0, theme.Space16).Gap(theme.Space4).
+			AlignItems(ui.Center).Children(func() {
+			ui.Text(c, locales.ReaderContents()).FontSize(14).FontWeight(600).Grow(1)
+			a.readerIconButton(c, p, icons.PanelLeft, locales.ReaderDockLeft(), side == "left",
+				func() { a.readerSetContentsSide("left") })
+			a.readerIconButton(c, p, icons.PanelRight, locales.ReaderDockRight(), side == "right",
+				func() { a.readerSetContentsSide("right") })
+			a.readerIconButton(c, p, icons.X, locales.ReaderClose(), false, func() { a.rd.toc = false })
 		})
+		ui.Row(c).Padding(0, theme.Space12, theme.Space8, theme.Space12).Gap(theme.Space6).Children(func() {
+			a.readerTab(c, p, locales.ReaderContents(), a.rd.tocTab == "contents", func() { a.rd.tocTab = "contents" })
+			a.readerTab(c, p, locales.ReaderBookmarks(), a.rd.tocTab == "bookmarks", func() { a.rd.tocTab = "bookmarks" })
+		})
+		ui.Box(c).Height(1).Background(p.Border)
+		if a.rd.tocTab == "bookmarks" {
+			a.readerBookmarkList(c, p)
+		} else {
+			a.readerChapterList(c, p)
+		}
+		a.readerContentsGrip(c, p, side)
+	})
+}
+
+// readerContentsGrip is the panel's inner edge: a drag toward the other
+// side docks it there, as a sheet snaps to an edge. A press that doesn't
+// move changes nothing.
+func (a *App) readerContentsGrip(c *ui.Context, p theme.Reading, side string) {
+	g := ui.Row(c).Absolute().Top(0).Bottom(0).Width(8).Center().Cursor(ui.CursorResizeEW).
+		Label(locales.ReaderContents())
+	if side == "left" {
+		g.Right(0)
+	} else {
+		g.Left(0)
+	}
+	dx, _, held := g.Dragged()
+	if held {
+		a.rd.tocDrag += dx
+	}
+	if _, _, ended := g.DragEnded(); ended {
+		const threshold = 48
+		if a.rd.tocDrag >= threshold && side == "left" {
+			a.readerSetContentsSide("right")
+		} else if a.rd.tocDrag <= -threshold && side == "right" {
+			a.readerSetContentsSide("left")
+		}
+		a.rd.tocDrag = 0
+	}
+	if g.PressCanceled() {
+		a.rd.tocDrag = 0
+	}
+	g.Children(func() {
+		grip := ui.Box(c).Width(3).Height(40).Radius(theme.RadiusFull).Background(p.Border)
+		if g.Hovered() {
+			grip.Background(p.Accent)
+		}
 	})
 }
 

@@ -61,6 +61,9 @@ type Reading struct {
 	// LineHeight is the height of a line as a multiple of the text's
 	// size; 0 is the default.
 	LineHeight float64 `json:"lineHeight,omitempty"`
+	// TOCSide is the edge the contents rest on: "left" or "right"; "" is
+	// the default, the right.
+	TOCSide string `json:"tocSide,omitempty"`
 	// Books are each book's place, by the library's UUID for it.
 	Books map[string]*Progress `json:"books,omitempty"`
 }

@@ -2977,6 +2977,26 @@ func (msgs Messages) ReaderContents() string {
 	return Catalog.Format(msgs.locale, "readerContents", nil)
 }
 
+// ReaderDockLeft says "Dock contents on the left"
+// in the language the app shows.
+func ReaderDockLeft() string { return In(i18n.Locale()).ReaderDockLeft() }
+
+// ReaderDockLeft says "Dock contents on the left"
+// in the language of msgs.
+func (msgs Messages) ReaderDockLeft() string {
+	return Catalog.Format(msgs.locale, "readerDockLeft", nil)
+}
+
+// ReaderDockRight says "Dock contents on the right"
+// in the language the app shows.
+func ReaderDockRight() string { return In(i18n.Locale()).ReaderDockRight() }
+
+// ReaderDockRight says "Dock contents on the right"
+// in the language of msgs.
+func (msgs Messages) ReaderDockRight() string {
+	return Catalog.Format(msgs.locale, "readerDockRight", nil)
+}
+
 // ReaderBookmarks says "Bookmarks"
 // in the language the app shows.
 func ReaderBookmarks() string { return In(i18n.Locale()).ReaderBookmarks() }

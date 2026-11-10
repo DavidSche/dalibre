@@ -133,6 +133,69 @@ func TestExtractEPUB(t *testing.T) {
 	}
 }
 
+func TestExtractEPUBJoinsNavlessFiles(t *testing.T) {
+	var buf bytes.Buffer
+	z := zip.NewWriter(&buf)
+	addBytes := func(name string, body []byte) {
+		w, err := z.Create(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write(body); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add := func(name, body string) { addBytes(name, []byte(body)) }
+	add("mimetype", "application/epub+zip")
+	add("META-INF/container.xml", `<container><rootfiles><rootfile full-path="OPS/book.opf"/></rootfiles></container>`)
+	add("OPS/book.opf", `<package><metadata><dc:title>Split</dc:title></metadata><manifest>
+		<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+		<item id="a" href="a.xhtml" media-type="application/xhtml+xml"/>
+		<item id="b" href="b.xhtml" media-type="application/xhtml+xml"/>
+		<item id="c" href="c.xhtml" media-type="application/xhtml+xml"/>
+		<item id="d" href="d.xhtml" media-type="application/xhtml+xml"/>
+		<item id="plate" href="img/plate.png" media-type="image/png"/>
+	</manifest><spine><itemref idref="a"/><itemref idref="b"/><itemref idref="c"/><itemref idref="d"/></spine></package>`)
+	add("OPS/nav.xhtml", `<html xmlns:epub="http://www.idpf.org/2007/ops"><body><nav epub:type="toc">
+		<ol><li><a href="a.xhtml">First</a></li></ol></nav></body></html>`)
+	add("OPS/a.xhtml", `<html><body><h1>First</h1><p>The first file.</p></body></html>`)
+	// The next two files aren't named by the contents: the rest of the
+	// chapter, then a plate. They belong with it.
+	add("OPS/b.xhtml", `<html><body><p>The rest of the first.</p></body></html>`)
+	add("OPS/c.xhtml", `<html><body><figure><img src="img/plate.png" alt="A plate"/></figure></body></html>`)
+	// A heading of its own keeps a file a chapter, even unnamed.
+	add("OPS/d.xhtml", `<html><body><h2>Its own</h2><p>Another chapter.</p></body></html>`)
+	addBytes("OPS/img/plate.png", testPNG(t))
+	if err := z.Close(); err != nil {
+		t.Fatal(err)
+	}
+	d, err := Extract(writeFile(t, "split.epub", buf.Bytes()), "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Chapters) != 2 {
+		t.Fatalf("chapters %d: %+v", len(d.Chapters), d.Chapters)
+	}
+	var texts []string
+	plate := false
+	for _, b := range d.Chapters[0].Blocks {
+		texts = append(texts, b.Text)
+		if b.Kind == Image && b.Alt == "A plate" {
+			plate = true
+		}
+	}
+	joined := strings.Join(texts, "|")
+	if !strings.Contains(joined, "The first file.") || !strings.Contains(joined, "The rest of the first.") {
+		t.Fatalf("first chapter %q", joined)
+	}
+	if !plate {
+		t.Fatalf("plate missing from the first chapter: %+v", d.Chapters[0].Blocks)
+	}
+	if d.Chapters[1].Blocks[0].Text != "Its own" {
+		t.Fatalf("second chapter %+v", d.Chapters[1])
+	}
+}
+
 // TestExtractEPUBManyPictures makes sure the picture count is generous
 // enough for a converted book that sets every formula's letter as its own
 // picture: two hundred used to be the limit, and a maths book has more.
@@ -273,6 +336,21 @@ func chapterText(ch Chapter) string {
 	return b.String()
 }
 
+func TestNavigationSelfClosingScript(t *testing.T) {
+	// Kobo writes its navigation document with <script .../>. HTML parsing
+	// takes that as an opening tag, so the lists after it vanished.
+	nav := []byte(`<html xmlns:epub="http://www.idpf.org/2007/ops"><head>
+		<script xmlns="http://www.w3.org/1999/xhtml" type="text/javascript" src="../js/kobo.js"/>
+	</head><body><nav epub:type="toc"><ol>
+		<li><a href="one.xhtml">Chapter One</a></li>
+		<li><a href="two.xhtml">Chapter Two</a></li>
+	</ol></nav></body></html>`)
+	entries := navEntries(nav)
+	if len(entries) != 2 || entries[0].Title != "Chapter One" || entries[1].Href != "two.xhtml" {
+		t.Fatalf("nav entries %+v", entries)
+	}
+}
+
 func TestNavigationDepth(t *testing.T) {
 	nav := []byte(`<html><body><nav epub:type="toc"><ol>
 		<li><span>Part One</span><ol><li><a href="one.xhtml">Chapter One</a></li></ol></li>
@@ -289,6 +367,46 @@ func TestNavigationDepth(t *testing.T) {
 	points := ncxEntries(ncx)
 	if len(points) != 2 || points[1].Depth != 2 || points[1].Title != "Chapter One" {
 		t.Fatalf("ncx entries %+v", points)
+	}
+}
+
+func TestExtractEPUB3FallsBackToNCX(t *testing.T) {
+	// The navigation document is broken and the spine doesn't name the
+	// NCX, as some EPUB 3 books leave it: the chapters still get names.
+	var buf bytes.Buffer
+	z := zip.NewWriter(&buf)
+	add := func(name, body string) {
+		w, err := z.Create(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := w.Write([]byte(body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	add("mimetype", "application/epub+zip")
+	add("META-INF/container.xml", `<container><rootfiles>
+		<rootfile full-path="OPS/book.opf"/></rootfiles></container>`)
+	add("OPS/book.opf", `<package><metadata>
+		<dc:title xmlns:dc="http://purl.org/dc/elements/1.1/">A Fallback</dc:title>
+	</metadata><manifest>
+		<item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+		<item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+		<item id="one" href="one.xhtml" media-type="application/xhtml+xml"/>
+	</manifest><spine><itemref idref="one"/></spine></package>`)
+	// nav.xhtml is named but absent, so only the NCX can name the chapters.
+	add("OPS/toc.ncx", `<ncx><navMap><navPoint><navLabel><text>From the NCX</text></navLabel>
+		<content src="one.xhtml"/></navPoint></navMap></ncx>`)
+	add("OPS/one.xhtml", `<html><body><p>Body.</p></body></html>`)
+	if err := z.Close(); err != nil {
+		t.Fatal(err)
+	}
+	d, err := Extract(writeFile(t, "fallback.epub", buf.Bytes()), "EPUB")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(d.Chapters) != 1 || d.Chapters[0].Title != "From the NCX" {
+		t.Fatalf("chapters %+v", d.Chapters)
 	}
 }
 

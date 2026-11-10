@@ -325,6 +325,8 @@
     }
   },
   "readerContents": "목차",
+  "readerDockLeft": "목차를 왼쪽에 고정",
+  "readerDockRight": "목차를 오른쪽에 고정",
   "readerBookmarks": "책갈피",
   "readerNoBookmarks": "아직 책갈피가 없습니다. B 키를 눌러 현재 위치를 표시하세요.",
   "readerAddBookmark": "이 장 책갈피",

@@ -260,6 +260,52 @@ func TestReaderThemeAndSize(t *testing.T) {
 	}
 }
 
+func TestReaderContentsDocks(t *testing.T) {
+	a := newTestApp(t)
+	a.builtins = true
+	a.pluginTransport = fakeWeb{http.NotFoundHandler()}
+	a.loadPlugins()
+	book := a.bookByTitle("Dune")
+	d, _ := a.lib.Details(book)
+	os.WriteFile(d.Files[0].Path, testEPUB(t), 0o644)
+
+	a.openReader(book, "EPUB")
+	if a.rd.err != nil {
+		t.Fatal(a.rd.err)
+	}
+	tt := ui.NewTester(a.View, 1440, 900)
+	tt.Frame()
+	if err := tt.Click("Contents"); err != nil {
+		t.Fatal(err)
+	}
+	tt.Frame()
+	if !tt.HasText("Dock contents on the left") || !tt.HasText("Dock contents on the right") {
+		t.Fatalf("no dock buttons: %q", tt.Texts())
+	}
+	if err := tt.Click("Dock contents on the left"); err != nil {
+		t.Fatal(err)
+	}
+	if a.readerContentsSide() != "left" || a.settings.Reading.TOCSide != "left" {
+		t.Fatalf("side %q, settings %q", a.readerContentsSide(), a.settings.Reading.TOCSide)
+	}
+	tt.Frame()
+	if !tt.HasText("The Halls") || !tt.HasText("A hall of statues, and one of them was me.") {
+		t.Fatalf("contents replaced the page: %q", tt.Texts())
+	}
+	shot(t, tt, "reader-contents-left")
+	// The inner edge moves it back with a drag, as a sheet snaps to an edge.
+	tt.Press(336, 450)
+	tt.Frame()
+	tt.Move(420, 450)
+	tt.Frame()
+	tt.Release(420, 450)
+	tt.Frame()
+	if a.readerContentsSide() != "right" {
+		t.Fatalf("side %q after the drag", a.readerContentsSide())
+	}
+	shot(t, tt, "reader-contents-right")
+}
+
 func (a *App) bookByTitle(title string) *calibre.Book {
 	for _, b := range a.books {
 		if b.Title == title {

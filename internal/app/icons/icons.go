@@ -41,6 +41,7 @@ var (
 	Alert         = lucide(`<circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>`)
 	CheckCircle   = lucide(`<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>`)
 	Loader        = lucide(`<path d="M21 12a9 9 0 1 1-6.219-8.56"/>`)
+	PanelLeft     = lucide(`<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/>`)
 	PanelRight    = lucide(`<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M15 3v18"/>`)
 	Sort          = lucide(`<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>`)
 	Bookmark      = lucide(`<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>`)

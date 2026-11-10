@@ -325,6 +325,8 @@
     }
   },
   "readerContents": "Índice",
+  "readerDockLeft": "Anclar el índice a la izquierda",
+  "readerDockRight": "Anclar el índice a la derecha",
   "readerBookmarks": "Marcadores",
   "readerNoBookmarks": "Aún no hay marcadores. Pulsa B para marcar tu posición.",
   "readerAddBookmark": "Marcar este capítulo",

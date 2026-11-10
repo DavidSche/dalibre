@@ -50,7 +50,8 @@ type readerState struct {
 	percent   float64   // the whole book, 0–1
 	percents  []float64 // each chapter's share of the book, by characters
 	toc       bool
-	tocTab    string // "contents" or "bookmarks"
+	tocTab    string  // "contents" or "bookmarks"
+	tocDrag   float32 // how far the contents' grip was dragged
 	typeSheet bool
 	pending   float64 // how far into the chapter to scroll once laid out
 
@@ -80,6 +81,27 @@ func (a *App) readerStyles() (name string, size int, lineHeight float64) {
 		lineHeight = settings.DefaultReadingLineHeight
 	}
 	return name, size, lineHeight
+}
+
+// readerContentsSide is the edge the contents rest on, "left" or "right".
+// The right is the default, as the page first set it.
+func (a *App) readerContentsSide() string {
+	if a.settings.Reading.TOCSide == "left" {
+		return "left"
+	}
+	return "right"
+}
+
+// readerSetContentsSide docks the contents to side, keeping it.
+func (a *App) readerSetContentsSide(side string) {
+	if side != "left" && side != "right" {
+		return
+	}
+	if a.settings.Reading.TOCSide == side {
+		return
+	}
+	a.settings.Reading.TOCSide = side
+	_ = a.settings.Save()
 }
 
 // readerKey is the settings key for a book's place: its UUID, which
