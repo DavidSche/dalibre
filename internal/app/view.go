@@ -127,7 +127,8 @@ func (a *App) shortcuts(c *ui.Context) {
 }
 
 func (a *App) anyDialog() bool {
-	return a.editOpen || a.deleteOpen || a.welcome.notLib.open || a.welcome.create.open || a.settingsOpen || a.consent != nil
+	return a.editOpen || a.deleteOpen || a.welcome.notLib.open || a.welcome.create.open || a.settingsOpen || a.consent != nil ||
+		a.act.form != nil || a.act.review != nil
 }
 
 // ---- Sidebar
@@ -161,6 +162,7 @@ func (a *App) sidebar(c *ui.Context) {
 				})
 			})
 			a.navSection(c, "formats", locales.MainNavFormats(), catalog.ByFormat, a.counts.Formats, icons.File, 0)
+			a.toolsNav(c)
 			a.catalogsNav(c)
 		})
 		if a.lib == nil {
@@ -176,6 +178,7 @@ func (a *App) sidebar(c *ui.Context) {
 
 func (a *App) setQuery(shelf catalog.Shelf, f catalog.Filter) {
 	a.page = pageLibrary
+	a.closeResults()
 	a.query.Shelf, a.query.Filter = shelf, f
 	a.curID = 0
 	a.chosen.Clear()
@@ -184,6 +187,9 @@ func (a *App) setQuery(shelf catalog.Shelf, f catalog.Filter) {
 func (a *App) navItem(c *ui.Context, key string, icon *ui.SVG, label string, count int, selected bool, iconColor *ui.Color, onClick func()) {
 	if key != "getbooks" && !strings.HasPrefix(key, "catalog:") && !strings.HasPrefix(key, "settings:") && a.page != pageLibrary {
 		selected = false
+	}
+	if a.act.results != nil && a.page == pageLibrary && !strings.HasPrefix(key, "tool:") {
+		selected = false // an action's results show instead of the shelf
 	}
 	row := ui.ButtonBase(c.Key(key)).Height(30).Radius(theme.RadiusSM).Padding(0, theme.Space8).Gap(theme.Space8).AlignItems(ui.Center).Label(label)
 	fg := pal().Icon
@@ -347,7 +353,15 @@ func (a *App) sidebarFooter(c *ui.Context) {
 	ui.Column(c).Padding(0, theme.Space8, theme.Space12, theme.Space8).Gap(theme.Space8).AlignItems(ui.Stretch).Children(func() {
 		widgets.Hairline(c)
 		if a.busy != "" {
-			ui.Row(c).Padding(theme.Space4, theme.Space8).Gap(theme.Space10).AlignItems(ui.Center).Children(func() {
+			ui.Row(c).Padding(theme.Space4, theme.Space4, theme.Space4, theme.Space8).Gap(theme.Space10).AlignItems(ui.Center).Children(func() {
+				if stop := a.act.cancel; stop != nil {
+					// An action can be stopped: what it does is the plugin's.
+					defer func() {
+						if widgets.IconButton(c, icons.X, locales.ActionStop(a.busy), false).Clicked() {
+							stop()
+						}
+					}()
+				}
 				ui.Spinner(c).Size(16, 16).Label(a.busy)
 				ui.Column(c).Grow(1).Gap(theme.Space6).AlignItems(ui.Stretch).Children(func() {
 					label := locales.MainBusyEllipsis(a.busy)
@@ -383,6 +397,10 @@ func (a *App) toolbar(c *ui.Context) {
 		if a.lib != nil {
 			title, count = a.viewTitle(), groupDigits(len(a.visible()))
 		}
+		results := a.act.results
+		if results != nil {
+			title, count = results.title, locales.ActionGroups(results.groupCount())
+		}
 		// In a narrow middle column (a small window with the detail panel
 		// open) the controls come first: the search field gives up width,
 		// the title goes (the sidebar still names the view) and Add books
@@ -401,34 +419,18 @@ func (a *App) toolbar(c *ui.Context) {
 		if a.lib == nil {
 			return
 		}
-		ui.SearchField(c, &a.query.Search).Placeholder(locales.MainSearchPlaceholder()).Label(locales.MainSearchLabel()).Width(260).Shrink(1).MinWidth(140).Bind(&a.searchFocus).OnChange(func() {
-			a.curID = 0
-		})
-		a.viewToggle(c)
-		sort := widgets.IconButton(c, icons.Sort, locales.MainSortButton(sortLabel(a.query.Sort)), false)
-		sort.PopoverMenuButton(func(m *ui.Menu) {
-			for _, k := range catalog.SortKeys {
-				if m.Item(sortLabel(k.Key)).Radio(a.query.Sort == k.Key).Chosen() {
-					a.query.Sort = k.Key
-					a.saveSettings()
-				}
-			}
-			m.Separator()
-			if m.Item(locales.MainSortAscending()).Radio(!a.query.Descending).Chosen() {
-				a.query.Descending = false
-				a.saveSettings()
-			}
-			if m.Item(locales.MainSortDescending()).Radio(a.query.Descending).Chosen() {
-				a.query.Descending = true
-				a.saveSettings()
-			}
-		})
+		// An action's results are a list in the action's own order: nothing
+		// to search, lay out or sort.
+		if results == nil {
+			a.listControls(c)
+		}
 		if widgets.IconButton(c, icons.PanelRight, locales.MainDetailsTooltip(), !a.settings.HideDetail).Clicked() {
 			a.settings.HideDetail = !a.settings.HideDetail
 			a.saveSettings()
 		}
 		a.sharingButton(c)
 		a.agentsButton(c)
+		a.pluginsButton(c)
 		ui.Box(c).Size(1, 20).Background(pal().Border).Margin(0, theme.Space4)
 		label := locales.CommonAddBooks()
 		if compact {
@@ -440,6 +442,33 @@ func (a *App) toolbar(c *ui.Context) {
 		}
 		if add.Clicked() {
 			a.chooseBooks()
+		}
+	})
+}
+
+// listControls are the toolbar's controls for the list of books: search,
+// grid or list, and the order.
+func (a *App) listControls(c *ui.Context) {
+	ui.SearchField(c, &a.query.Search).Placeholder(locales.MainSearchPlaceholder()).Label(locales.MainSearchLabel()).Width(260).Shrink(1).MinWidth(104).Bind(&a.searchFocus).OnChange(func() {
+		a.curID = 0
+	})
+	a.viewToggle(c)
+	sort := widgets.IconButton(c, icons.Sort, locales.MainSortButton(sortLabel(a.query.Sort)), false)
+	sort.PopoverMenuButton(func(m *ui.Menu) {
+		for _, k := range catalog.SortKeys {
+			if m.Item(sortLabel(k.Key)).Radio(a.query.Sort == k.Key).Chosen() {
+				a.query.Sort = k.Key
+				a.saveSettings()
+			}
+		}
+		m.Separator()
+		if m.Item(locales.MainSortAscending()).Radio(!a.query.Descending).Chosen() {
+			a.query.Descending = false
+			a.saveSettings()
+		}
+		if m.Item(locales.MainSortDescending()).Radio(a.query.Descending).Chosen() {
+			a.query.Descending = true
+			a.saveSettings()
 		}
 	})
 }
@@ -493,6 +522,10 @@ func (a *App) mainContent(c *ui.Context) {
 			ui.Spinner(c).Size(24, 24).Label(locales.CommonLoading())
 			ui.Text(c, locales.MainOpeningLibrary()).TextColor(pal().TextSecondary)
 		})
+		return
+	}
+	if a.act.results != nil {
+		a.resultsView(c)
 		return
 	}
 	a.filterBar(c)

@@ -65,6 +65,9 @@ func newTestApp(t *testing.T) *App {
 	a.covers.thumbs = nil
 	a.openLibrary(root)
 	t.Cleanup(func() {
+		for _, p := range a.plugins {
+			p.Close()
+		}
 		if a.lib != nil {
 			a.lib.Close()
 		}

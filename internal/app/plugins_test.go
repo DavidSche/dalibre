@@ -185,13 +185,13 @@ func TestGetBooksPage(t *testing.T) {
 		t.Fatal(err)
 	}
 	tt.Frame()
-	if !a.settingsOpen || a.section != sectionPlugins || a.pl.sel != "com.example.books" || !tt.HasText("API key") || !tt.HasText("api.example.com") {
+	if !a.pluginsOpen || a.pl.sel != "com.example.books" || !tt.HasText("API key") || !tt.HasText("api.example.com") {
 		t.Fatalf("plugins dialog: %q", tt.Texts())
 	}
 	shot(t, tt, "plugins")
 
 	// Back in the library, the book is there.
-	a.settingsOpen = false
+	a.pluginsOpen = false
 	tt.Frame()
 	if err := tt.Click("All books"); err != nil {
 		t.Fatal(err)

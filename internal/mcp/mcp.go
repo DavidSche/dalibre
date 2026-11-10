@@ -120,7 +120,8 @@ func New(h Host, version string, allowChanges bool) *Server {
 		Instructions: "Dalibre is the user's e-book library, a calibre library. Book ids come from search_books. " +
 			"To convert a book, convert the file get_book gives to a file outside the library, then add it with add_format. " +
 			"To write a plugin for Dalibre (a book source, a metadata source, or one that works on books' files), read " + PluginDocs +
-			" first, then use create_plugin, add_plugin and test_plugin; reload_plugins after an edit.",
+			" first, then use create_plugin, add_plugin and test_plugin; reload_plugins after an edit. " +
+			"What the user's plugins can do with books and the library (find duplicates and the like) is in list_actions; run_action runs one.",
 		Capabilities: &sdk.ServerCapabilities{Tools: &sdk.ToolCapabilities{ListChanged: true}},
 	})
 	s.srv.AddReceivingMiddleware(s.noteUse)
@@ -179,6 +180,9 @@ func (s *Server) SetAllowChanges(on bool) {
 		}
 		if _, ok := s.host.(Plugins); ok {
 			s.addPluginTools()
+		}
+		if _, ok := s.host.(Actions); ok {
+			s.addActionTools()
 		}
 		return
 	}

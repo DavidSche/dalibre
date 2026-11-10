@@ -194,7 +194,23 @@ func CompactDialogFrame(c *ui.Context, open *bool, width float32, header func(),
 	dialogFrame(c, open, width, true, header, body, footer)
 }
 
+// TallDialogFrame is a dialog as tall as height, or as the window allows,
+// whose body fills it without scrolling: its panes scroll themselves.
+func TallDialogFrame(c *ui.Context, open *bool, width, height float32, header func(), body func(), footer func()) {
+	tallDialogFrame(c, open, width, height, header, body, footer)
+}
+
 func dialogFrame(c *ui.Context, open *bool, width float32, compact bool, header func(), body func(), footer func()) {
+	frame(c, open, width, 0, compact, header, body, footer)
+}
+
+func tallDialogFrame(c *ui.Context, open *bool, width, height float32, header func(), body func(), footer func()) {
+	frame(c, open, width, height, false, header, body, footer)
+}
+
+// frame draws a dialog: with height 0, as tall as its content up to the
+// window, its body scrolling; else that tall, its body filling it.
+func frame(c *ui.Context, open *bool, width, height float32, compact bool, header func(), body func(), footer func()) {
 	headPad := [4]float32{theme.Space16, theme.Space16, theme.Space16, theme.Space24}
 	footV, footH := float32(theme.Space16), float32(theme.Space24)
 	if compact {
@@ -206,7 +222,11 @@ func dialogFrame(c *ui.Context, open *bool, width float32, compact bool, header 
 	bar := c.TitleBar()
 	ui.DialogBase(c, open, func(backdrop, panel ui.Element) {
 		backdrop.Background(pal().Scrim).Padding(bar.Height, 0)
-		panel.Width(width).MaxHeight(ui.Auto).Background(pal().SurfaceRaised).Border(1, pal().BorderSubtle).Radius(theme.RadiusXL).Clip().
+		panel.Width(width).MaxHeight(ui.Auto)
+		if height > 0 {
+			panel.Height(height).MaxHeightPercent(94).MaxWidthPercent(94)
+		}
+		panel.Background(pal().SurfaceRaised).Border(1, pal().BorderSubtle).Radius(theme.RadiusXL).Clip().
 			Shadow(0, 2, 6, 0, ui.RGBA(26, 23, 18, 0.08)).Shadow(0, 24, 48, -8, ui.RGBA(26, 23, 18, 0.24)).AlignItems(ui.Stretch)
 		panel.Children(func() {
 			ui.Row(c).Padding(headPad[0], headPad[1], headPad[2], headPad[3]).Gap(theme.Space12).AlignItems(ui.Center).BorderWidth(0, 0, 1, 0).BorderColor(pal().BorderSubtle).Children(func() {
@@ -215,7 +235,11 @@ func dialogFrame(c *ui.Context, open *bool, width float32, compact bool, header 
 					*open = false
 				}
 			})
-			ui.Scroll(c).Grow(1).MinHeight(0).Children(body)
+			if height > 0 {
+				ui.Column(c).Grow(1).MinHeight(0).AlignItems(ui.Stretch).Children(body)
+			} else {
+				ui.Scroll(c).Grow(1).MinHeight(0).Children(body)
+			}
 			ui.Row(c).Padding(footV, footH).Gap(theme.Space8).AlignItems(ui.Center).Background(pal().Chrome).BorderWidth(1, 0, 0, 0).BorderColor(pal().BorderSubtle).Children(footer)
 		})
 	})

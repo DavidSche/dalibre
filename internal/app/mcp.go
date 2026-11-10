@@ -289,12 +289,12 @@ const addWait = 2 * time.Minute
 
 // pluginExports are the functions a plugin may export that agents are
 // told about.
-var pluginExports = []string{"search", "collections", "list", "get", "resolve", "identify", "process"}
+var pluginExports = []string{"search", "collections", "list", "get", "resolve", "identify", "process", "run"}
 
 // manifestInfo is a plugin as agents see it, from its manifest.
 func manifestInfo(m *plugin.Manifest, state string) mcp.PluginInfo {
 	return mcp.PluginInfo{ID: m.ID, Name: m.Name, Version: m.Version, Description: m.Description,
-		Capabilities: m.Capabilities.Names(), State: state, Asks: m.Permissions.Describe()}
+		Capabilities: m.Capabilities.Names(), State: state, Asks: m.Asks()}
 }
 
 // pluginList is the plugins as agents see them. Main thread.
@@ -497,4 +497,138 @@ func (h mcpHost) RemovePlugin(ctx context.Context, id string) error {
 	})
 	loaded(ctx, wait)
 	return err
+}
+
+// ---- Plugins' actions, for an agent (mcp.Actions)
+
+func (h mcpHost) Actions(ctx context.Context) []mcp.ActionInfo {
+	h.settled(ctx)
+	var out []mcp.ActionInfo
+	h.onMain(ctx, func() {
+		for _, p := range h.a.plugins {
+			for _, act := range p.Manifest.Capabilities.Actions {
+				info := mcp.ActionInfo{Plugin: p.Manifest.ID, PluginName: p.Manifest.Name, ID: act.ID, Title: act.Label(), Scope: act.Scope,
+					Formats: act.Formats, ChangesBooks: p.Manifest.Permissions.Library == plugin.LibraryWrite}
+				if act.Books != nil {
+					info.MinBooks, info.MaxBooks = act.Books.Min, act.Books.Max
+				}
+				out = append(out, info)
+			}
+		}
+	})
+	return out
+}
+
+// RunAction runs an action for an agent: its forms are answered from
+// run.Answers, and what it returns is written into the library only with
+// run.Apply, the agent standing where the user reviews a plugin's
+// changes.
+func (h mcpHost) RunAction(ctx context.Context, run mcp.ActionRun) (*mcp.ActionOutcome, error) {
+	h.settled(ctx)
+	var (
+		p            *plugin.Plugin
+		act          *plugin.Action
+		lib          *calibre.Library
+		books, all   []*calibre.Book
+		index        map[string]int64
+		hooks, after []*plugin.Plugin
+		err          error
+	)
+	if !h.onMain(ctx, func() {
+		a := h.a
+		if i := slices.IndexFunc(a.plugins, func(p *plugin.Plugin) bool { return p.Manifest.ID == run.Plugin }); i >= 0 {
+			p = a.plugins[i]
+			act = p.Manifest.Action(run.Action)
+		}
+		switch {
+		case p == nil:
+			err = fmt.Errorf("no loaded plugin %q (see list_actions)", run.Plugin)
+			return
+		case act == nil:
+			err = fmt.Errorf("%s has no action %q (see list_actions)", p.Manifest.Name, run.Action)
+			return
+		case a.lib == nil:
+			err = errors.New("no library is open")
+			return
+		}
+		lib, all, index = a.lib, a.books, a.idIndex
+		hooks, after = a.importPlugins(), a.hookPlugins()
+		if act.Scope != plugin.ScopeBooks {
+			return
+		}
+		for _, id := range run.Books {
+			b := a.byID[id]
+			if b == nil {
+				err = fmt.Errorf("no book %d", id)
+				return
+			}
+			books = append(books, b)
+		}
+		if !a.takes(act, run.Books) {
+			err = fmt.Errorf("%s doesn’t take these books: see its min_books, max_books and formats in list_actions", act.Label())
+		}
+	}) {
+		return nil, ctx.Err()
+	}
+	if err != nil {
+		return nil, err
+	}
+	infos, files, err := actionBooks(lib, act, books)
+	if err != nil {
+		return nil, err
+	}
+	res, err := p.RunAction(ctx, act.ID, infos, files, &plugin.ActionHost{Answers: run.Answers, Books: libraryPager(lib, all, index), Covers: actionCovers(lib, act, books)})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Done()
+	ref := func(id int64) mcp.BookRef {
+		if b, err := lib.Book(id); err == nil {
+			return mcp.BookRef{ID: b.ID, Title: b.Title}
+		}
+		return mcp.BookRef{ID: id}
+	}
+	out := &mcp.ActionOutcome{Message: res.Message, Open: res.Open, Applied: run.Apply}
+	for _, g := range res.Groups {
+		ag := mcp.ActionGroup{Title: g.Title}
+		for _, gb := range g.Books {
+			ag.Books = append(ag.Books, mcp.ActionBook{ID: gb.ID, Title: ref(gb.ID).Title, Note: gb.Note})
+		}
+		out.Groups = append(out.Groups, ag)
+	}
+	for _, nb := range res.Add {
+		out.Files = append(out.Files, mcp.NewFile{Name: filepath.Base(nb.File), Format: strings.ToUpper(strings.TrimPrefix(filepath.Ext(nb.File), "."))})
+	}
+	for _, f := range res.Formats {
+		r := ref(f.Book)
+		out.Files = append(out.Files, mcp.NewFile{Book: &r, Name: filepath.Base(f.File), Format: f.Format})
+	}
+	// What it would change, read before anything is written.
+	for _, it := range applyActionTo(ctx, lib, res, false, false, nil, nil).review {
+		bc := mcp.BookChanges{Book: mcp.BookRef{ID: it.id, Title: it.title}}
+		for _, l := range it.lines {
+			bc.Changes = append(bc.Changes, mcp.FieldChange{Field: l.name, From: l.old, To: l.now})
+		}
+		out.Changes = append(out.Changes, bc)
+	}
+	if !run.Apply {
+		return out, nil
+	}
+	did := applyAction(ctx, lib, res, true, hooks, after)
+	if did.files.undoDir != "" {
+		os.RemoveAll(did.files.undoDir) // an agent has no Undo
+	}
+	for _, id := range did.touched {
+		out.Changed = append(out.Changed, ref(id))
+	}
+	for _, id := range did.added {
+		out.Added = append(out.Added, ref(id))
+	}
+	for _, e := range did.failed {
+		out.Failed = append(out.Failed, e.Error())
+	}
+	if len(did.touched)+len(did.added) > 0 {
+		h.Changed(did.touched...)
+	}
+	return out, nil
 }

@@ -320,7 +320,7 @@ What's going on:
 
 ### 5. Load it into Dalibre
 
-In Dalibre, open **Settings › Plugins › Add plugin › From a folder…**
+In Dalibre, open **Plugins › Add plugin › From a folder…**
 and pick the plugin's folder. Grant the hosts it asks for.
 
 Dalibre loads the plugin from that folder, not a copy, and reloads it a
@@ -329,7 +329,7 @@ moment after you save a change. Open **Get books**, pick
 *pride and prejudice*, then *dickens* with the language set to French,
 then download a book into your library.
 
-If the plugin doesn't load, Settings › Plugins shows why: a field
+If the plugin doesn't load, Plugins shows why: a field
 `plugin.json` doesn't allow, a missing export, a script error.
 
 Your own AI agent can do this loop for you over [MCP](/docs/mcp/#write-a-plugin): it starts
@@ -370,7 +370,7 @@ Save, and the Get books page shows your two shelves, each with *See all*.
 ### 7. Share it
 
 Push the folder to a GitHub repository, with `plugin.json` at its root.
-Anyone can then install it from **Settings › Plugins › Install from
+Anyone can then install it from **Plugins › Install from
 GitHub**.
 
 ## plugin.json
@@ -1419,7 +1419,7 @@ as a GitHub release asset, with your source next to it.
 
 ### Installing from GitHub
 
-Users can install straight from your repository: **Settings › Plugins ›
+Users can install straight from your repository: **Plugins ›
 Install from GitHub**, with `owner/repo` or a github.com link. They pick
 one of your releases (the latest by default) or a branch:
 
@@ -1446,6 +1446,27 @@ that isn't a pre-release, or a new commit on the branch followed.
 - An update that asks for **no new permissions** can install by itself.
 - One that asks for **more** waits for the user.
 - **Bump `version` in each release**, or it won't be seen as newer.
+
+### The Marketplace
+
+**Plugins › Marketplace** (the toolbar's Plugins button) lists plugins users install with a
+click: the plugins in Dalibre's [marketplace/](https://github.com/djyde/dalibre/tree/main/marketplace)
+folder, and the community's. To list yours, open a pull request adding
+your repository to
+[marketplace/community.json](https://github.com/djyde/dalibre/blob/main/marketplace/community.json):
+
+```json
+{ "repo": "ann/dalibre-example-books", "category": "sources", "calibre": "Example Books" }
+```
+
+- `category` is one of `library`, `metadata`, `epub`, `language`,
+  `sources`; `calibre`, optional, names the calibre plugin yours does the
+  work of, so calibre's users find it.
+- Your repository needs a release, as above. The Marketplace lists its
+  latest, checked with `dalibre-plugin check`, and picks up new releases
+  within a day.
+- Installing still shows users what your plugin asks for; updates follow
+  the same rules as above.
 
 ### Compatibility
 

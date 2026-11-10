@@ -1,3 +1,12 @@
+## Unreleased
+
+- Merged upstream djyde/dalibre 0.4.0:
+  - Plugins have their own window, from the toolbar's Plugins button, with
+    a Marketplace of calibre's most used plugins and the community's.
+  - Plugin actions run on the books you choose or the whole library, from
+    the book menu or the sidebar's Tools.
+  - Removing books works in libraries made before calibre 8.
+
 ## 0.3.2
 
 - Merged upstream djyde/dalibre 0.3.0:

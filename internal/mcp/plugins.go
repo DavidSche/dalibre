@@ -21,7 +21,7 @@ import (
 // functions, and reload it after an edit. What a plugin may reach is
 // still the user's to grant, in Dalibre's own dialog.
 
-var pluginTools = []string{"list_plugins", "create_plugin", "add_plugin", "reload_plugins", "test_plugin", "enable_plugin", "remove_plugin"}
+var pluginTools = []string{"list_plugins", "create_plugin", "add_plugin", "reload_plugins", "test_plugin", "enable_plugin", "remove_plugin", "list_actions", "run_action"}
 
 // PluginDocs is where writing plugins is explained.
 const PluginDocs = "https://dalibre.randynamic.org/docs/plugins/"
@@ -40,7 +40,7 @@ type PluginInfo struct {
 	Name         string   `json:"name"`
 	Version      string   `json:"version"`
 	Description  string   `json:"description,omitempty"`
-	Capabilities []string `json:"capabilities" jsonschema:"bookSource, metadata, fileType"`
+	Capabilities []string `json:"capabilities" jsonschema:"bookSource, metadata, fileType, actions"`
 	State        string   `json:"state" jsonschema:"loaded, disabled, needs_approval (the user must allow it in Dalibre) or failed (see errors)"`
 	Builtin      bool     `json:"builtin,omitempty" jsonschema:"ships inside Dalibre"`
 	Folder       string   `json:"folder,omitempty" jsonschema:"the folder it loads from, when added from one"`
@@ -294,7 +294,7 @@ type testIn struct {
 
 // TestError is why a plugin's call failed.
 type TestError struct {
-	Kind    string `json:"kind" jsonschema:"auth, notFound, rateLimited, unavailable, invalid, settings, timeout, permission or script"`
+	Kind    string `json:"kind" jsonschema:"auth, notFound, rateLimited, unavailable, invalid, settings, timeout, permission, cancelled or script"`
 	Message string `json:"message"`
 	Stack   string `json:"stack,omitempty" jsonschema:"where the script threw"`
 }

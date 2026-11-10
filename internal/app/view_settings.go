@@ -27,7 +27,6 @@ const (
 	sectionGeneral settingsSection = iota
 	sectionLibrary
 	sectionOPDS
-	sectionPlugins
 	sectionMCP
 	sectionWireless
 )
@@ -43,7 +42,6 @@ var sections = []struct {
 	{sectionGeneral, "General", locales.SettingsSectionGeneral, icons.Sliders},
 	{sectionLibrary, "Library", locales.CommonLibrary, icons.Library},
 	{sectionOPDS, "OPDS", locales.SettingsSectionOPDS, icons.Rss},
-	{sectionPlugins, "Plugins", locales.SettingsSectionPlugins, icons.Puzzle},
 	{sectionMCP, "MCP", locales.SettingsSectionMCP, icons.Bot},
 	{sectionWireless, "Wireless", locales.WirelessName, icons.Wifi},
 }
@@ -55,9 +53,6 @@ const settingsWidth = 920
 // openSettings opens the Settings window at section.
 func (a *App) openSettings(s settingsSection) {
 	a.settingsOpen, a.section = true, s
-	if s == sectionPlugins {
-		a.checkUpdates(false)
-	}
 }
 
 func (a *App) settingsDialog(c *ui.Context) {
@@ -82,8 +77,6 @@ func (a *App) settingsDialog(c *ui.Context) {
 				a.libraryPane(c)
 			case sectionOPDS:
 				a.opdsPane(c)
-			case sectionPlugins:
-				a.pluginsPane(c)
 			case sectionMCP:
 				a.mcpPane(c)
 			case sectionWireless:
@@ -97,7 +90,6 @@ func (a *App) settingsDialog(c *ui.Context) {
 		}
 	})
 	a.catalogSheet(c)
-	a.githubSheet(c)
 }
 
 // pane is a section's scrolling column.

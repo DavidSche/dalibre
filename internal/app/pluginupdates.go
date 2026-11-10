@@ -245,12 +245,21 @@ func (a *App) checkUpdates(force bool) {
 		return
 	}
 	a.updatesChecking = true
-	gh := a.gh()
+	gh, marketURL := a.gh(), a.marketURL
 	a.run(func() {
 		found := map[string]*pluginUpdate{}
 		var errs []error
+		// The Marketplace's index, read once, for the plugins from there.
+		var index *plugin.Marketplace
+		var indexErr error
+		market := func() (*plugin.Marketplace, error) {
+			if index == nil && indexErr == nil {
+				index, _, indexErr = gh.FetchMarketplace(context.Background(), marketURL)
+			}
+			return index, indexErr
+		}
 		for _, it := range items {
-			u, err := latestUpdate(gh, it.src)
+			u, err := latestUpdate(gh, it.id, it.src, market)
 			if err != nil {
 				errs = append(errs, errors.New(locales.PluginsCheckFailed(it.id, err.Error())))
 				continue
@@ -287,8 +296,16 @@ func (a *App) checkUpdates(force bool) {
 	})
 }
 
-// latestUpdate is the update src has on GitHub, nil when it is up to date.
-func latestUpdate(gh *plugin.GitHub, src settings.PluginSource) (*pluginUpdate, error) {
+// latestUpdate is the update src has on GitHub, or in the Marketplace's
+// index (market) for a plugin from there; nil when it is up to date.
+func latestUpdate(gh *plugin.GitHub, id string, src settings.PluginSource, market func() (*plugin.Marketplace, error)) (*pluginUpdate, error) {
+	if src.Marketplace {
+		index, err := market()
+		if err != nil {
+			return nil, err
+		}
+		return marketUpdate(index, id, src.Ref), nil
+	}
 	repo, err := plugin.ParseRepo(src.Repo)
 	if err != nil {
 		return nil, err

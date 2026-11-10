@@ -452,7 +452,7 @@ var mcpToolInfo = map[string]func() string{
 	"find_books": locales.McpToolFindBooks, "download_book": locales.McpToolDownloadBook, "find_metadata": locales.McpToolFindMetadata,
 	"list_plugins": locales.McpToolListPlugins, "create_plugin": locales.McpToolCreatePlugin, "add_plugin": locales.McpToolAddPlugin,
 	"reload_plugins": locales.McpToolReloadPlugins, "test_plugin": locales.McpToolTestPlugin, "enable_plugin": locales.McpToolEnablePlugin,
-	"remove_plugin": locales.McpToolRemovePlugin,
+	"remove_plugin": locales.McpToolRemovePlugin, "list_actions": locales.McpToolListActions, "run_action": locales.McpToolRunAction,
 }
 
 // mcpTools lists the tools agents get, by group; those they don't have
