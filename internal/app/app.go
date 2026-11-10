@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -115,7 +116,11 @@ type App struct {
 	consent        *consentAsk
 	downloads      []*download
 	pluginsLoading bool
-	pl             pluginsState
+	// loadSeq counts the plugins' loads; loadWait is closed when the last
+	// one started is done (afterPluginLoad).
+	loadSeq  int
+	loadWait []chan struct{}
+	pl       pluginsState
 	// updates are newer versions of plugins installed from GitHub, by id.
 	updates         map[string]*pluginUpdate
 	updatesChecking bool
@@ -175,8 +180,11 @@ type App struct {
 }
 
 type toastMsg struct {
-	text  string
-	error bool
+	text     string
+	error    bool
+	action   string // a button, as Undo, which runs onAction
+	onAction func()
+	onClose  func()
 }
 
 type shownKey struct {
@@ -570,19 +578,28 @@ func (a *App) removeBooks(ids []int64) {
 // addFormat asks for a file and adds it to the book.
 func (a *App) addFormat(id int64) {
 	lib := a.lib
+	hooks, after := a.importPlugins(), a.hookPlugins()
 	a.run(func() {
 		paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: a.win, Title: locales.AppAddFormatTitle(), Filters: ebookFilter()})
 		if err != nil || len(paths) == 0 || lib == nil {
 			return
 		}
-		err = lib.AddFormat(id, paths[0])
+		file, done, warned := processImport(context.Background(), hooks, paths[0])
+		err = lib.AddFormat(id, file)
+		done()
+		if err == nil {
+			afterAdd(context.Background(), lib, after, id, strings.ToUpper(strings.TrimPrefix(filepath.Ext(file), ".")), false)
+		}
 		a.post(func() {
+			for _, e := range warned {
+				a.toastError(e)
+			}
 			if err != nil {
 				a.toastError(err)
 				return
 			}
 			a.reload(func() {
-				a.toast("%s", locales.AppToastAddedFormat(strings.ToUpper(strings.TrimPrefix(filepath.Ext(paths[0]), "."))))
+				a.toast("%s", locales.AppToastAddedFormat(strings.ToUpper(strings.TrimPrefix(filepath.Ext(file), "."))))
 			})
 		})
 	})
@@ -590,8 +607,12 @@ func (a *App) addFormat(id int64) {
 
 func (a *App) removeFormat(id int64, format string) {
 	lib := a.lib
+	after := a.hookPlugins()
 	a.run(func() {
 		err := lib.RemoveFormat(id, format)
+		if err == nil {
+			runHooks(context.Background(), lib, after, plugin.HookPostDelete, id, format)
+		}
 		a.post(func() {
 			if err != nil {
 				a.toastError(err)

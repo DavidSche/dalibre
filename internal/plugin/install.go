@@ -221,7 +221,10 @@ func Uninstall(root, id string) error {
 	if _, err := os.Stat(filepath.Join(dir, "plugin.json")); err != nil {
 		return fmt.Errorf("%s isn’t installed", id)
 	}
-	return os.RemoveAll(dir)
+	if err := os.RemoveAll(dir); err != nil {
+		return err
+	}
+	return os.RemoveAll(DataDir(root, id))
 }
 
 // Pack zips the plugin in dir as <id>-<version>.dalibre-plugin in out,

@@ -4,3 +4,4 @@
 .mygo/
 mygo_windows_*.syso
 *.exe
+.data/

@@ -27,7 +27,7 @@ func (a *App) view(c *ui.Context) {
 		if t.error {
 			typ = "error"
 		}
-		c.AddToast(ui.Toast{Title: t.text, Type: typ})
+		c.AddToast(ui.Toast{Title: t.text, Type: typ, Action: t.action, OnAction: t.onAction, OnClose: t.onClose})
 	}
 	a.toasts = nil
 

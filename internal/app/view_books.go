@@ -285,6 +285,7 @@ func (a *App) bookMenu(b *calibre.Book) func(m *ui.Menu) {
 				a.editBook(b, "")
 			}
 		}
+		a.pluginActions(m, ids)
 		if dev := a.connectedDevice(); dev != nil {
 			item := m.Item(locales.WirelessSendTo(dev.Info().Name)).Icon(icons.Menu(icons.Wifi))
 			if a.device.sending > 0 {

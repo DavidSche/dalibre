@@ -3,6 +3,7 @@ package app
 import (
 	"maps"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -267,12 +268,38 @@ func (a *App) pluginPane(c *ui.Context, k knownPlugin) {
 			if m.IsMetadataSource() {
 				widgets.Tag(c, locales.CommonFetchMetadata(), false, nil)
 			}
+			if m.IsFileType() {
+				widgets.Tag(c, locales.PluginsCapBookFiles(), false, nil)
+			}
 		})
 		if m.IsBookSource() {
 			ui.Text(c, locales.PluginsGetBooksNote(m.Name)).FontSize(12).TextColor(pal().TextTertiary)
 		}
 		if m.IsMetadataSource() {
 			ui.Text(c, locales.PluginsFetchMetadataNote(m.Name)).FontSize(12).TextColor(pal().TextTertiary)
+		}
+		if m.IsFileType() {
+			// What it does with files: as they are added, from the book
+			// menu (when it exports process), after books change.
+			manual := true
+			if p := a.pluginByID(m.ID); p != nil {
+				manual = p.Defines("process")
+			}
+			note := ""
+			switch {
+			case m.RunsOnImport():
+				note = locales.PluginsBookFilesNote(m.Name)
+			case manual:
+				note = locales.PluginsBookFilesManualNote(m.Name)
+			}
+			switch {
+			case len(m.Hooks()) == 0:
+			case note == "":
+				note = locales.PluginsBookFilesHooksOnlyNote(m.Name)
+			default:
+				note += " " + locales.PluginsBookFilesHooksNote()
+			}
+			ui.Text(c, note).FontSize(12).TextColor(pal().TextTertiary)
 		}
 	})
 	if len(m.Settings) > 0 {
@@ -286,9 +313,10 @@ func (a *App) pluginPane(c *ui.Context, k knownPlugin) {
 		if m.Permissions.LocalNetwork {
 			permissionItem(c, icons.Network, locales.PluginsLocalNetwork(), locales.PluginsLocalNetworkDetail(), true)
 		}
-		if m.Permissions.Library == plugin.LibraryRead {
-			permissionItem(c, icons.Library, locales.PluginsLibraryRead(), locales.PluginsLibraryReadDetail(), false)
+		if m.IsFileType() {
+			permissionItem(c, icons.File, locales.PluginsBookFilesAccess(), locales.PluginsBookFilesAccessDetail(), false)
 		}
+		libraryPermission(c, m, false, nil)
 		note := locales.PluginsNoteAllowed()
 		if k.builtin {
 			note = locales.PluginsNoteBuiltIn()
@@ -322,6 +350,28 @@ func (a *App) pluginPane(c *ui.Context, k knownPlugin) {
 			}
 		}
 	})
+}
+
+// libraryPermission shows what the plugin may see and change of the
+// library. When asking consent, only what had (granted before, when
+// not nil) doesn't cover.
+func libraryPermission(c *ui.Context, m *plugin.Manifest, consent bool, had *plugin.Permissions) {
+	want := plugin.Permissions{Library: m.Permissions.Library}
+	if want.Library == "" || had != nil && had.Covers(want) {
+		return
+	}
+	if want.Library == plugin.LibraryWrite {
+		permissionItem(c, icons.Pencil, locales.PluginsLibraryWrite(), locales.PluginsLibraryWriteDetail(), true)
+		return
+	}
+	label, detail := locales.PluginsLibraryRead(), locales.PluginsLibraryReadDetail()
+	if consent {
+		label = locales.PluginsConsentSeeBooks()
+	}
+	if !m.IsMetadataSource() && len(m.Hooks()) > 0 {
+		detail = locales.PluginsLibraryReadHooksDetail()
+	}
+	permissionItem(c, icons.Library, label, detail, false)
 }
 
 // permissionItem is the PermissionItem component.
@@ -369,15 +419,23 @@ func (a *App) pluginSettingsForm(c *ui.Context, m *plugin.Manifest, loaded bool)
 						ui.Text(c, hint).FontSize(12).TextColor(pal().TextTertiary)
 					}
 				})
-				in := ui.TextInput(c, &v).Label(s.Title).Placeholder(s.Default)
-				if s.Type == "secret" {
-					in.Password()
+				if s.Type == "file" {
+					a.fileSettingField(c, m, s, &v)
+				} else {
+					in := ui.TextInput(c, &v).Label(s.Title).Placeholder(s.Default)
+					if s.Type == "secret" {
+						in.Password()
+					}
 				}
 				if s.Description != "" {
 					ui.Text(c, s.Description).FontSize(12).TextColor(pal().TextTertiary)
 				}
 			})
 			a.pl.values[s.Key] = v
+		}
+		// File settings apply as they are chosen; Save is for the others.
+		if !slices.ContainsFunc(m.Settings, func(s plugin.Setting) bool { return s.Type != "file" }) {
+			return
 		}
 		changed := !maps.Equal(trimmed(a.pl.values), trimmed(saved))
 		ui.Row(c).Gap(theme.Space8).Children(func() {
@@ -388,6 +446,81 @@ func (a *App) pluginSettingsForm(c *ui.Context, m *plugin.Manifest, loaded bool)
 			}
 		})
 	})
+}
+
+// fileSettingField is a file setting (Figma, 16 · Run plugin on books):
+// Choose file… when none is chosen, else the file with Change… and
+// Remove. A choice applies at once, with no Save: the file is copied into
+// the plugin's data folder, and the setting holds the path its script
+// reads it at.
+func (a *App) fileSettingField(c *ui.Context, m *plugin.Manifest, s plugin.Setting, v *string) {
+	dataDir := ""
+	if a.pluginDir != "" {
+		dataDir = plugin.DataDir(a.pluginDir, m.ID)
+	}
+	name, size := "", int64(0)
+	if f := plugin.SettingFile(dataDir, *v); dataDir != "" && f != "" {
+		if st, err := os.Stat(f); err == nil {
+			name, size = filepath.Base(f), st.Size()
+		}
+	}
+	id, key := m.ID, s.Key
+	choose := func() {
+		a.run(func() {
+			paths, err := mygo.Dialog.Open(mygo.OpenDialogOptions{Parent: a.win, Title: s.Title})
+			if err != nil || len(paths) == 0 {
+				return
+			}
+			p, err := plugin.StoreSettingFile(dataDir, key, paths[0])
+			a.post(func() {
+				if err != nil {
+					a.toastError(err)
+					return
+				}
+				a.setFileSetting(id, key, p)
+			})
+		})
+	}
+	if name == "" {
+		ui.Row(c).Children(func() {
+			if widgets.ButtonSized(c, widgets.Secondary, nil, locales.PluginsFileChoose(), theme.ControlS).Disabled(dataDir == "").Clicked() {
+				choose()
+			}
+		})
+		return
+	}
+	ui.Row(c).Gap(theme.Space8).AlignItems(ui.Center).Children(func() {
+		ui.Icon(c, icons.File).FontSize(16).TextColor(pal().IconMuted)
+		ui.Text(c, name).FontSize(13).SingleLine().MinWidth(0)
+		ui.Text(c, humanSize(size)).FontSize(13).TextColor(pal().TextTertiary)
+		ui.Spacer(c)
+		if widgets.ButtonSized(c, widgets.Ghost, nil, locales.PluginsFileChange(), theme.ControlS).Clicked() {
+			choose()
+		}
+		if widgets.ButtonSized(c, widgets.Ghost, nil, locales.CommonRemove(), theme.ControlS).Label(locales.CommonRemove() + " " + s.Title).Clicked() {
+			plugin.RemoveSettingFile(dataDir, key)
+			a.setFileSetting(id, key, "")
+		}
+	})
+}
+
+// setFileSetting saves file setting key of plugin id, with the plugin's
+// other saved values as they are, and reloads it.
+func (a *App) setFileSetting(id, key, v string) {
+	values := map[string]string{}
+	if st := a.settings.Plugins[id]; st != nil {
+		maps.Copy(values, st.Values)
+	}
+	maps.Copy(values, a.pluginSecrets[id])
+	if v == "" {
+		delete(values, key)
+	} else {
+		values[key] = v
+	}
+	if a.pl.valuesFor == id {
+		a.pl.values[key] = v
+	}
+	a.setPluginValues(id, values)
 }
 
 func trimmed(values map[string]string) map[string]string {
@@ -450,9 +583,10 @@ func (a *App) consentDialog(c *ui.Context) {
 				permissionItem(c, icons.Network, locales.PluginsConsentLocal(),
 					locales.PluginsConsentLocalDetail(), true)
 			}
-			if m.Permissions.Library == plugin.LibraryRead && (had == nil || had.Library != plugin.LibraryRead) {
-				permissionItem(c, icons.Library, locales.PluginsConsentSeeBooks(), locales.PluginsLibraryReadDetail(), false)
+			if m.IsFileType() && had == nil {
+				permissionItem(c, icons.File, locales.PluginsBookFilesAccess(), locales.PluginsBookFilesAccessDetail(), false)
 			}
+			libraryPermission(c, m, true, had)
 			if had != nil && len(had.Hosts) > 0 {
 				ui.Text(c, locales.PluginsConsentAlreadyAllowed(strings.Join(had.Hosts, ", "))).FontSize(12).TextColor(pal().TextTertiary)
 			}
@@ -480,6 +614,9 @@ func (a *App) consentDialog(c *ui.Context) {
 	})
 	if !open {
 		a.consent = nil
+		if ask.answered != nil {
+			ask.answered(false)
+		}
 	}
 }
 

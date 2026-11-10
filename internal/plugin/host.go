@@ -85,6 +85,8 @@ func (p *Plugin) hostInfo([]any) (any, error) {
 		"api":      APIVersion,
 		"plugin":   map[string]string{"id": p.Manifest.ID, "version": p.Manifest.Version},
 		"settings": p.settings,
+		// what a refused request's error says, to tell it from others
+		"notAllowed": ErrHostNotAllowed.Error(),
 	})
 	return string(data), err
 }
@@ -97,11 +99,13 @@ func (p *Plugin) hostLog(args []any) (any, error) {
 	return nil, nil
 }
 
-// hostSettle is __host_settle(json): the outcome of the call in progress.
+// hostSettle is __host_settle(json): the outcome of the call in progress,
+// which ends the loop running it.
 func (p *Plugin) hostSettle(args []any) (any, error) {
 	if len(args) == 1 {
 		if s, ok := args[0].(string); ok && p.settled == nil {
 			p.settled = &s
+			p.loop.StopNoWait()
 		}
 	}
 	return nil, nil
@@ -218,96 +222,4 @@ func (p *Plugin) request(ctx context.Context, method, rawURL string, headers map
 		p.authorize(req)
 	}
 	return req, nil
-}
-
-// fetchInit is fetch's second argument, as the web's.
-type fetchInit struct {
-	Method  string            `json:"method"`
-	Headers map[string]string `json:"headers"`
-	Body    *string           `json:"body"`
-}
-
-// fetchResult is what __host_fetch returns, as JSON: a response or an
-// error the prelude rejects with.
-type fetchResult struct {
-	Status     int               `json:"status,omitempty"`
-	StatusText string            `json:"statusText,omitempty"`
-	OK         bool              `json:"ok,omitempty"`
-	URL        string            `json:"url,omitempty"`
-	Headers    map[string]string `json:"headers,omitempty"`
-	Body       string            `json:"body,omitempty"`
-	Error      *struct {
-		Kind    ErrorKind `json:"kind"`
-		Message string    `json:"message"`
-	} `json:"error,omitempty"`
-}
-
-// hostFetch is __host_fetch(url, init), behind dalibre.fetch: the web's
-// fetch, cut down. The request is made before it returns.
-func (p *Plugin) hostFetch(args []any) (any, error) {
-	r := p.fetch(args)
-	data, err := json.Marshal(r)
-	return string(data), err
-}
-
-func (p *Plugin) fetch(args []any) fetchResult {
-	fail := func(err error) fetchResult {
-		kind := KindUnavailable
-		switch {
-		case errors.Is(err, ErrHostNotAllowed):
-			kind = KindPermission
-		case errors.Is(err, context.DeadlineExceeded), errors.Is(err, context.Canceled):
-			kind = KindTimeout
-		}
-		r := fetchResult{}
-		r.Error = &struct {
-			Kind    ErrorKind `json:"kind"`
-			Message string    `json:"message"`
-		}{kind, err.Error()}
-		return r
-	}
-	if p.requests++; p.requests > MaxRequests {
-		return fail(fmt.Errorf("%w: more than %d requests in one call", ErrHostNotAllowed, MaxRequests))
-	}
-	if len(args) != 2 {
-		return fail(errors.New("fetch: bad arguments"))
-	}
-	rawURL, _ := args[0].(string)
-	initJSON, _ := args[1].(string)
-	var init fetchInit
-	if err := json.Unmarshal([]byte(initJSON), &init); err != nil {
-		return fail(fmt.Errorf("fetch: init must be {method, headers, body} with string values: %s", jsonProblem(err)))
-	}
-	if init.Method == "" {
-		init.Method = http.MethodGet
-	}
-	var body io.Reader
-	if init.Body != nil {
-		body = strings.NewReader(*init.Body)
-	}
-	req, err := p.request(p.ctx, strings.ToUpper(init.Method), rawURL, init.Headers, body)
-	if err != nil {
-		return fail(err)
-	}
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return fail(err)
-	}
-	defer resp.Body.Close()
-	data, err := io.ReadAll(io.LimitReader(resp.Body, MaxFetchBody+1))
-	if err != nil {
-		return fail(err)
-	}
-	if len(data) > MaxFetchBody {
-		return fail(fmt.Errorf("fetch %s: the response is over %d MB; return the file’s URL for the host to download", req.URL.Redacted(), MaxFetchBody>>20))
-	}
-	r := fetchResult{
-		Status: resp.StatusCode, StatusText: http.StatusText(resp.StatusCode),
-		OK: resp.StatusCode >= 200 && resp.StatusCode < 300, URL: resp.Request.URL.String(),
-		Headers: map[string]string{}, Body: string(data),
-	}
-	for k := range resp.Header {
-		r.Headers[strings.ToLower(k)] = resp.Header.Get(k)
-	}
-	return r
 }

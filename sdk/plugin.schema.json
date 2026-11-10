@@ -22,7 +22,7 @@
     "author": { "type": "string" },
     "homepage": { "type": "string", "format": "uri" },
     "license": { "description": "An SPDX identifier, as \"MIT\".", "type": "string" },
-    "main": { "description": "The script, relative to plugin.json. Default main.js.", "type": "string", "pattern": "\\.js$" },
+    "main": { "description": "The main module, a .js, .mjs, .ts or .mts file relative to plugin.json. Default main.js.", "type": "string", "pattern": "\\.m?[jt]s$" },
     "icon": {
       "description": "The plugin's icon, from Dalibre's set.",
       "enum": ["globe", "library", "book-open", "database", "network", "building", "bookmark", "layers"]
@@ -73,6 +73,17 @@
                   "items": { "enum": ["title", "authors", "series", "tags", "publisher", "pubdate", "language", "identifiers", "cover", "description"] }
                 }
               }
+            },
+            "fileType": {
+              "description": "Works on books' files: each file Dalibre adds, and the books the user runs it on from the book menu. Export process.",
+              "type": "object", "additionalProperties": false,
+              "properties": {
+                "title": { "description": "What running it is called in the book menu, as \"Clean up EPUB\". Default: the plugin's name.", "type": "string", "maxLength": 64 },
+                "onImport": { "description": "false to run only from the book menu, not on the files Dalibre adds. Default true.", "type": "boolean" },
+                "onPostImport": { "description": "Call postimport after a file was added to a book, as calibre's on_postimport. Needs permissions.library.", "type": "boolean" },
+                "onPostAdd": { "description": "Call postadd after a book was added, as calibre's on_postadd. Needs permissions.library.", "type": "boolean" },
+                "onPostDelete": { "description": "Call postdelete after a format was removed, as calibre's on_postdelete. Needs permissions.library.", "type": "boolean" }
+              }
             }
           }
         }
@@ -91,8 +102,8 @@
           "type": "boolean"
         },
         "library": {
-          "description": "\"read\": see the title, authors, identifiers and language of the books the user looks up with the plugin. Metadata sources need it.",
-          "enum": ["read"]
+          "description": "\"read\": see the details of the books the plugin is asked about; metadata sources and file type hooks need it. \"write\": also lets file type hooks change those details.",
+          "enum": ["read", "write"]
         }
       }
     },
@@ -103,7 +114,7 @@
         "properties": {
           "key": { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]{0,63}$" },
           "title": { "type": "string", "minLength": 1 },
-          "type": { "enum": ["text", "secret"] },
+          "type": { "enum": ["text", "secret", "file"] },
           "description": { "type": "string" },
           "default": { "type": "string" },
           "required": { "type": "boolean" }

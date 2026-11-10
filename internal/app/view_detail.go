@@ -101,6 +101,7 @@ func (a *App) bookDetail(c *ui.Context, b *calibre.Book) {
 					if editableFormat(b) != "" && m.Item(locales.EditorMenuEditBook()).Icon(icons.Menu(icons.File)).Trailing("Ctrl+E").Chosen() {
 						a.editBook(b, "")
 					}
+					a.pluginActions(m, []int64{b.ID})
 					if m.Item(locales.DetailMenuAddFormat()).Icon(icons.Menu(icons.Plus)).Chosen() {
 						a.addFormat(b.ID)
 					}

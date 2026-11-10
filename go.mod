@@ -3,6 +3,7 @@ module dalibre
 go 1.27.3
 
 require (
+	github.com/MoeForge/moejs v0.1.0
 	github.com/ebitengine/purego v0.11.1
 	github.com/egoist/mygo v0.8.3
 	github.com/modelcontextprotocol/go-sdk v1.8.0
@@ -10,11 +11,11 @@ require (
 	golang.org/x/image v0.47.0
 	golang.org/x/net v0.59.0
 	golang.org/x/text v0.43.0
-	modernc.org/quickjs v0.27.0
 	modernc.org/sqlite v1.62.0
 )
 
 require (
+	github.com/MoeForge/moego v0.1.0-alpha.1 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/go-text/typesetting v0.3.5 // indirect
 	github.com/google/jsonschema-go v0.4.3 // indirect
@@ -30,7 +31,6 @@ require (
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	modernc.org/libc v1.80.1 // indirect
-	modernc.org/libquickjs v0.14.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
 )

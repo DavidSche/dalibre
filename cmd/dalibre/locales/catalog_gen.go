@@ -6229,6 +6229,88 @@ func (msgs Messages) McpDownloadedMany(count int) string {
 	return Catalog.Format(msgs.locale, "mcpDownloadedMany", map[string]any{"count": count})
 }
 
+// McpListedPlugins says "Listed the plugins"
+// in the language the app shows.
+func McpListedPlugins() string { return In(i18n.Locale()).McpListedPlugins() }
+
+// McpListedPlugins says "Listed the plugins"
+// in the language of msgs.
+func (msgs Messages) McpListedPlugins() string {
+	return Catalog.Format(msgs.locale, "mcpListedPlugins", nil)
+}
+
+// McpCreatedPlugin says "Started a plugin in {folder}"
+// in the language the app shows.
+func McpCreatedPlugin(folder string) string { return In(i18n.Locale()).McpCreatedPlugin(folder) }
+
+// McpCreatedPlugin says "Started a plugin in {folder}"
+// in the language of msgs.
+func (msgs Messages) McpCreatedPlugin(folder string) string {
+	return Catalog.Format(msgs.locale, "mcpCreatedPlugin", map[string]any{"folder": folder})
+}
+
+// McpAddedPlugin says "Added the plugin in {folder}"
+// in the language the app shows.
+func McpAddedPlugin(folder string) string { return In(i18n.Locale()).McpAddedPlugin(folder) }
+
+// McpAddedPlugin says "Added the plugin in {folder}"
+// in the language of msgs.
+func (msgs Messages) McpAddedPlugin(folder string) string {
+	return Catalog.Format(msgs.locale, "mcpAddedPlugin", map[string]any{"folder": folder})
+}
+
+// McpReloadedPlugins says "Reloaded the plugins"
+// in the language the app shows.
+func McpReloadedPlugins() string { return In(i18n.Locale()).McpReloadedPlugins() }
+
+// McpReloadedPlugins says "Reloaded the plugins"
+// in the language of msgs.
+func (msgs Messages) McpReloadedPlugins() string {
+	return Catalog.Format(msgs.locale, "mcpReloadedPlugins", nil)
+}
+
+// McpTestedPlugin says "Tested {call} of {plugin}"
+// in the language the app shows.
+func McpTestedPlugin(call string, plugin string) string {
+	return In(i18n.Locale()).McpTestedPlugin(call, plugin)
+}
+
+// McpTestedPlugin says "Tested {call} of {plugin}"
+// in the language of msgs.
+func (msgs Messages) McpTestedPlugin(call string, plugin string) string {
+	return Catalog.Format(msgs.locale, "mcpTestedPlugin", map[string]any{"call": call, "plugin": plugin})
+}
+
+// McpEnabledPlugin says "Turned on {plugin}"
+// in the language the app shows.
+func McpEnabledPlugin(plugin string) string { return In(i18n.Locale()).McpEnabledPlugin(plugin) }
+
+// McpEnabledPlugin says "Turned on {plugin}"
+// in the language of msgs.
+func (msgs Messages) McpEnabledPlugin(plugin string) string {
+	return Catalog.Format(msgs.locale, "mcpEnabledPlugin", map[string]any{"plugin": plugin})
+}
+
+// McpDisabledPlugin says "Turned off {plugin}"
+// in the language the app shows.
+func McpDisabledPlugin(plugin string) string { return In(i18n.Locale()).McpDisabledPlugin(plugin) }
+
+// McpDisabledPlugin says "Turned off {plugin}"
+// in the language of msgs.
+func (msgs Messages) McpDisabledPlugin(plugin string) string {
+	return Catalog.Format(msgs.locale, "mcpDisabledPlugin", map[string]any{"plugin": plugin})
+}
+
+// McpRemovedPlugin says "Removed the plugin {plugin}"
+// in the language the app shows.
+func McpRemovedPlugin(plugin string) string { return In(i18n.Locale()).McpRemovedPlugin(plugin) }
+
+// McpRemovedPlugin says "Removed the plugin {plugin}"
+// in the language of msgs.
+func (msgs Messages) McpRemovedPlugin(plugin string) string {
+	return Catalog.Format(msgs.locale, "mcpRemovedPlugin", map[string]any{"plugin": plugin})
+}
+
 // McpFoundMetadata says "Looked up metadata for “{title}”"
 // in the language the app shows.
 func McpFoundMetadata(title string) string { return In(i18n.Locale()).McpFoundMetadata(title) }
@@ -6279,6 +6361,16 @@ func McpGroupChange() string { return In(i18n.Locale()).McpGroupChange() }
 // in the language of msgs.
 func (msgs Messages) McpGroupChange() string {
 	return Catalog.Format(msgs.locale, "mcpGroupChange", nil)
+}
+
+// McpGroupPlugins says "Plugins"
+// in the language the app shows.
+func McpGroupPlugins() string { return In(i18n.Locale()).McpGroupPlugins() }
+
+// McpGroupPlugins says "Plugins"
+// in the language of msgs.
+func (msgs Messages) McpGroupPlugins() string {
+	return Catalog.Format(msgs.locale, "mcpGroupPlugins", nil)
 }
 
 // McpGroupSources says "Get books"
@@ -6409,6 +6501,76 @@ func McpToolDownloadBook() string { return In(i18n.Locale()).McpToolDownloadBook
 // in the language of msgs.
 func (msgs Messages) McpToolDownloadBook() string {
 	return Catalog.Format(msgs.locale, "mcpToolDownloadBook", nil)
+}
+
+// McpToolListPlugins says "List the plugins and how each is doing."
+// in the language the app shows.
+func McpToolListPlugins() string { return In(i18n.Locale()).McpToolListPlugins() }
+
+// McpToolListPlugins says "List the plugins and how each is doing."
+// in the language of msgs.
+func (msgs Messages) McpToolListPlugins() string {
+	return Catalog.Format(msgs.locale, "mcpToolListPlugins", nil)
+}
+
+// McpToolCreatePlugin says "Start a new plugin from the template."
+// in the language the app shows.
+func McpToolCreatePlugin() string { return In(i18n.Locale()).McpToolCreatePlugin() }
+
+// McpToolCreatePlugin says "Start a new plugin from the template."
+// in the language of msgs.
+func (msgs Messages) McpToolCreatePlugin() string {
+	return Catalog.Format(msgs.locale, "mcpToolCreatePlugin", nil)
+}
+
+// McpToolAddPlugin says "Add a plugin from its folder, once you allow it."
+// in the language the app shows.
+func McpToolAddPlugin() string { return In(i18n.Locale()).McpToolAddPlugin() }
+
+// McpToolAddPlugin says "Add a plugin from its folder, once you allow it."
+// in the language of msgs.
+func (msgs Messages) McpToolAddPlugin() string {
+	return Catalog.Format(msgs.locale, "mcpToolAddPlugin", nil)
+}
+
+// McpToolReloadPlugins says "Load the plugins again after an edit."
+// in the language the app shows.
+func McpToolReloadPlugins() string { return In(i18n.Locale()).McpToolReloadPlugins() }
+
+// McpToolReloadPlugins says "Load the plugins again after an edit."
+// in the language of msgs.
+func (msgs Messages) McpToolReloadPlugins() string {
+	return Catalog.Format(msgs.locale, "mcpToolReloadPlugins", nil)
+}
+
+// McpToolTestPlugin says "Call a plugin’s function to try it."
+// in the language the app shows.
+func McpToolTestPlugin() string { return In(i18n.Locale()).McpToolTestPlugin() }
+
+// McpToolTestPlugin says "Call a plugin’s function to try it."
+// in the language of msgs.
+func (msgs Messages) McpToolTestPlugin() string {
+	return Catalog.Format(msgs.locale, "mcpToolTestPlugin", nil)
+}
+
+// McpToolEnablePlugin says "Turn a plugin on or off."
+// in the language the app shows.
+func McpToolEnablePlugin() string { return In(i18n.Locale()).McpToolEnablePlugin() }
+
+// McpToolEnablePlugin says "Turn a plugin on or off."
+// in the language of msgs.
+func (msgs Messages) McpToolEnablePlugin() string {
+	return Catalog.Format(msgs.locale, "mcpToolEnablePlugin", nil)
+}
+
+// McpToolRemovePlugin says "Remove a plugin added from a folder."
+// in the language the app shows.
+func McpToolRemovePlugin() string { return In(i18n.Locale()).McpToolRemovePlugin() }
+
+// McpToolRemovePlugin says "Remove a plugin added from a folder."
+// in the language of msgs.
+func (msgs Messages) McpToolRemovePlugin() string {
+	return Catalog.Format(msgs.locale, "mcpToolRemovePlugin", nil)
 }
 
 // McpToolFindMetadata says "Look up a book’s metadata with metadata plugins."
@@ -6833,4 +6995,226 @@ func EditorCloseFind() string { return In(i18n.Locale()).EditorCloseFind() }
 // in the language of msgs.
 func (msgs Messages) EditorCloseFind() string {
 	return Catalog.Format(msgs.locale, "editorCloseFind", nil)
+}
+
+// PluginsProcessFailed says "{plugin} couldn’t process {file}, so it was added as it was: {reason}"
+// in the language the app shows.
+func PluginsProcessFailed(plugin string, file string, reason string) string {
+	return In(i18n.Locale()).PluginsProcessFailed(plugin, file, reason)
+}
+
+// PluginsProcessFailed says "{plugin} couldn’t process {file}, so it was added as it was: {reason}"
+// in the language of msgs.
+func (msgs Messages) PluginsProcessFailed(plugin string, file string, reason string) string {
+	return Catalog.Format(msgs.locale, "pluginsProcessFailed", map[string]any{"plugin": plugin, "file": file, "reason": reason})
+}
+
+// BooksMenuPlugins says "Plugins"
+// in the language the app shows.
+func BooksMenuPlugins() string { return In(i18n.Locale()).BooksMenuPlugins() }
+
+// BooksMenuPlugins says "Plugins"
+// in the language of msgs.
+func (msgs Messages) BooksMenuPlugins() string {
+	return Catalog.Format(msgs.locale, "booksMenuPlugins", nil)
+}
+
+// PluginsCapBookFiles says "Book files"
+// in the language the app shows.
+func PluginsCapBookFiles() string { return In(i18n.Locale()).PluginsCapBookFiles() }
+
+// PluginsCapBookFiles says "Book files"
+// in the language of msgs.
+func (msgs Messages) PluginsCapBookFiles() string {
+	return Catalog.Format(msgs.locale, "pluginsCapBookFiles", nil)
+}
+
+// PluginsBookFilesNote says "Book files: {name} works on the file of each book you add, and of the books you run it on from the book menu."
+// in the language the app shows.
+func PluginsBookFilesNote(name string) string { return In(i18n.Locale()).PluginsBookFilesNote(name) }
+
+// PluginsBookFilesNote says "Book files: {name} works on the file of each book you add, and of the books you run it on from the book menu."
+// in the language of msgs.
+func (msgs Messages) PluginsBookFilesNote(name string) string {
+	return Catalog.Format(msgs.locale, "pluginsBookFilesNote", map[string]any{"name": name})
+}
+
+// PluginsBookFilesManualNote says "Book files: {name} works on the files of the books you run it on from the book menu."
+// in the language the app shows.
+func PluginsBookFilesManualNote(name string) string {
+	return In(i18n.Locale()).PluginsBookFilesManualNote(name)
+}
+
+// PluginsBookFilesManualNote says "Book files: {name} works on the files of the books you run it on from the book menu."
+// in the language of msgs.
+func (msgs Messages) PluginsBookFilesManualNote(name string) string {
+	return Catalog.Format(msgs.locale, "pluginsBookFilesManualNote", map[string]any{"name": name})
+}
+
+// PluginsBookFilesAccess says "Your books’ files"
+// in the language the app shows.
+func PluginsBookFilesAccess() string { return In(i18n.Locale()).PluginsBookFilesAccess() }
+
+// PluginsBookFilesAccess says "Your books’ files"
+// in the language of msgs.
+func (msgs Messages) PluginsBookFilesAccess() string {
+	return Catalog.Format(msgs.locale, "pluginsBookFilesAccess", nil)
+}
+
+// PluginsBookFilesAccessDetail says "The books you add, and those you run it on. Only through Dalibre, never your other files."
+// in the language the app shows.
+func PluginsBookFilesAccessDetail() string { return In(i18n.Locale()).PluginsBookFilesAccessDetail() }
+
+// PluginsBookFilesAccessDetail says "The books you add, and those you run it on. Only through Dalibre, never your other files."
+// in the language of msgs.
+func (msgs Messages) PluginsBookFilesAccessDetail() string {
+	return Catalog.Format(msgs.locale, "pluginsBookFilesAccessDetail", nil)
+}
+
+// PluginsFileNone says "No file chosen"
+// in the language the app shows.
+func PluginsFileNone() string { return In(i18n.Locale()).PluginsFileNone() }
+
+// PluginsFileNone says "No file chosen"
+// in the language of msgs.
+func (msgs Messages) PluginsFileNone() string {
+	return Catalog.Format(msgs.locale, "pluginsFileNone", nil)
+}
+
+// PluginsFileChoose says "Choose file…"
+// in the language the app shows.
+func PluginsFileChoose() string { return In(i18n.Locale()).PluginsFileChoose() }
+
+// PluginsFileChoose says "Choose file…"
+// in the language of msgs.
+func (msgs Messages) PluginsFileChoose() string {
+	return Catalog.Format(msgs.locale, "pluginsFileChoose", nil)
+}
+
+// CommonUndo says "Undo"
+// in the language the app shows.
+func CommonUndo() string { return In(i18n.Locale()).CommonUndo() }
+
+// CommonUndo says "Undo"
+// in the language of msgs.
+func (msgs Messages) CommonUndo() string {
+	return Catalog.Format(msgs.locale, "commonUndo", nil)
+}
+
+// RunPluginChanged says "{action} · {count, plural, one {# book} other {# books}} changed"
+// in the language the app shows.
+func RunPluginChanged(action string, count int) string {
+	return In(i18n.Locale()).RunPluginChanged(action, count)
+}
+
+// RunPluginChanged says "{action} · {count, plural, one {# book} other {# books}} changed"
+// in the language of msgs.
+func (msgs Messages) RunPluginChanged(action string, count int) string {
+	return Catalog.Format(msgs.locale, "runPluginChanged", map[string]any{"action": action, "count": count})
+}
+
+// RunPluginNothing says "{action} · Nothing to change"
+// in the language the app shows.
+func RunPluginNothing(action string) string { return In(i18n.Locale()).RunPluginNothing(action) }
+
+// RunPluginNothing says "{action} · Nothing to change"
+// in the language of msgs.
+func (msgs Messages) RunPluginNothing(action string) string {
+	return Catalog.Format(msgs.locale, "runPluginNothing", map[string]any{"action": action})
+}
+
+// RunPluginFailedOn says "{action} failed on {count, plural, one {# book} other {# books}}: {reason}"
+// in the language the app shows.
+func RunPluginFailedOn(action string, count int, reason string) string {
+	return In(i18n.Locale()).RunPluginFailedOn(action, count, reason)
+}
+
+// RunPluginFailedOn says "{action} failed on {count, plural, one {# book} other {# books}}: {reason}"
+// in the language of msgs.
+func (msgs Messages) RunPluginFailedOn(action string, count int, reason string) string {
+	return Catalog.Format(msgs.locale, "runPluginFailedOn", map[string]any{"action": action, "count": count, "reason": reason})
+}
+
+// RunPluginNeedsSetup says "{plugin} needs setting up: {reason}"
+// in the language the app shows.
+func RunPluginNeedsSetup(plugin string, reason string) string {
+	return In(i18n.Locale()).RunPluginNeedsSetup(plugin, reason)
+}
+
+// RunPluginNeedsSetup says "{plugin} needs setting up: {reason}"
+// in the language of msgs.
+func (msgs Messages) RunPluginNeedsSetup(plugin string, reason string) string {
+	return Catalog.Format(msgs.locale, "runPluginNeedsSetup", map[string]any{"plugin": plugin, "reason": reason})
+}
+
+// RunPluginFillIn says "fill in {settings}"
+// in the language the app shows.
+func RunPluginFillIn(settings string) string { return In(i18n.Locale()).RunPluginFillIn(settings) }
+
+// RunPluginFillIn says "fill in {settings}"
+// in the language of msgs.
+func (msgs Messages) RunPluginFillIn(settings string) string {
+	return Catalog.Format(msgs.locale, "runPluginFillIn", map[string]any{"settings": settings})
+}
+
+// PluginsFileChange says "Change…"
+// in the language the app shows.
+func PluginsFileChange() string { return In(i18n.Locale()).PluginsFileChange() }
+
+// PluginsFileChange says "Change…"
+// in the language of msgs.
+func (msgs Messages) PluginsFileChange() string {
+	return Catalog.Format(msgs.locale, "pluginsFileChange", nil)
+}
+
+// PluginsLibraryWrite says "Change your books’ details"
+// in the language the app shows.
+func PluginsLibraryWrite() string { return In(i18n.Locale()).PluginsLibraryWrite() }
+
+// PluginsLibraryWrite says "Change your books’ details"
+// in the language of msgs.
+func (msgs Messages) PluginsLibraryWrite() string {
+	return Catalog.Format(msgs.locale, "pluginsLibraryWrite", nil)
+}
+
+// PluginsLibraryWriteDetail says "Title, authors, tags and other details of the books it runs for, without asking each time."
+// in the language the app shows.
+func PluginsLibraryWriteDetail() string { return In(i18n.Locale()).PluginsLibraryWriteDetail() }
+
+// PluginsLibraryWriteDetail says "Title, authors, tags and other details of the books it runs for, without asking each time."
+// in the language of msgs.
+func (msgs Messages) PluginsLibraryWriteDetail() string {
+	return Catalog.Format(msgs.locale, "pluginsLibraryWriteDetail", nil)
+}
+
+// PluginsLibraryReadHooksDetail says "Title, authors, tags and other details of the books it runs for"
+// in the language the app shows.
+func PluginsLibraryReadHooksDetail() string { return In(i18n.Locale()).PluginsLibraryReadHooksDetail() }
+
+// PluginsLibraryReadHooksDetail says "Title, authors, tags and other details of the books it runs for"
+// in the language of msgs.
+func (msgs Messages) PluginsLibraryReadHooksDetail() string {
+	return Catalog.Format(msgs.locale, "pluginsLibraryReadHooksDetail", nil)
+}
+
+// PluginsBookFilesHooksNote says "It also runs after books are added and formats removed."
+// in the language the app shows.
+func PluginsBookFilesHooksNote() string { return In(i18n.Locale()).PluginsBookFilesHooksNote() }
+
+// PluginsBookFilesHooksNote says "It also runs after books are added and formats removed."
+// in the language of msgs.
+func (msgs Messages) PluginsBookFilesHooksNote() string {
+	return Catalog.Format(msgs.locale, "pluginsBookFilesHooksNote", nil)
+}
+
+// PluginsBookFilesHooksOnlyNote says "Book files: {name} runs after books are added and formats removed."
+// in the language the app shows.
+func PluginsBookFilesHooksOnlyNote(name string) string {
+	return In(i18n.Locale()).PluginsBookFilesHooksOnlyNote(name)
+}
+
+// PluginsBookFilesHooksOnlyNote says "Book files: {name} runs after books are added and formats removed."
+// in the language of msgs.
+func (msgs Messages) PluginsBookFilesHooksOnlyNote(name string) string {
+	return Catalog.Format(msgs.locale, "pluginsBookFilesHooksOnlyNote", map[string]any{"name": name})
 }

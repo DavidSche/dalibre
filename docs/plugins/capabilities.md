@@ -1,9 +1,10 @@
 # Plugin capabilities
 
-Status: rollout steps 1, 2 and 4 are built (the Get books page, the book
+Status: rollout steps 1–4 and 6 are built (the Get books page, the book
 source capability with filters, collections, `get`, and the built-in
-Project Gutenberg plugin; the metadata capability, `permissions.library`
-and the built-in NeoDB plugin); the rest is a proposal. Extends plugin API 1
+Project Gutenberg plugin; a data folder and file settings; the metadata
+capability, `permissions.library` and the built-in NeoDB plugin; the
+file type capability); the rest is a proposal. Extends plugin API 1
 without breaking it; see [design.md](design.md) for the engine, sandbox
 and trust model, which this keeps as they are. Plugin authors read
 [README.md](README.md).
@@ -27,7 +28,7 @@ the app draws natively, so:
 | `manifest.json` + `main.js` | `plugin.json` + `main.js` (as now) |
 | `class extends Plugin { onload() { this.addCommand(…) } }`: capabilities registered in code | Capabilities **declared** in `plugin.json`, implemented by exports. Dalibre knows what a plugin adds, and asks the right permissions, before running any of its code |
 | Plugins draw views, modals, settings tabs | Plugins **never draw**. They return data; Dalibre's own screens show it (the Get books page, the detail panel, menus, the settings form) |
-| `loadData` / `saveData` | `dalibre.storage` (small key–value, per plugin) |
+| `loadData` / `saveData` | `node:fs` over the plugin's own data folder (`/data`) |
 | Full access to the vault and the network | Hosts and library access granted per plugin, at install |
 | Restricted mode; community list in a GitHub repo | Same: plugins off until the user turns them on; an index repo; install from file always works |
 | `minAppVersion` | `api` (as now) |
@@ -168,6 +169,26 @@ first author (fielded, then free text), ranked as NeoDB. Without a key,
 Google's shared quota running out is an `auth` error, so the app
 offers the settings.
 
+## Capability: File type
+
+calibre's file type plugins. The plugin exports `process(file)`, gets a
+copy of a book's file in `/work` and returns the path of a new one, or
+`null`. Every file Dalibre adds goes through the file type plugins, one
+after the other (unless `"onImport": false`), and a failure adds the
+file as it was. From the book menu (Figma, 16 · Run plugin on books) the
+plugin's `title` runs at once on the books, in the background with the
+sidebar's progress; the old file is kept as `ORIGINAL_<format>` and a
+toast offers Undo. Choosing the action is the whole decision: no dialog.
+A `file` setting gives the plugin a file the user chooses, such as a key.
+
+Hooks, as calibre's: `onPostImport`, `onPostAdd` and `onPostDelete` call
+`postimport`, `postadd` and `postdelete` after a file is added, a book is
+added and a format is removed, with the book's details (they need
+`permissions.library: "read"`). Where calibre's hooks get the database,
+ours return `{ metadata }` changes, which Dalibre writes with
+`permissions.library: "write"`. calibre's conversion hooks wait for a
+conversion pipeline.
+
 ## Later capabilities
 
 Each is a new key under `capabilities`, its exports, and a place in
@@ -177,7 +198,7 @@ checked against them.
 | Capability | Where it shows | Plugin returns |
 |---|---|---|
 | `actions` | book menu and ⌘K: "Send to Kindle", "Look up on Goodreads" | `run(actionId, books)` → effects Dalibre applies after confirming: set fields, add tags, open URL, add a format, toast |
-| `hooks` | none; runs when a book is added or changed | effects, as `actions` |
+| `hooks` | none; runs when a book's details change or it is removed (adding books and formats is the file type hooks') | effects, as `actions` |
 | `devices` | "Send to device" targets | a `DownloadRequest`-like upload description |
 
 Effects instead of library writes: a plugin never writes the library
@@ -189,9 +210,9 @@ confirmation per book.
 
 - Setting types add `select`, `toggle`, `number`, `url` to `text` and
   `secret`. Still a form Dalibre draws.
-- `dalibre.storage.get/set/delete(key)`: up to 1 MB per plugin, for
-  tokens and caches that survive restarts. Secrets move to the OS
-  keychain together with `secret` settings.
+- ✅ A data folder per plugin, through the standard `node:fs` at `/data`
+  (64 MB), for tokens and caches that survive restarts. Secrets move to
+  the OS keychain together with `secret` settings.
 - Sign-in flows (open the browser, receive a callback) stay in Later.
 
 ## Permissions and consent
@@ -239,11 +260,13 @@ enforce it.
    object form of `capabilities`; `icon` and one-line `description`.
    All sources. Project Gutenberg rewritten on gutenberg.org's own OPDS
    catalog and built into Dalibre as `dalibre.gutenberg`.
-3. `dalibre.storage`, new setting types, keychain.
+3. ✅ A data folder per plugin (`node:fs` at `/data`, 64 MB), and `file`
+   settings. Still to do: other setting types, keychain.
 4. ✅ Metadata capability with `permissions.library`; Fetch metadata in
    Edit metadata; NeoDB built in as `dalibre.neodb`.
 5. Index, restricted mode, updates.
-6. Actions and hooks.
+6. ✅ File type capability: `process`, on import and from the book menu.
+7. Actions and hooks.
 
 Each step ships on its own and keeps earlier plugins working.
 

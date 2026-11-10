@@ -285,7 +285,8 @@ func TestLinkedPlugin(t *testing.T) {
 	if len(a.pluginsKnown) != 1 || a.pluginsKnown[0].linked != src {
 		t.Fatalf("known %+v", a.pluginsKnown)
 	}
-	if entries, _ := os.ReadDir(a.pluginDir); len(entries) != 0 {
+	// Only its data folder (.data) is there, as for every plugin.
+	if entries, _ := os.ReadDir(a.pluginDir); len(entries) != 1 || entries[0].Name() != ".data" {
 		t.Fatalf("copied into the plugins folder: %v", entries)
 	}
 
