@@ -2,7 +2,8 @@
 // pictures, tables and notes, which a reader plugin lays out for the
 // reader page. It reads the formats Dalibre can open by itself: EPUB
 // (and KEPUB) and plain text. A reader plugin can't add a format: it
-// decides how what it gets is set.
+// decides how what it gets is set. A PDF is pages rather than text, and
+// is drawn by internal/pdf instead.
 //
 // The text is the book's, not the library's: the host reads only the file
 // of a book the user opened, and hands it to the plugin the user chose to

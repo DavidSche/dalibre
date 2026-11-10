@@ -320,7 +320,9 @@ A reader declares the formats it lays out and `open`:
 `formats` are the ones Dalibre can extract — `EPUB`, `KEPUB`, `TXT` — and
 a reader must export `open`. It needs no `permissions.hosts`: Dalibre
 reads the book's file, and the plugin gets only the text, the names of
-pictures, and the tables and notes.
+pictures, and the tables and notes. PDFs are not a reader format: their
+pages are already laid out, so Dalibre draws each page itself as the
+reader turns to it.
 
 `open({ book, document }) → Reading` is called when the user opens a book
 in Dalibre's reader. `book` is `{ id, title, authors, language, format }`.

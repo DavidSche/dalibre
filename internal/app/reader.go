@@ -16,6 +16,7 @@ import (
 	"dalibre/cmd/dalibre/locales"
 	"dalibre/internal/app/theme"
 	"dalibre/internal/calibre"
+	"dalibre/internal/pdf"
 	"dalibre/internal/plugin"
 	"dalibre/internal/reader"
 	"dalibre/internal/settings"
@@ -44,6 +45,10 @@ type readerState struct {
 	imageData map[string][]byte
 	images    map[string]ui.ImageSource
 	imageGen  int // set a chapter's decode aside when another was asked for
+	// pdf is the book when it is a PDF. Its pages are drawn when they are
+	// shown, not read once with the book, and the document is closed when
+	// the reader leaves.
+	pdf *pdf.Book
 
 	chapter   int
 	scroll    ui.ScrollState
@@ -179,6 +184,10 @@ func (a *App) bookProgress(b *calibre.Book) float64 {
 	return math.Max(0, math.Min(1, v))
 }
 
+// pdfFormat is the format Dalibre draws itself, page by page, without a
+// reader plugin: a PDF has already been laid out.
+const pdfFormat = "PDF"
+
 // readerPlugin returns the plugin that reads format: the first the user
 // installed, which may lay a book out better than Dalibre's own, or else the
 // built-in reader.
@@ -201,15 +210,25 @@ func (a *App) readerPlugin(format string) *plugin.Plugin {
 	return fallback
 }
 
-// readableFormat is the format the reader would open b in, if a plugin
-// reads one: the one Dalibre reads best first.
+// readableFormat is the format the reader would open b in: one of the
+// formats Dalibre extracts, a PDF, or a format a reader plugin brings.
+// Dalibre's own formats come first because it reads them best; a PDF is
+// next because its pages keep the book's own layout; a plugin's extra
+// format is last.
 func (a *App) readableFormat(b *calibre.Book) (string, bool) {
 	if b == nil {
 		return "", false
 	}
-	order := append(slices.Clone(reader.Formats), b.Formats...)
-	for _, f := range order {
+	for _, f := range reader.Formats {
 		if slices.Contains(b.Formats, f) && a.readerPlugin(f) != nil {
+			return f, true
+		}
+	}
+	if slices.Contains(b.Formats, pdfFormat) {
+		return pdfFormat, true
+	}
+	for _, f := range b.Formats {
+		if a.readerPlugin(f) != nil {
 			return f, true
 		}
 	}
@@ -229,7 +248,8 @@ func (a *App) openBookOrRead(b *calibre.Book) {
 	a.openBook(b, "")
 }
 
-// openReader shows b in the reader page, laid out by a reader plugin.
+// openReader shows b in the reader page, laid out by a reader plugin, or
+// drawn page by page when the book is a PDF.
 func (a *App) openReader(b *calibre.Book, format string) {
 	if b == nil || a.lib == nil {
 		return
@@ -240,34 +260,21 @@ func (a *App) openReader(b *calibre.Book, format string) {
 			format = f
 		}
 	}
+	if format == pdfFormat {
+		a.openPDFReader(b)
+		return
+	}
 	p := a.readerPlugin(format)
 	if p == nil {
 		a.toast("%s", locales.ReaderNoPlugin(format))
 		return
 	}
-	name, size, lineHeight := a.readerStyles()
-	prev := a.settings.Reading.Books[readerKey(b)]
-	marks := []int{}
-	highlights := []settings.Highlight{}
-	chapter, fraction := 0, 0.0
-	if prev != nil {
-		marks = slices.Clone(prev.Bookmarks)
-		highlights = slices.Clone(prev.Highlights)
-		chapter, fraction = prev.Chapter, prev.Percent
-	}
-	gen := a.rd.gen + 1
-	a.rd = readerState{
-		open: true, loading: true, gen: gen, book: b, format: format,
-		tocTab: "contents", pending: fraction, chapter: chapter,
-		theme: name, size: size, lineHeight: lineHeight, bookmarks: marks,
-		highlights: highlights,
-	}
+	gen, at := a.readerBegin(b, format)
 	lib := a.lib
 	info := plugin.ReaderBook{
 		ID: strconv.FormatInt(b.ID, 10), Title: b.Title, Authors: slices.Clone(b.Authors),
 		Language: firstLanguage(b.Languages), Format: format,
 	}
-	at := a.rd.chapter
 	a.run(func() {
 		doc, err := openDocument(lib, b, format)
 		var reading *plugin.Reading
@@ -299,6 +306,123 @@ func (a *App) openReader(b *calibre.Book, format string) {
 			}
 		})
 	})
+}
+
+// readerBegin resets the page for b in format, at the place kept for the
+// book, and returns the load's generation and that place. It puts a PDF
+// from the last book away first, so its document is not left open.
+func (a *App) readerBegin(b *calibre.Book, format string) (gen, at int) {
+	name, size, lineHeight := a.readerStyles()
+	prev := a.settings.Reading.Books[readerKey(b)]
+	marks := []int{}
+	highlights := []settings.Highlight{}
+	chapter, fraction := 0, 0.0
+	if prev != nil {
+		marks = slices.Clone(prev.Bookmarks)
+		highlights = slices.Clone(prev.Highlights)
+		chapter, fraction = prev.Chapter, prev.Percent
+	}
+	a.readerDiscardPDF()
+	gen = a.rd.gen + 1
+	a.rd = readerState{
+		open: true, loading: true, gen: gen, book: b, format: format,
+		tocTab: "contents", pending: fraction, chapter: chapter,
+		theme: name, size: size, lineHeight: lineHeight, bookmarks: marks,
+		highlights: highlights,
+	}
+	return gen, a.rd.chapter
+}
+
+// readerDiscardPDF closes the PDF the reader has open, in the background:
+// a close waits for a page already being drawn, and that wait must not hold
+// the window.
+func (a *App) readerDiscardPDF() {
+	if a.rd.pdf == nil {
+		return
+	}
+	book := a.rd.pdf
+	a.run(func() { _ = book.Close() })
+}
+
+// openPDFReader draws a PDF's pages. A PDF has no text to lay out, so each
+// page is one image block; the page is rendered when the reader turns to it,
+// not all at once, and only that page's bitmap is held.
+func (a *App) openPDFReader(b *calibre.Book) {
+	if b == nil || a.lib == nil {
+		return
+	}
+	gen, at := a.readerBegin(b, pdfFormat)
+	lib := a.lib
+	a.run(func() {
+		var book *pdf.Book
+		var reading *plugin.Reading
+		raw := map[string][]byte{}
+		var images map[string]ui.ImageSource
+		path, err := bookFile(lib, b, pdfFormat)
+		if err == nil {
+			book, err = pdf.Open(path)
+		}
+		if err == nil {
+			reading = pdfReading(b, book.Pages())
+			if at >= 0 && at < book.Pages() {
+				data, renderErr := book.Render(at)
+				if renderErr != nil {
+					err = renderErr
+				} else {
+					raw[pdf.PageSrc(at)] = data
+					images = decodeReaderChapter(reading.Chapters, at, raw)
+				}
+			}
+		}
+		a.post(func() {
+			if a.rd.gen != gen || !a.rd.open {
+				if book != nil {
+					_ = book.Close()
+				}
+				return
+			}
+			a.rd.loading = false
+			if err != nil {
+				a.rd.err = err
+				if book != nil {
+					_ = book.Close()
+				}
+				return
+			}
+			a.rd.pdf = book
+			a.rd.imageData = raw
+			a.rd.images = images
+			a.adoptReading(reading)
+			// The kept page may have moved when the book was counted; draw
+			// the page the reader actually landed on.
+			if a.rd.chapter != at {
+				a.readerLoadImages()
+			}
+		})
+	})
+}
+
+// pdfReading is a PDF as the reader's chapters: one page each, in the
+// order the document has them. The contents is the page list; a PDF's own
+// outline can name pages, but the pages are still what the reader turns.
+func pdfReading(b *calibre.Book, pages int) *plugin.Reading {
+	chapters := make([]reader.Chapter, pages)
+	for i := range chapters {
+		title := locales.ReaderPageN(i + 1)
+		chapters[i] = reader.Chapter{
+			Title: title,
+			Blocks: []reader.Block{{
+				Kind: reader.Image,
+				Src:  pdf.PageSrc(i),
+				Alt:  title,
+			}},
+		}
+	}
+	return &plugin.Reading{
+		Title:    b.Title,
+		Author:   strings.Join(b.Authors, ", "),
+		Chapters: chapters,
+	}
 }
 
 // A picture's pixels are bounded too: a small file can decode to a plate
@@ -373,7 +497,7 @@ func decodeReaderChapter(chapters []reader.Chapter, at int, raw map[string][]byt
 	return out
 }
 
-// readerLoadImages decodes the current chapter's pictures in the
+// readerLoadImages draws or decodes the current chapter's pictures in the
 // background and lets the previous chapter's go when they are ready. A
 // quicker turn makes an earlier decode's result stale, so it is dropped.
 func (a *App) readerLoadImages() {
@@ -383,17 +507,35 @@ func (a *App) readerLoadImages() {
 	}
 	r.imageGen++
 	gen, imgGen, at := r.gen, r.imageGen, r.chapter
-	chapters, raw := r.chapters, r.imageData
-	if len(raw) == 0 {
+	chapters, raw, book := r.chapters, r.imageData, r.pdf
+	if book == nil && len(raw) == 0 {
 		r.images = nil
 		return
 	}
 	a.run(func() {
+		var renderErr error
+		if book != nil {
+			// A PDF's page is drawn now, at the size the page shows it;
+			// its bytes take the place the book's pictures would.
+			raw = map[string][]byte{}
+			data, err := book.Render(at)
+			if err != nil {
+				renderErr = err
+			} else {
+				raw[pdf.PageSrc(at)] = data
+			}
+		}
 		images := decodeReaderChapter(chapters, at, raw)
 		a.post(func() {
-			if a.rd.open && a.rd.gen == gen && a.rd.imageGen == imgGen && a.rd.chapter == at {
-				a.rd.images = images
+			if !a.rd.open || a.rd.gen != gen || a.rd.imageGen != imgGen || a.rd.chapter != at {
+				return
 			}
+			if renderErr != nil {
+				a.toastError(renderErr)
+				return
+			}
+			a.rd.imageData = raw
+			a.rd.images = images
 		})
 	})
 }
@@ -411,19 +553,27 @@ func readerImageFits(data []byte) bool {
 		int64(cfg.Width)*int64(cfg.Height) <= maxReaderImagePixels
 }
 
+// bookFile is the path of b's file in format.
+func bookFile(lib *calibre.Library, b *calibre.Book, format string) (string, error) {
+	d, err := lib.Details(b)
+	if err != nil {
+		return "", err
+	}
+	for _, f := range d.Files {
+		if f.Format == format {
+			return f.Path, nil
+		}
+	}
+	return "", errNoFormat{book: b.Title, format: format}
+}
+
 // openDocument reads the book's file in format and extracts its text.
 func openDocument(lib *calibre.Library, b *calibre.Book, format string) (*reader.Document, error) {
-	d, err := lib.Details(b)
+	path, err := bookFile(lib, b, format)
 	if err != nil {
 		return nil, err
 	}
-	for _, f := range d.Files {
-		if f.Format != format {
-			continue
-		}
-		return reader.Extract(f.Path, format)
-	}
-	return nil, errNoFormat{book: b.Title, format: format}
+	return reader.Extract(path, format)
 }
 
 type errNoFormat struct{ book, format string }
@@ -557,6 +707,7 @@ func (a *App) readerClose() {
 		return
 	}
 	a.saveReading()
+	a.readerDiscardPDF()
 	gen := a.rd.gen + 1
 	a.rd = readerState{gen: gen}
 }
@@ -857,14 +1008,22 @@ func (a *App) readerSetTheme(name string) {
 	a.saveReading()
 }
 
-// readerSetSize steps the text's size by delta DIPs.
+// readerSetSize steps the text's size by delta DIPs. A PDF page is a
+// picture, so its size is the page's, not the reader's.
 func (a *App) readerSetSize(delta int) {
+	if a.rd.format == pdfFormat {
+		return
+	}
 	a.rd.size = min(max(a.rd.size+delta, 14), 30)
 	a.saveReading()
 }
 
-// readerSetLineHeight steps the line height by delta.
+// readerSetLineHeight steps the line height by delta. A PDF page keeps the
+// leading its typesetter gave it.
 func (a *App) readerSetLineHeight(delta float64) {
+	if a.rd.format == pdfFormat {
+		return
+	}
 	h := math.Round((a.rd.lineHeight+delta)*10) / 10
 	a.rd.lineHeight = min(max(h, 1.4), 2.6)
 	a.saveReading()
@@ -882,6 +1041,9 @@ func (a *App) readerTitle(i int) string {
 	}
 	if ch.Continued {
 		return ""
+	}
+	if a.rd.format == pdfFormat {
+		return locales.ReaderPageN(i + 1)
 	}
 	return locales.ReaderChapterN(i + 1)
 }

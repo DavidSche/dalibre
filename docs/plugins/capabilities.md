@@ -258,6 +258,13 @@ catalogue's own habits can replace Dalibre's.
 host can extract — `EPUB`, `KEPUB`, `TXT`. More formats arrive with the
 host; the capability then offers them to plugins without changing.
 
+Dalibre also opens PDFs, but a PDF does not go through a reader plugin:
+its pages are already laid out, so the host draws the page the reader
+turns to and uses it as a picture. A reader plugin sees only the text
+formats above. Until the page is drawn, the reading page shows a
+placeholder; the page's size, type, leading and paper color are the
+PDF's own. The chrome around the page still follows the reader's theme.
+
 `typography.indent` asks for a first line indent (CJK books get one
 anyway). A `continued` chapter is part of the chapter before, from a
 chapter the host split for length: no heading, one entry in the
@@ -383,6 +390,7 @@ Each step ships on its own and keeps earlier plugins working.
 | `plugins/neodb` | the NeoDB metadata plugin |
 | `plugins/googlebooks` | the Google Books metadata plugin |
 | `internal/reader` | extracts text, pictures, tables and notes from EPUB, KEPUB and TXT files: chapters, blocks, limits |
+| `internal/pdf` | draws PDF pages with PDFium in WebAssembly: one page at a time, no cgo |
 | `internal/plugin/reader.go` | `open`: `ReaderBook`, `Document`, `Reading`, its checks |
 | `internal/app/reader.go`, `view_reader.go` | the reading page: state, progress, contents, themes |
 | `plugins/reader` | the built-in Reader layout plugin |

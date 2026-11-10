@@ -4,6 +4,13 @@ Each version's section is the release notes that Dalibre's update window
 shows, so write them for readers of the app. `mygo build` needs a
 `## <version>` section for the version in `cmd/dalibre/mygo.json`.
 
+## Unreleased
+
+- PDF books open in the reader: each page is drawn when the reader turns
+  to it, so a large or scanned book opens without waiting for every page.
+  PDFium runs as WebAssembly inside Dalibre, so the build still needs no
+  cgo and ships as one binary.
+
 ## 0.3.1
 
 - Saving an edited EPUB, KEPUB or TXT book now works on Windows: the

@@ -69,6 +69,7 @@ internal/
   catalog/            search, filters, sorting and sidebar counts (no UI)
   plugin/             plugins: manifest, sandboxed JS runtime, consent, packages
   reader/             text, pictures, tables and notes of EPUB, KEPUB and TXT books
+  pdf/                draws PDF pages with PDFium in WebAssembly, one page at a time
   mcp/                the MCP server: tools, call log, stdio bridge
   settings/           user settings persisted as JSON
   thumbs/             on-disk cover thumbnails

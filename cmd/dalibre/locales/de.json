@@ -316,6 +316,26 @@
       }
     }
   },
+
+  "readerPageN": "Seite {n}",
+  "@readerPageN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "readerPageOf": "Seite {current} von {total}",
+  "@readerPageOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "readerProgress": "{percent}%",
   "@readerProgress": {
     "placeholders": {

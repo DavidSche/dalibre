@@ -316,6 +316,26 @@
       }
     }
   },
+
+  "readerPageN": "{n}페이지",
+  "@readerPageN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "readerPageOf": "{current}페이지 / 전체 {total}페이지",
+  "@readerPageOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "readerProgress": "{percent}%",
   "@readerProgress": {
     "placeholders": {

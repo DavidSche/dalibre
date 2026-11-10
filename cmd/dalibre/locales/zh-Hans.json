@@ -316,6 +316,26 @@
       }
     }
   },
+
+  "readerPageN": "第 {n} 页",
+  "@readerPageN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "readerPageOf": "第 {current} 页 / 共 {total} 页",
+  "@readerPageOf": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "readerProgress": "{percent}%",
   "@readerProgress": {
     "placeholders": {
